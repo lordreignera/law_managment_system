@@ -1,0 +1,382 @@
+body.kfms-auth-body {
+    background: #f2f3f5;
+    color: #172033;
+    font-family: Arial, sans-serif;
+    margin: 0;
+}
+
+.kfms-auth-stage {
+    align-items: center;
+    display: flex;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 18px;
+}
+
+.kfms-auth-showcase {
+    background: #fff;
+    border-radius: 22px;
+    box-shadow: 0 18px 44px rgba(17, 24, 39, 0.14);
+    display: grid;
+    grid-template-columns: 1fr 0.95fr;
+    min-height: 430px;
+    overflow: hidden;
+    position: relative;
+    width: min(100%, 760px);
+}
+
+.kfms-register-showcase {
+    width: min(100%, 820px);
+}
+
+.kfms-auth-simple {
+    min-height: 390px;
+    width: min(100%, 700px);
+}
+
+.kfms-auth-blue {
+    background: linear-gradient(145deg, var(--kfms-primary, #050505) 0%, #222 100%);
+    color: #fff;
+    min-height: 100%;
+    overflow: hidden;
+    padding: 36px 38px;
+    position: relative;
+}
+
+.kfms-auth-blue::after {
+    background: #fff;
+    border-radius: 0 50% 50% 0;
+    content: "";
+    height: 132%;
+    position: absolute;
+    right: -132px;
+    top: -16%;
+    width: 230px;
+    z-index: 1;
+}
+
+.kfms-auth-logo-mark {
+    align-items: center;
+    border: 1px solid rgba(255, 255, 255, 0.88);
+    border-radius: 12px;
+    display: inline-flex;
+    font-size: 22px;
+    font-weight: 800;
+    height: 44px;
+    justify-content: center;
+    position: relative;
+    width: 44px;
+    z-index: 2;
+}
+
+.kfms-auth-logo-image {
+    background: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.88);
+    border-radius: 12px;
+    display: inline-block;
+    height: 48px;
+    object-fit: contain;
+    padding: 5px;
+    position: relative;
+    width: 48px;
+    z-index: 2;
+}
+
+.kfms-auth-logo-link,
+.kfms-auth-logo-link:hover {
+    color: #fff;
+    display: inline-flex;
+    position: relative;
+    text-decoration: none;
+    z-index: 2;
+}
+
+.kfms-auth-welcome {
+    margin-top: 54px;
+    max-width: 285px;
+    position: relative;
+    z-index: 2;
+}
+
+.kfms-auth-welcome h1 {
+    color: #fff;
+    font-size: 30px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    line-height: 1;
+    margin: 0 0 10px;
+}
+
+.kfms-auth-welcome h3 {
+    color: #fff;
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    margin: 0 0 18px;
+}
+
+.kfms-auth-welcome p {
+    color: rgba(255, 255, 255, 0.86);
+    font-size: 12px;
+    line-height: 1.65;
+    margin: 0 0 12px;
+}
+
+.kfms-orb {
+    background: linear-gradient(145deg, #4a4a4a 0%, #111 80%);
+    display: block;
+    position: absolute;
+    z-index: 2;
+}
+
+.kfms-orb-large {
+    border-radius: 50%;
+    bottom: 36px;
+    height: 118px;
+    right: 28px;
+    width: 118px;
+}
+
+.kfms-orb-small {
+    border-radius: 0 50% 0 0;
+    bottom: 0;
+    height: 120px;
+    left: 0;
+    width: 165px;
+}
+
+.kfms-auth-white {
+    align-items: center;
+    background: #fff;
+    display: flex;
+    justify-content: center;
+    padding: 38px 52px 34px 28px;
+    position: relative;
+}
+
+.kfms-auth-white::after {
+    background: #202020;
+    border-radius: 100% 0 0 0;
+    bottom: 0;
+    content: "";
+    height: 76px;
+    position: absolute;
+    right: 0;
+    width: 92px;
+}
+
+.kfms-auth-form-card {
+    max-width: 290px;
+    position: relative;
+    width: 100%;
+    z-index: 2;
+}
+
+.kfms-register-card {
+    max-width: 390px;
+}
+
+.kfms-auth-title {
+    margin-bottom: 22px;
+    text-align: center;
+}
+
+.kfms-auth-title h2 {
+    color: #2d2f36;
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    line-height: 1;
+    margin: 0 0 10px;
+}
+
+.kfms-auth-title p {
+    color: #7c828d;
+    font-size: 11px;
+    margin: 0;
+}
+
+.kfms-input-group {
+    align-items: center;
+    background: #f0f0f0;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    display: flex;
+    gap: 10px;
+    min-height: 48px;
+    margin-bottom: 11px;
+    padding: 0 13px;
+}
+
+.kfms-input-group:focus-within {
+    background: #fff;
+    border-color: #0d6fb8;
+}
+
+.kfms-input-group i {
+    color: #555b64;
+    font-size: 22px;
+}
+
+.kfms-input-group input {
+    background: transparent;
+    border: 0;
+    color: #253040;
+    flex: 1;
+    font-size: 13px;
+    min-width: 0;
+    outline: 0;
+}
+
+.kfms-show-password {
+    background: transparent;
+    border: 0;
+    color: var(--kfms-primary, #111);
+    font-size: 11px;
+    font-weight: 800;
+    padding: 0;
+}
+
+.kfms-auth-row {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+    margin: 2px 0 22px;
+}
+
+.kfms-auth-row .form-check-label,
+.kfms-terms .form-check-label {
+    color: #626977;
+    font-size: 11px;
+}
+
+.kfms-auth-row .form-check-input,
+.kfms-terms .form-check-input {
+    border-radius: 0;
+    margin-top: 1px;
+}
+
+.kfms-auth-row a,
+.kfms-auth-switch a,
+.kfms-terms a {
+    color: var(--kfms-primary, #111);
+    font-size: 11px;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.kfms-primary-button {
+    background: var(--kfms-primary, #111);
+    border: 0;
+    border-radius: 8px;
+    box-shadow: 0 8px 18px rgba(17, 24, 39, 0.18);
+    color: #fff;
+    display: block;
+    font-size: 16px;
+    font-weight: 800;
+    min-height: 48px;
+    width: 100%;
+}
+
+.kfms-primary-button:hover,
+.kfms-primary-button:focus {
+    background: #222;
+    color: #fff;
+}
+
+.kfms-divider {
+    align-items: center;
+    color: #777;
+    display: flex;
+    font-size: 12px;
+    gap: 10px;
+    margin: 14px 0 10px;
+}
+
+.kfms-divider::before,
+.kfms-divider::after {
+    background: #c8c8c8;
+    content: "";
+    flex: 1;
+    height: 1px;
+}
+
+.kfms-outline-button {
+    align-items: center;
+    border: 2px solid #333;
+    border-radius: 8px;
+    color: #333;
+    display: flex;
+    font-size: 15px;
+    font-weight: 700;
+    justify-content: center;
+    min-height: 46px;
+    text-decoration: none;
+}
+
+.kfms-outline-button:hover {
+    color: #111;
+    text-decoration: none;
+}
+
+.kfms-register-grid {
+    display: grid;
+    gap: 0 12px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.kfms-terms {
+    margin: 2px 0 18px;
+}
+
+.kfms-auth-switch {
+    color: #626977;
+    font-size: 11px;
+    margin: 18px 0 0;
+    text-align: center;
+}
+
+@media (max-width: 850px) {
+    .kfms-auth-showcase,
+    .kfms-register-showcase {
+        grid-template-columns: 1fr;
+        width: min(100%, 520px);
+    }
+
+    .kfms-auth-blue {
+        min-height: 235px;
+        padding: 28px;
+    }
+
+    .kfms-auth-blue::after,
+    .kfms-orb,
+    .kfms-auth-white::after {
+        display: none;
+    }
+
+    .kfms-auth-welcome {
+        margin-top: 26px;
+    }
+
+    .kfms-auth-welcome h1 {
+        font-size: 28px;
+    }
+
+    .kfms-auth-white {
+        padding: 30px 24px;
+    }
+}
+
+@media (max-width: 540px) {
+    .kfms-auth-stage {
+        padding: 12px;
+    }
+
+    .kfms-auth-showcase {
+        border-radius: 16px;
+    }
+
+    .kfms-register-grid {
+        grid-template-columns: 1fr;
+    }
+}
