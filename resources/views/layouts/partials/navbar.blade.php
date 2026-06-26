@@ -19,7 +19,55 @@
             </li>
         </ul>
 
-        <ul class="navbar-nav navbar-nav-right">
+        <ul class="navbar-nav navbar-nav-right kfms-navbar-actions">
+            <li class="nav-item dropdown d-flex">
+                <button class="kfms-quick-action" type="button" id="quickActionsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="mdi mdi-plus-circle-outline"></i>
+                    <span>Quick Actions</span>
+                </button>
+                <div class="dropdown-menu dropdown-menu-end navbar-dropdown kfms-action-dropdown" aria-labelledby="quickActionsDropdown">
+                    <a class="dropdown-item" href="{{ route('clients.create') }}">
+                        <i class="mdi mdi-account-plus-outline"></i>
+                        Add Client
+                    </a>
+                    <a class="dropdown-item" href="{{ route('matters.create') }}">
+                        <i class="mdi mdi-briefcase-plus-outline"></i>
+                        Add Matter
+                    </a>
+                    <a class="dropdown-item" href="{{ route('settings.system.overview') }}">
+                        <i class="mdi mdi-tune-variant"></i>
+                        System Settings
+                    </a>
+                    <a class="dropdown-item" href="{{ route('settings.company.edit') }}">
+                        <i class="mdi mdi-cog-outline"></i>
+                        Company Branding
+                    </a>
+                </div>
+            </li>
+
+            <li class="nav-item dropdown">
+                <button class="kfms-nav-icon" type="button" id="chatDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Messages">
+                    <i class="mdi mdi-message-text-outline"></i>
+                </button>
+                <div class="dropdown-menu dropdown-menu-end navbar-dropdown kfms-notice-dropdown" aria-labelledby="chatDropdown">
+                    <h6>Messages</h6>
+                    <p>Your internal chat space will appear here when the chat module is connected.</p>
+                </div>
+            </li>
+
+            <li class="nav-item dropdown">
+                <button class="kfms-nav-icon" type="button" id="notificationDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Notifications">
+                    <i class="mdi mdi-bell-outline"></i>
+                    <span class="kfms-nav-badge">3</span>
+                </button>
+                <div class="dropdown-menu dropdown-menu-end navbar-dropdown kfms-notice-dropdown" aria-labelledby="notificationDropdown">
+                    <h6>Notifications</h6>
+                    <a class="dropdown-item" href="{{ route('matters.index') }}">Review open matters</a>
+                    <a class="dropdown-item" href="{{ route('recoveries.index') }}">Check recovery assignments</a>
+                    <a class="dropdown-item" href="{{ route('settings.company.edit') }}">Confirm company branding</a>
+                </div>
+            </li>
+
             <li class="nav-item dropdown">
                 <a class="nav-link" id="profileDropdown" href="#" data-bs-toggle="dropdown">
                     <div class="navbar-profile">

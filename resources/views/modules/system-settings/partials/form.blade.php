@@ -1,5 +1,6 @@
 @php
     $extraFields = $definition['extra_fields'] ?? [];
+    $isModal = $isModal ?? false;
 @endphp
 
 <div class="kfms-form-grid">
@@ -105,6 +106,10 @@
 </div>
 
 <div class="kfms-form-actions">
-    <a class="kfms-link-btn" href="{{ route('settings.system.index', $setting) }}">Cancel</a>
+    @if ($isModal)
+        <button class="kfms-link-btn" type="button" data-bs-dismiss="modal">Cancel</button>
+    @else
+        <a class="kfms-link-btn" href="{{ route('settings.system.index', $setting) }}">Cancel</a>
+    @endif
     <button type="submit">Save {{ $definition['singular'] }}</button>
 </div>

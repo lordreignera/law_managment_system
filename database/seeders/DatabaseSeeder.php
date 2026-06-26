@@ -20,6 +20,10 @@ class DatabaseSeeder extends Seeder
         CompanySetting::query()->firstOrCreate(['id' => 1], CompanySetting::defaults());
 
         $this->call([
+            SalutationSeeder::class,
+            CountrySeeder::class,
+            ContactPositionSeeder::class,
+            RelationshipTypeSeeder::class,
             PracticeAreaSeeder::class,
             BusinessIndustrySeeder::class,
             MatterCategorySeeder::class,

@@ -4,6 +4,8 @@ use App\Models\Bank;
 use App\Models\BillableRate;
 use App\Models\BudgetCategory;
 use App\Models\BusinessIndustry;
+use App\Models\ContactPosition;
+use App\Models\Country;
 use App\Models\Court;
 use App\Models\CurrencyType;
 use App\Models\EngagementType;
@@ -15,10 +17,36 @@ use App\Models\Letterhead;
 use App\Models\MatterCategory;
 use App\Models\PaymentMode;
 use App\Models\PracticeArea;
+use App\Models\RelationshipType;
 use App\Models\RequisitionCategory;
+use App\Models\Salutation;
 use App\Models\Shelf;
 
 return [
+    'salutations' => [
+        'title' => 'Salutations',
+        'singular' => 'Salutation',
+        'model' => Salutation::class,
+        'description' => 'Client and next-of-kin title options such as Mr, Ms, Dr, and Counsel.',
+    ],
+    'countries' => [
+        'title' => 'Countries',
+        'singular' => 'Country',
+        'model' => Country::class,
+        'description' => 'Country of origin options used on client and next-of-kin records.',
+    ],
+    'contact-positions' => [
+        'title' => 'Contact Positions',
+        'singular' => 'Contact Position',
+        'model' => ContactPosition::class,
+        'description' => 'Client contact roles such as Director, Primary Contact, Normal Contact, and Other.',
+    ],
+    'relationship-types' => [
+        'title' => 'Relationship Types',
+        'singular' => 'Relationship Type',
+        'model' => RelationshipType::class,
+        'description' => 'Next-of-kin relationship options used when registering individual clients.',
+    ],
     'practice-areas' => [
         'title' => 'Practice Areas',
         'singular' => 'Practice Area',

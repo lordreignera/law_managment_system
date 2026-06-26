@@ -15,4 +15,14 @@ class MatterAssignment extends Model
         'assigned_on' => 'date',
         'is_lead' => 'boolean',
     ];
+
+    public function matter()
+    {
+        return $this->belongsTo(Matter::class);
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 }

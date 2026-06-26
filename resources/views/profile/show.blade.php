@@ -1,45 +1,90 @@
-<x-app-layout>
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Profile') }}
-        </h2>
-    </x-slot>
+@extends('layouts.admin')
 
-    <div>
-        <div class="max-w-7xl mx-auto py-10 sm:px-6 lg:px-8">
+@section('title', 'Profile')
+@section('page-title', 'Profile')
+
+@section('content')
+    <section class="kfms-panel kfms-profile-shell">
+        <div class="kfms-panel-header">
+            <div>
+                <h2>Account Profile</h2>
+                <span>Manage your personal information, password, sessions, and account security.</span>
+            </div>
+            <a class="kfms-link-btn" href="{{ route('dashboard') }}">
+                <i class="mdi mdi-arrow-left"></i>
+                Back to Dashboard
+            </a>
+        </div>
+
+        <div class="kfms-profile-summary">
+            <div class="kfms-profile-avatar">{{ substr(auth()->user()->name, 0, 1) }}</div>
+            <div>
+                <strong>{{ auth()->user()->name }}</strong>
+                <span>{{ auth()->user()->email }}</span>
+            </div>
+        </div>
+
+        <div class="kfms-table-toolbar kfms-profile-filter" role="group" aria-label="Profile filters">
+            <button class="kfms-link-btn is-active" type="button" data-profile-filter="all">All</button>
+            <button class="kfms-link-btn" type="button" data-profile-filter="profile">Profile</button>
+            <button class="kfms-link-btn" type="button" data-profile-filter="security">Security</button>
+            <button class="kfms-link-btn" type="button" data-profile-filter="sessions">Sessions</button>
+            @if (Laravel\Jetstream\Jetstream::hasAccountDeletionFeatures())
+                <button class="kfms-link-btn" type="button" data-profile-filter="danger">Danger Zone</button>
+            @endif
+        </div>
+
+        <div class="kfms-profile-sections">
             @if (Laravel\Fortify\Features::canUpdateProfileInformation())
-                @livewire('profile.update-profile-information-form')
-
-                <x-section-border />
+                <div class="kfms-profile-section" data-profile-section="profile">
+                    @livewire('profile.update-profile-information-form')
+                </div>
             @endif
 
             @if (Laravel\Fortify\Features::enabled(Laravel\Fortify\Features::updatePasswords()))
-                <div class="mt-10 sm:mt-0">
+                <div class="kfms-profile-section" data-profile-section="security">
                     @livewire('profile.update-password-form')
                 </div>
-
-                <x-section-border />
             @endif
 
             @if (Laravel\Fortify\Features::canManageTwoFactorAuthentication())
-                <div class="mt-10 sm:mt-0">
+                <div class="kfms-profile-section" data-profile-section="security">
                     @livewire('profile.two-factor-authentication-form')
                 </div>
-
-                <x-section-border />
             @endif
 
-            <div class="mt-10 sm:mt-0">
+            <div class="kfms-profile-section" data-profile-section="sessions">
                 @livewire('profile.logout-other-browser-sessions-form')
             </div>
 
             @if (Laravel\Jetstream\Jetstream::hasAccountDeletionFeatures())
-                <x-section-border />
-
-                <div class="mt-10 sm:mt-0">
+                <div class="kfms-profile-section" data-profile-section="danger">
                     @livewire('profile.delete-user-form')
                 </div>
             @endif
         </div>
-    </div>
-</x-app-layout>
+    </section>
+@endsection
+
+@push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const buttons = document.querySelectorAll('[data-profile-filter]');
+            const sections = document.querySelectorAll('[data-profile-section]');
+
+            buttons.forEach(function (button) {
+                button.addEventListener('click', function () {
+                    const filter = button.dataset.profileFilter;
+
+                    buttons.forEach(function (item) {
+                        item.classList.toggle('is-active', item === button);
+                    });
+
+                    sections.forEach(function (section) {
+                        section.hidden = filter !== 'all' && section.dataset.profileSection !== filter;
+                    });
+                });
+            });
+        });
+    </script>
+@endpush

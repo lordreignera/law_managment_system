@@ -23,18 +23,35 @@ class SystemSettingController extends Controller
         ]);
     }
 
-    public function index(string $setting)
+    public function index(Request $request, string $setting)
     {
         $definition = $this->definition($setting);
         $records = $definition['model']::query()
+            ->when($request->filled('search'), function ($query) use ($request) {
+                $search = $request->string('search')->toString();
+
+                $query->where(function ($query) use ($search) {
+                    $query
+                        ->where('name', 'like', "%{$search}%")
+                        ->orWhere('code', 'like', "%{$search}%")
+                        ->orWhere('description', 'like', "%{$search}%");
+                });
+            })
+            ->when($request->filled('status'), function ($query) use ($request) {
+                $query->where('is_active', $request->string('status')->toString() === 'active');
+            })
             ->orderBy('sort_order')
             ->orderBy('name')
-            ->paginate(15);
+            ->paginate(15)
+            ->withQueryString();
 
         return view('modules.system-settings.index', [
             'setting' => $setting,
             'definition' => $definition,
             'records' => $records,
+            'newRecord' => new $definition['model'],
+            'currencyTypes' => CurrencyType::orderBy('name')->get(),
+            'filters' => $request->only(['search', 'status']),
         ]);
     }
 

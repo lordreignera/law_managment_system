@@ -11,6 +11,18 @@ class Client extends Model
 
     protected $guarded = [];
 
+    protected $casts = [
+        'is_prospect' => 'boolean',
+        'date_of_birth' => 'date',
+    ];
+
+    public function getDisplayNameAttribute(): string
+    {
+        return $this->name
+            ?: trim(collect([$this->first_name, $this->middle_name, $this->last_name])->filter()->implode(' '))
+            ?: ($this->organization_name ?: 'Unnamed Client');
+    }
+
     public function contacts()
     {
         return $this->hasMany(ClientContact::class);
@@ -19,5 +31,25 @@ class Client extends Model
     public function matters()
     {
         return $this->hasMany(Matter::class);
+    }
+
+    public function salutation()
+    {
+        return $this->belongsTo(Salutation::class);
+    }
+
+    public function position()
+    {
+        return $this->belongsTo(ContactPosition::class, 'position_id');
+    }
+
+    public function country()
+    {
+        return $this->belongsTo(Country::class);
+    }
+
+    public function clientInCharge()
+    {
+        return $this->belongsTo(User::class, 'client_in_charge_id');
     }
 }

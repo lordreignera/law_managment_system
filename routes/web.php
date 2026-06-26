@@ -22,7 +22,11 @@ Route::middleware([
 ])->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::get('/clients', [ClientController::class, 'index'])->name('clients.index');
+    Route::get('/clients/create', [ClientController::class, 'create'])->name('clients.create');
+    Route::post('/clients', [ClientController::class, 'store'])->name('clients.store');
     Route::get('/matters', [MatterController::class, 'index'])->name('matters.index');
+    Route::get('/matters/create', [MatterController::class, 'create'])->name('matters.create');
+    Route::post('/matters', [MatterController::class, 'store'])->name('matters.store');
     Route::get('/recoveries', [RecoveryController::class, 'index'])->name('recoveries.index');
     Route::get('/land-titles', [LandTitleController::class, 'index'])->name('land-titles.index');
     Route::get('/finance', [FinanceController::class, 'index'])->name('finance.index');
