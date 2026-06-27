@@ -79,7 +79,7 @@ body.kfms-auth-body {
 }
 
 .jf-login-card-centered .jf-form-panel {
-    padding: 34px 40px 30px;
+    padding: 26px 38px 22px;
 }
 
 .jf-login-card-centered .jf-form-wrap {
@@ -330,7 +330,7 @@ body.kfms-auth-body {
     font-weight: 800;
     gap: 7px;
     justify-content: center;
-    margin-bottom: 12px;
+    margin-bottom: 8px;
 }
 
 .jf-login-kicker i {
@@ -339,23 +339,23 @@ body.kfms-auth-body {
 }
 
 .jf-login-refined .jf-form-title {
-    margin-bottom: 20px;
+    margin-bottom: 14px;
 }
 
 .jf-login-refined .jf-form-title h2 {
     color: var(--jf-navy);
-    font-size: 28px;
-    margin-bottom: 8px;
+    font-size: 25px;
+    margin-bottom: 6px;
 }
 
 .jf-login-refined .jf-form-title p {
     color: #5d6b80;
-    font-size: 14px;
+    font-size: 13px;
     line-height: 1.45;
 }
 
 .jf-login-refined .jf-form-logo {
-    margin-bottom: 14px;
+    margin-bottom: 10px;
 }
 
 .jf-login-refined .jf-form-logo-image,
@@ -366,11 +366,11 @@ body.kfms-auth-body {
 }
 
 .jf-login-refined .jf-form-logo-image {
-    height: 54px;
+    height: 48px;
 }
 
 .jf-login-refined .jf-form-logo-mark {
-    height: 54px;
+    height: 48px;
 }
 
 .jf-field {
@@ -407,7 +407,7 @@ body.kfms-auth-body {
 }
 
 .jf-login-refined .jf-field {
-    margin-bottom: 15px;
+    margin-bottom: 10px;
 }
 
 .jf-login-refined .jf-field > span {
@@ -417,7 +417,7 @@ body.kfms-auth-body {
 .jf-login-refined .jf-field > div {
     background: #fbfcfe;
     border-color: #cfd8e5;
-    min-height: 46px;
+    min-height: 42px;
 }
 
 .jf-login-refined .jf-field > div:focus-within {
@@ -528,7 +528,7 @@ body.kfms-auth-body {
     border: 1px solid #06162f;
     border-bottom: 3px solid var(--jf-gold);
     box-shadow: 0 12px 22px rgba(3, 27, 60, 0.24);
-    min-height: 50px;
+    min-height: 44px;
 }
 
 .jf-login-refined .jf-primary-button i {
@@ -566,7 +566,7 @@ body.kfms-auth-body {
 }
 
 .jf-login-refined .jf-divider {
-    margin: 16px 0;
+    margin: 12px 0;
 }
 
 .jf-login-refined .jf-divider span {
@@ -578,7 +578,7 @@ body.kfms-auth-body {
 .jf-login-refined .jf-outline-button {
     border-color: #c8d2df;
     color: var(--jf-navy);
-    min-height: 46px;
+    min-height: 42px;
 }
 
 .jf-login-refined .jf-outline-button:hover {
@@ -650,8 +650,8 @@ body.kfms-auth-body {
     gap: 8px;
     justify-content: center;
     line-height: 1.4;
-    margin-top: 18px;
-    padding-top: 16px;
+    margin-top: 12px;
+    padding-top: 12px;
     text-align: center;
 }
 
@@ -835,11 +835,11 @@ body.kfms-auth-body {
     }
 
     .jf-login-card-centered .jf-form-panel {
-        padding: 28px 22px 24px;
+        padding: 22px 20px 20px;
     }
 
     .jf-login-refined .jf-form-title h2 {
-        font-size: 24px;
+        font-size: 23px;
     }
 
     .jf-login-support {

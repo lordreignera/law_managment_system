@@ -13,7 +13,7 @@
                             <x-company-logo mark-class="jf-form-logo-mark" image-class="jf-form-logo-image" />
                         </div>
                         <h2>{{ $companySetting->login_heading ?: 'Sign in' }}</h2>
-                        <p>{{ $companySetting->company_name }} matter and client management portal.</p>
+                        <p>{{ $companySetting->company_name }}</p>
                     </div>
 
                     @if ($errors->any())
@@ -59,7 +59,7 @@
 
                         <button class="jf-primary-button" type="submit">
                             <i class="mdi mdi-login"></i>
-                            Sign In Securely
+                            Sign In
                         </button>
                     </form>
 

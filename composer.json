@@ -66,10 +66,7 @@
     },
     "config": {
         "optimize-autoloader": true,
-        "preferred-install": {
-            "psr/http-client": "source",
-            "*": "dist"
-        },
+        "preferred-install": "auto",
         "sort-packages": true,
         "allow-plugins": {
             "pestphp/pest-plugin": true,
