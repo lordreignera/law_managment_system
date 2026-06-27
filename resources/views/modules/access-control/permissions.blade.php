@@ -36,33 +36,53 @@
                 <thead>
                     <tr>
                         <th>Permission</th>
+                        <th>Module</th>
+                        <th>Source</th>
                         <th>Guard</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse ($permissions as $permission)
+                        @php
+                            $isRouteBound = $routeBound->contains($permission->name);
+                            $moduleLabel = $registry->moduleLabel($registry->moduleSlug($permission->name));
+                        @endphp
                         <tr>
                             <td>{{ $permission->name }}</td>
+                            <td>{{ $moduleLabel }}</td>
+                            <td>
+                                @if ($isRouteBound)
+                                    <span class="kfms-status is-active">Route</span>
+                                @else
+                                    <span class="kfms-status is-muted">Custom</span>
+                                @endif
+                            </td>
                             <td>{{ $permission->guard_name }}</td>
                             <td>
                                 <div class="kfms-table-actions">
-                                    <button type="button" data-bs-toggle="modal" data-bs-target="#edit-permission-{{ $permission->id }}">Edit</button>
-                                    <form method="POST" action="{{ route('access.permissions.destroy', $permission) }}">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button class="is-danger" type="submit" onclick="return confirm('Delete this permission?')">Delete</button>
-                                    </form>
+                                    @if ($isRouteBound)
+                                        <span class="kfms-muted-text" title="This permission is created automatically from a route. Rename or delete the route instead.">Locked</span>
+                                    @else
+                                        <button type="button" data-bs-toggle="modal" data-bs-target="#edit-permission-{{ $permission->id }}">Edit</button>
+                                        <form method="POST" action="{{ route('access.permissions.destroy', $permission) }}">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button class="is-danger" type="submit" onclick="return confirm('Delete this permission?')">Delete</button>
+                                        </form>
+                                    @endif
                                 </div>
                             </td>
                         </tr>
 
-                        @push('modals')
-                            @include('modules.access-control.partials.permission-modal', ['modalId' => 'edit-permission-'.$permission->id, 'permission' => $permission, 'action' => route('access.permissions.update', $permission), 'method' => 'PUT'])
-                        @endpush
+                        @unless ($isRouteBound)
+                            @push('modals')
+                                @include('modules.access-control.partials.permission-modal', ['modalId' => 'edit-permission-'.$permission->id, 'permission' => $permission, 'action' => route('access.permissions.update', $permission), 'method' => 'PUT'])
+                            @endpush
+                        @endunless
                     @empty
                         <tr>
-                            <td colspan="3" class="kfms-empty">No permissions found.</td>
+                            <td colspan="5" class="kfms-empty">No permissions found.</td>
                         </tr>
                     @endforelse
                 </tbody>

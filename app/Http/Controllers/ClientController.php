@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Client;
+use App\Models\Branch;
 use App\Models\ContactPosition;
 use App\Models\Country;
 use App\Models\RelationshipType;
@@ -18,6 +19,7 @@ class ClientController extends Controller
     public function index(Request $request)
     {
         $clients = Client::query()
+            ->forBranchOf($request->user())
             ->when($request->filled('search'), function ($query) use ($request) {
                 $search = $request->string('search')->toString();
 
@@ -53,6 +55,7 @@ class ClientController extends Controller
             'countries' => Country::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
             'relationships' => RelationshipType::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
             'users' => User::orderBy('name')->get(),
+            'branches' => Branch::where('is_active', true)->orderBy('name')->get(),
         ]);
     }
 
@@ -186,6 +189,7 @@ class ClientController extends Controller
             'phone' => ['required', 'string', 'max:60'],
             'address' => ['required', 'string', 'max:1000'],
             'status' => ['required', Rule::in(['active', 'inactive'])],
+            'branch_id' => ['nullable', 'exists:branches,id'],
             'next_of_kin.relationship_type_id' => ['nullable', 'exists:relationship_types,id'],
             'next_of_kin.salutation_id' => ['nullable', 'exists:salutations,id'],
             'next_of_kin.country_id' => ['nullable', 'exists:countries,id'],
@@ -204,6 +208,7 @@ class ClientController extends Controller
             $clientData = collect($data)->except('next_of_kin')->toArray();
             $clientData['client_no'] = MonthlyReferenceNumber::make(Client::class, 'client_no', 'CL');
             $clientData['is_prospect'] = $request->boolean('is_prospect');
+            $clientData['branch_id'] = $clientData['branch_id'] ?? $request->user()->branch_id;
             $clientData['name'] = $this->clientName($clientData);
 
             $client = Client::create($clientData);

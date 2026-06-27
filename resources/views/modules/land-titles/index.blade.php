@@ -1,12 +1,12 @@
 @extends('layouts.admin')
 
-@section('title', 'Land Titles')
-@section('page-title', 'Land Titles')
+@section('title', 'Securities')
+@section('page-title', 'Securities')
 
 @section('content')
     <section class="kfms-panel">
         <div class="kfms-panel-header">
-            <h2>Land Title Registry</h2>
+            <h2>Securities Registry</h2>
             <span>{{ $titles->total() }} records</span>
         </div>
         <form class="kfms-table-toolbar" method="GET" action="{{ route('land-titles.index') }}">

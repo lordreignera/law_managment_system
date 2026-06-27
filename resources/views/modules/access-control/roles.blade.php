@@ -71,7 +71,7 @@
                         </tr>
 
                         @push('modals')
-                            @include('modules.access-control.partials.role-modal', ['modalId' => 'edit-role-'.$role->id, 'role' => $role, 'permissions' => $permissions, 'action' => route('access.roles.update', $role), 'method' => 'PUT'])
+                            @include('modules.access-control.partials.role-modal', ['modalId' => 'edit-role-'.$role->id, 'role' => $role, 'permissions' => $permissions, 'permissionGroups' => $permissionGroups, 'action' => route('access.roles.update', $role), 'method' => 'PUT'])
                         @endpush
                     @empty
                         <tr>
@@ -86,6 +86,6 @@
     </section>
 
     @push('modals')
-        @include('modules.access-control.partials.role-modal', ['modalId' => 'create-role-modal', 'role' => new \Spatie\Permission\Models\Role, 'permissions' => $permissions, 'action' => route('access.roles.store'), 'method' => null])
+        @include('modules.access-control.partials.role-modal', ['modalId' => 'create-role-modal', 'role' => new \Spatie\Permission\Models\Role, 'permissions' => $permissions, 'permissionGroups' => $permissionGroups, 'action' => route('access.roles.store'), 'method' => null])
     @endpush
 @endsection

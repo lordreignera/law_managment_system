@@ -6,6 +6,7 @@ use App\Models\Branch;
 use App\Models\Department;
 use App\Models\StaffProfile;
 use App\Models\User;
+use App\Support\RoutePermissionRegistry;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Spatie\Permission\Models\Permission;
@@ -13,11 +14,15 @@ use Spatie\Permission\Models\Role;
 
 class AccessControlController extends Controller
 {
+    public function __construct(private RoutePermissionRegistry $routeRegistry)
+    {
+    }
+
     public function users(Request $request)
     {
         $this->ensureCanManageAccessControl();
 
-        $users = User::with(['branch', 'department', 'roles', 'staffProfile'])
+        $users = User::with(['branch', 'department', 'roles', 'permissions', 'staffProfile'])
             ->when($request->filled('search'), function ($query) use ($request) {
                 $search = $request->string('search')->toString();
 
@@ -37,6 +42,7 @@ class AccessControlController extends Controller
         return view('modules.access-control.users', [
             'users' => $users,
             'roles' => Role::orderBy('name')->get(),
+            'permissionGroups' => $this->permissionGroups(),
             'filters' => $request->only(['search', 'status', 'role']),
         ]);
     }
@@ -117,14 +123,22 @@ class AccessControlController extends Controller
         $data = $request->validate([
             'roles' => ['nullable', 'array'],
             'roles.*' => ['exists:roles,name'],
+            'direct_permissions' => ['nullable', 'array'],
+            'direct_permissions.*' => ['exists:permissions,name'],
             'employment_status' => ['required', Rule::in(['pending', 'active', 'inactive', 'suspended'])],
         ]);
 
         $roles = $data['roles'] ?? [];
-        $keepsAccessControl = Role::with('permissions')
-            ->whereIn('name', $roles)
-            ->get()
-            ->contains(fn (Role $role) => $role->permissions->contains('name', 'manage access control'));
+        $directPermissions = $data['direct_permissions'] ?? [];
+
+        // Compute the effective permission set after the update so we can
+        // protect the actor's own access-control access.
+        $effectivePermissions = Permission::whereHas('roles', fn ($q) => $q->whereIn('name', $roles))
+            ->pluck('name')
+            ->merge($directPermissions)
+            ->unique();
+
+        $keepsAccessControl = $effectivePermissions->contains('access.users.index');
 
         abort_if(
             $user->is(auth()->user()) && (! $keepsAccessControl || $data['employment_status'] !== 'active'),
@@ -133,6 +147,7 @@ class AccessControlController extends Controller
         );
 
         $user->syncRoles($roles);
+        $user->syncPermissions($directPermissions);
         $user->staffProfile()->updateOrCreate(
             ['user_id' => $user->id],
             ['employment_status' => $data['employment_status'], 'branch_id' => $user->branch_id, 'department_id' => $user->department_id]
@@ -164,6 +179,7 @@ class AccessControlController extends Controller
         return view('modules.access-control.roles', [
             'roles' => $roles,
             'permissions' => Permission::orderBy('name')->get(),
+            'permissionGroups' => $this->permissionGroups(),
             'filters' => $request->only(['search']),
         ]);
     }
@@ -223,11 +239,15 @@ class AccessControlController extends Controller
         $permissions = Permission::query()
             ->when($request->filled('search'), fn ($query) => $query->where('name', 'like', '%'.$request->string('search')->toString().'%'))
             ->orderBy('name')
-            ->paginate(15)
+            ->paginate(50)
             ->withQueryString();
+
+        $routeNames = $this->routeRegistry->routeNames();
 
         return view('modules.access-control.permissions', [
             'permissions' => $permissions,
+            'routeBound' => $routeNames,
+            'registry' => $this->routeRegistry,
             'filters' => $request->only(['search']),
         ]);
     }
@@ -249,6 +269,12 @@ class AccessControlController extends Controller
     {
         $this->ensureCanManageAccessControl();
 
+        abort_if(
+            $this->routeRegistry->isRouteBound($permission->name),
+            422,
+            'Route-bound permissions cannot be renamed. Rename the route instead.'
+        );
+
         $data = $request->validate([
             'name' => ['required', 'string', 'max:125', Rule::unique('permissions', 'name')->ignore($permission->id)],
         ]);
@@ -262,7 +288,11 @@ class AccessControlController extends Controller
     {
         $this->ensureCanManageAccessControl();
 
-        abort_if(in_array($permission->name, $this->corePermissions(), true), 422, 'Protected system permission.');
+        abort_if(
+            $this->routeRegistry->isRouteBound($permission->name),
+            422,
+            'Route-bound permissions cannot be deleted. Remove the route or rerun kfms:sync-route-permissions --prune.'
+        );
 
         $permission->delete();
 
@@ -271,24 +301,28 @@ class AccessControlController extends Controller
 
     private function ensureCanManageAccessControl(): void
     {
-        abort_unless(auth()->user()?->can('manage access control'), 403);
+        abort_unless(auth()->user()?->can('access.users.index'), 403);
     }
 
-    private function corePermissions(): array
+    /**
+     * Permissions grouped by module slug for the role/user edit pickers.
+     * Returns ['Module Label' => Collection<Permission>] sorted by label.
+     */
+    private function permissionGroups(): array
     {
-        return [
-            'view dashboard',
-            'manage clients',
-            'manage intakes',
-            'manage matters',
-            'manage litigation',
-            'manage recoveries',
-            'manage land titles',
-            'manage finance',
-            'manage staff',
-            'manage access control',
-            'approve requests',
-            'manage settings',
-        ];
+        $all = Permission::orderBy('name')->get();
+        $registry = $this->routeRegistry;
+        $groups = [];
+
+        foreach ($all as $permission) {
+            $slug = $registry->moduleSlug($permission->name);
+            $label = $registry->moduleLabel($slug);
+            $groups[$label] ??= collect();
+            $groups[$label]->push($permission);
+        }
+
+        ksort($groups);
+
+        return $groups;
     }
 }

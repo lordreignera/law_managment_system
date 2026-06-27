@@ -1,20 +1,23 @@
 # Authentication and Access Control Flow
 
-Last updated: June 26, 2026
+Last updated: June 27, 2026
 
 ## Purpose
 
-This document describes the current authentication, staff approval, and role/permission authorization flow for Kalikumutima FMS / JurisFlow.
+This document describes the **authentication** and **staff approval** flow.
+For the authorization model (route-per-permission, roles, direct user grants,
+the sync workflow), see [access-control-flow.md](access-control-flow.md).
 
-The system uses Laravel Fortify, Jetstream, Sanctum, and Spatie Laravel Permission.
+The system uses Laravel Fortify, Jetstream, Sanctum, and Spatie Laravel
+Permission.
 
 ## Core Concepts
 
 - **Authentication** confirms who the user is.
 - **Email verification** confirms the account email is verified where the route requires it.
 - **Staff status** controls whether the authenticated user can enter the workspace.
-- **Roles** group permissions.
-- **Permissions** control access to modules and administrative actions.
+- **Roles** group permissions; see [access-control-flow.md](access-control-flow.md).
+- **Permissions** map one-to-one to named routes; see [access-control-flow.md](access-control-flow.md).
 - **Requested role** is stored during registration but is not granted until approval.
 
 ## Main Files
@@ -115,75 +118,47 @@ Supported values:
 
 ## Authorization Model
 
-The app uses Spatie permissions as route middleware.
+The app uses Spatie permissions as route middleware. Every named workspace
+route is itself a permission (route name = permission name) and the
+`route.permission` middleware enforces it automatically. See
+[access-control-flow.md](access-control-flow.md) for the full picture, the
+complete permission catalogue, role mapping, and the
+`php artisan kfms:sync-route-permissions` workflow.
 
-| Area | Required Permission |
-| --- | --- |
-| Dashboard | `view dashboard` |
-| Clients | `manage clients` |
-| Matters | `manage matters` |
-| Recoveries | `manage recoveries` |
-| Land Titles | `manage land titles` |
-| Finance | `manage finance` |
-| Staff | `manage staff` |
-| Access Control | `manage access control` |
-| System Settings | `manage settings` |
-| Company Settings | `manage settings` |
-
-The sidebar and navbar quick actions use the same permissions, so users should not see links they cannot access.
+The sidebar and navbar quick actions use the same route-name permissions, so
+users should not see links they cannot reach.
 
 ## Access Control Administration
 
-The Access Control module is protected by:
+The Access Control module is protected by the `access.users.index` permission
+(plus the matching `access.*` permissions for each sub-action).
 
-`permission:manage access control`
-
-Users with this permission can:
+Users with these permissions can:
 
 - view all users
 - view pending approval requests
 - approve users
-- edit user roles and status
+- edit user roles, direct permissions, and status
 - delete users, except their own account
 - create, update, and delete roles
-- create, update, and delete permissions
+- create, update, and delete custom permissions (route-bound permissions are locked)
 
 Protected behavior:
 
 - A user cannot delete their own account.
-- A user cannot remove their own access-control permission or deactivate their own account.
+- A user cannot remove their own `access.users.index` permission or deactivate their own account.
 - `Super Admin` and `Administrator` roles cannot be deleted.
 - `Super Admin` and `Administrator` roles cannot be renamed.
-- Core system permissions cannot be deleted.
+- Route-bound permissions cannot be edited or deleted from the UI; rename or remove the route instead and rerun the sync command.
 
 ## Seeded Roles and Permissions
 
-The default permissions are seeded in `DatabaseSeeder`.
+Defined in [database/seeders/DatabaseSeeder.php](../database/seeders/DatabaseSeeder.php).
+The seeder wipes Spatie's permission/role tables, calls the sync command to
+populate the permission catalogue from the current route table, then attaches
+role-by-module groupings.
 
-Core permissions:
-
-- `view dashboard`
-- `manage clients`
-- `manage matters`
-- `manage litigation`
-- `manage recoveries`
-- `manage land titles`
-- `manage finance`
-- `manage staff`
-- `manage access control`
-- `approve requests`
-- `manage settings`
-
-The seeded `Super Admin` user receives:
-
-- `Super Admin`
-- `Administrator`
-
-The seeded administrator receives:
-
-- `Administrator`
-
-Both seeded users are given active staff profiles.
+See the full mapping table in [access-control-flow.md](access-control-flow.md#seeded-roles-baseline).
 
 ## Route Protection Summary
 
@@ -194,10 +169,12 @@ auth:sanctum
 Jetstream auth session
 verified
 active.staff
-permission:<module permission>
+route.permission   ← checks $user->can(<route name>)
 ```
 
-The pending access route sits behind authentication and verification, but not `active.staff`, so blocked users can still see their pending status page.
+The pending access route sits behind authentication and verification, but
+not `active.staff` and not `route.permission`, so blocked users can still see
+their pending status page.
 
 ## Test Coverage
 
@@ -219,6 +196,7 @@ Important assertions:
 ## Operational Notes
 
 - Run migrations after deployment so `staff_profiles.requested_role` exists.
-- Run seeders when setting up a fresh environment so the baseline roles and permissions exist.
-- Keep module route permissions, sidebar visibility, and navbar quick actions aligned whenever a new module is added.
+- Run seeders when setting up a fresh environment so the baseline roles and permissions exist. The seeder wipes Spatie tables and re-creates them from the current route catalogue.
+- The route → permission catalogue is kept in sync automatically: in local development it auto-runs on the next page load whenever `routes/web.php` changes; in production, the composer `post-install-cmd` / `post-update-cmd` scripts call `kfms:sync-route-permissions` for you. You can also run it manually any time with `php artisan kfms:sync-route-permissions`.
+- Keep route registrations, sidebar visibility, and navbar quick actions aligned whenever a new module is added; see [access-control-flow.md](access-control-flow.md#adding-a-new-route).
 - Avoid granting roles during registration. Role assignment should happen through approval or explicit administrator action.

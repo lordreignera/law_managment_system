@@ -122,6 +122,17 @@
                 </label>
 
                 <label>
+                    <span>Branch</span>
+                    <select name="branch_id">
+                        <option value="">My branch (default)</option>
+                        @foreach ($branches as $branch)
+                            <option value="{{ $branch->id }}" @selected((string) old('branch_id', auth()->user()->branch_id) === (string) $branch->id)>{{ $branch->name }}</option>
+                        @endforeach
+                    </select>
+                    @error('branch_id') <small>{{ $message }}</small> @enderror
+                </label>
+
+                <label>
                     <span>Telephone</span>
                     <input type="text" name="phone" value="{{ old('phone') }}" required>
                     @error('phone') <small>{{ $message }}</small> @enderror

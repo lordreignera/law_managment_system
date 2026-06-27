@@ -97,7 +97,7 @@
 
                         @push('modals')
                             <div class="modal fade kfms-modal" id="edit-user-{{ $user->id }}" tabindex="-1" aria-hidden="true">
-                                <div class="modal-dialog kfms-setting-modal-dialog modal-dialog-centered">
+                                <div class="modal-dialog kfms-setting-modal-dialog modal-dialog-centered modal-dialog-scrollable">
                                     <div class="modal-content">
                                         <div class="modal-header">
                                             <div>
@@ -110,6 +110,9 @@
                                             @csrf
                                             @method('PUT')
                                             <div class="modal-body">
+                                                @php
+                                                    $userDirectPermissionNames = $user->permissions->pluck('name')->all();
+                                                @endphp
                                                 <div class="kfms-form-grid">
                                                     <label>
                                                         <span>Status</span>
@@ -132,6 +135,25 @@
                                                         </select>
                                                     </label>
                                                 </div>
+
+                                                <div class="kfms-form-section-title">Direct Permissions</div>
+                                                <p class="kfms-muted-text" style="margin: 0 0 10px;">Grants on top of the user's roles. Useful for one-off access without creating a new role.</p>
+                                                <div class="kfms-check-grid kfms-permission-grid">
+                                                    @foreach ($permissionGroups as $label => $groupPermissions)
+                                                        <details class="kfms-permission-group" @if (collect($groupPermissions)->pluck('name')->intersect($userDirectPermissionNames)->isNotEmpty()) open @endif>
+                                                            <summary>{{ $label }} <span>({{ count($groupPermissions) }})</span></summary>
+                                                            <div class="kfms-permission-options">
+                                                                @foreach ($groupPermissions as $permission)
+                                                                    <label>
+                                                                        <input type="checkbox" name="direct_permissions[]" value="{{ $permission->name }}" @checked(in_array($permission->name, $userDirectPermissionNames, true))>
+                                                                        <span>{{ $permission->name }}</span>
+                                                                    </label>
+                                                                @endforeach
+                                                            </div>
+                                                        </details>
+                                                    @endforeach
+                                                </div>
+
                                                 <div class="kfms-form-actions">
                                                     <button class="kfms-link-btn" type="button" data-bs-dismiss="modal">Cancel</button>
                                                     <button type="submit">Save Access</button>

@@ -26,7 +26,7 @@ class AccessControlFlowTest extends TestCase
     public function test_pending_staff_are_redirected_to_pending_access_screen(): void
     {
         $role = Role::findOrCreate('Advocate');
-        $role->givePermissionTo(Permission::findOrCreate('view dashboard'));
+        $role->givePermissionTo(Permission::findOrCreate('dashboard'));
 
         $user = User::factory()->create();
         $user->assignRole($role);
@@ -44,7 +44,7 @@ class AccessControlFlowTest extends TestCase
     public function test_module_permissions_are_enforced(): void
     {
         $role = Role::findOrCreate('Dashboard User');
-        $role->givePermissionTo(Permission::findOrCreate('view dashboard'));
+        $role->givePermissionTo(Permission::findOrCreate('dashboard'));
 
         $user = User::factory()->create();
         $user->assignRole($role);
@@ -60,7 +60,9 @@ class AccessControlFlowTest extends TestCase
     public function test_approval_activates_user_and_grants_requested_role(): void
     {
         $accessRole = Role::findOrCreate('Access Manager');
-        $accessRole->givePermissionTo(Permission::findOrCreate('manage access control'));
+        $accessRole->givePermissionTo(Permission::findOrCreate('access.users.index'));
+        $accessRole->givePermissionTo(Permission::findOrCreate('access.users.approve'));
+        $accessRole->givePermissionTo(Permission::findOrCreate('access.approvals.index'));
         $requestedRole = Role::findOrCreate('Advocate');
         $correctedRole = Role::findOrCreate('Paralegal');
         $branch = Branch::create(['name' => 'Kampala', 'code' => 'KLA']);

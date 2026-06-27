@@ -76,6 +76,15 @@ class User extends Authenticatable
         return $this->belongsTo(Branch::class);
     }
 
+    /**
+     * Whether this user may view records across every branch.
+     */
+    public function canSeeAllBranches(): bool
+    {
+        return $this->hasRole('Super Admin')
+            || $this->hasAnyRole(['Administrator', 'Managing Partner']);
+    }
+
     public function department()
     {
         return $this->belongsTo(Department::class);
@@ -84,5 +93,13 @@ class User extends Authenticatable
     public function staffProfile()
     {
         return $this->hasOne(StaffProfile::class);
+    }
+
+    /**
+     * Route notifications for the SMS channel (used by App\Notifications\Channels\SmsChannel).
+     */
+    public function routeNotificationForSms($notification = null): ?string
+    {
+        return $this->staffProfile?->phone;
     }
 }

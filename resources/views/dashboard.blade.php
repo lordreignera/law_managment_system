@@ -21,8 +21,12 @@
             </div>
             <div class="kfms-action-list">
                 <a href="{{ route('matters.index') }}">Review open matters</a>
-                <a href="{{ route('recoveries.index') }}">Check recovery assignments</a>
-                <a href="{{ route('land-titles.index') }}">Track pending land titles</a>
+                @can('recoveries.index')
+                    <a href="{{ route('recoveries.index') }}">Check recovery assignments</a>
+                @elsecan('recoveries.mine')
+                    <a href="{{ route('recoveries.mine') }}">View my recoveries</a>
+                @endcan
+                <a href="{{ route('land-titles.index') }}">Track pending securities</a>
                 <a href="{{ route('finance.index') }}">Approve requisitions and invoices</a>
             </div>
         </section>
@@ -41,4 +45,36 @@
             </ol>
         </section>
     </div>
+
+    @if (isset($myRecoveries) && $myRecoveries->isNotEmpty())
+        <section class="kfms-panel">
+            <div class="kfms-panel-header">
+                <div>
+                    <h2>My Recovery Assignments</h2>
+                    <span>Active accounts assigned to you</span>
+                </div>
+                @can('recoveries.mine')
+                    <a class="kfms-link-btn" href="{{ route('recoveries.mine') }}">View all <i class="mdi mdi-arrow-right"></i></a>
+                @endcan
+            </div>
+            <div class="kfms-table-wrap">
+                <table class="kfms-table">
+                    <thead>
+                        <tr><th>Debtor</th><th>Bank/Client</th><th>Account</th><th>Outstanding</th><th>Recovered</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($myRecoveries as $account)
+                            <tr>
+                                <td><a href="{{ route('recoveries.show', $account) }}">{{ $account->debtor_name }}</a></td>
+                                <td>{{ $account->client?->name ?: '-' }}</td>
+                                <td>{{ $account->account_number ?: '-' }}</td>
+                                <td>{{ number_format($account->outstanding_amount) }}</td>
+                                <td>{{ number_format($account->amount_recovered) }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    @endif
 @endsection

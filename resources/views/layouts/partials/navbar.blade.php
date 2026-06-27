@@ -26,17 +26,19 @@
                     <span>Quick Actions</span>
                 </button>
                 <div class="dropdown-menu dropdown-menu-end navbar-dropdown kfms-action-dropdown" aria-labelledby="quickActionsDropdown">
-                    @can('manage intakes')
+                    @can('intakes.create')
                         <a class="dropdown-item" href="{{ route('intakes.create') }}">
                             <i class="mdi mdi-clipboard-plus-outline"></i>
                             New Intake
                         </a>
                     @endcan
-                    @can('manage settings')
+                    @can('settings.system.overview')
                         <a class="dropdown-item" href="{{ route('settings.system.overview') }}">
                             <i class="mdi mdi-tune-variant"></i>
                             System Settings
                         </a>
+                    @endcan
+                    @can('settings.company.edit')
                         <a class="dropdown-item" href="{{ route('settings.company.edit') }}">
                             <i class="mdi mdi-cog-outline"></i>
                             Company Branding
@@ -62,16 +64,16 @@
                 </button>
                 <div class="dropdown-menu dropdown-menu-end navbar-dropdown kfms-notice-dropdown" aria-labelledby="notificationDropdown">
                     <h6>Notifications</h6>
-                    @can('manage matters')
+                    @can('matters.index')
                         <a class="dropdown-item" href="{{ route('matters.index') }}">Review open matters</a>
                     @endcan
-                    @can('manage intakes')
+                    @can('intakes.index')
                         <a class="dropdown-item" href="{{ route('intakes.index') }}">Review intake conflicts</a>
                     @endcan
-                    @can('manage recoveries')
+                    @can('recoveries.index')
                         <a class="dropdown-item" href="{{ route('recoveries.index') }}">Check recovery assignments</a>
                     @endcan
-                    @can('manage settings')
+                    @can('settings.company.edit')
                         <a class="dropdown-item" href="{{ route('settings.company.edit') }}">Confirm company branding</a>
                     @endcan
                 </div>

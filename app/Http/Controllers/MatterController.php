@@ -21,6 +21,7 @@ class MatterController extends Controller
     public function index(Request $request)
     {
         $matters = Matter::with(['client', 'practiceArea'])
+            ->forBranchOf($request->user())
             ->when($request->filled('search'), function ($query) use ($request) {
                 $search = $request->string('search')->toString();
 

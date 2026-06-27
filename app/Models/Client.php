@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BranchScoped;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Client extends Model
 {
+    use BranchScoped;
     use HasFactory;
 
     protected $guarded = [];
@@ -21,6 +23,11 @@ class Client extends Model
         return $this->name
             ?: trim(collect([$this->first_name, $this->middle_name, $this->last_name])->filter()->implode(' '))
             ?: ($this->organization_name ?: 'Unnamed Client');
+    }
+
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class);
     }
 
     public function contacts()

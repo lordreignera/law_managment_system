@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureRoutePermission;
 use App\Http\Middleware\EnsureStaffIsActive;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -18,6 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
             'active.staff' => EnsureStaffIsActive::class,
+            'route.permission' => EnsureRoutePermission::class,
             'permission' => PermissionMiddleware::class,
             'role' => RoleMiddleware::class,
             'role_or_permission' => RoleOrPermissionMiddleware::class,

@@ -26,8 +26,13 @@ class ClientIntakeFlowTest extends TestCase
     public function test_intake_can_be_reviewed_and_converted_to_matter(): void
     {
         $role = Role::findOrCreate('Intake Manager');
-        $role->givePermissionTo(Permission::findOrCreate('manage intakes'));
-        $role->givePermissionTo(Permission::findOrCreate('manage matters'));
+        foreach ([
+            'intakes.index', 'intakes.create', 'intakes.store', 'intakes.show',
+            'intakes.conflict-review', 'intakes.convert-matter',
+            'matters.index', 'matters.show', 'matters.engagement.update',
+        ] as $permissionName) {
+            $role->givePermissionTo(Permission::findOrCreate($permissionName));
+        }
         $practiceArea = PracticeArea::create(['name' => 'Litigation', 'is_active' => true]);
 
         $user = User::factory()->create();

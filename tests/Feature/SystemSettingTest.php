@@ -74,7 +74,15 @@ class SystemSettingTest extends TestCase
     private function settingsUser(): User
     {
         $role = Role::findOrCreate('Settings Manager');
-        $role->givePermissionTo(Permission::findOrCreate('manage settings'));
+        foreach ([
+            'settings.system.overview', 'settings.system.index',
+            'settings.system.create', 'settings.system.store',
+            'settings.system.edit', 'settings.system.update',
+            'settings.system.destroy',
+            'settings.company.edit', 'settings.company.update',
+        ] as $permissionName) {
+            $role->givePermissionTo(Permission::findOrCreate($permissionName));
+        }
 
         $user = User::factory()->create();
         $user->assignRole($role);

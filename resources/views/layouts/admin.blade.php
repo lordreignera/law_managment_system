@@ -36,6 +36,7 @@
         @livewireScripts
         <script src="{{ asset('admin/assets/vendors/js/vendor.bundle.base.js') }}"></script>
         <script src="{{ asset('admin/assets/js/off-canvas.js') }}"></script>
+        <script src="{{ asset('admin/assets/js/kfms-sidebar.js') }}?v={{ file_exists(public_path('admin/assets/js/kfms-sidebar.js')) ? filemtime(public_path('admin/assets/js/kfms-sidebar.js')) : time() }}"></script>
         @stack('scripts')
     </body>
 </html>

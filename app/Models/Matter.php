@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BranchScoped;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Matter extends Model
 {
+    use BranchScoped;
     use HasFactory;
     use SoftDeletes;
 
@@ -37,6 +39,11 @@ class Matter extends Model
     public function client()
     {
         return $this->belongsTo(Client::class);
+    }
+
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class);
     }
 
     public function ultimateClient()

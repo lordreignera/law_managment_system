@@ -20,7 +20,7 @@ class CompanySetting extends Model
             'logo_path' => null,
             'tagline' => 'Firm Management System',
             'login_heading' => 'Secure access for your firm operations.',
-            'login_subheading' => 'Manage matters, recoveries, land titles, finance, staff, and approvals from one workspace.',
+            'login_subheading' => 'Manage matters, recoveries, securities, finance, staff, and approvals from one workspace.',
             'primary_color' => '#050505',
             'secondary_color' => '#ffffff',
             'contact_email' => null,

@@ -22,8 +22,13 @@ class ClientManagementFlowTest extends TestCase
     public function test_approved_client_can_be_viewed_updated_and_given_new_engagement(): void
     {
         $role = Role::findOrCreate('Client Manager');
-        $role->givePermissionTo(Permission::findOrCreate('manage clients'));
-        $role->givePermissionTo(Permission::findOrCreate('manage matters'));
+        foreach ([
+            'clients.index', 'clients.show', 'clients.details.edit', 'clients.details.update',
+            'clients.engagements.create', 'clients.engagements.store',
+            'matters.index', 'matters.show',
+        ] as $permissionName) {
+            $role->givePermissionTo(Permission::findOrCreate($permissionName));
+        }
 
         $user = User::factory()->create();
         $user->assignRole($role);

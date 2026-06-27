@@ -1937,3 +1937,592 @@ body.kfms-template {
         right: auto;
     }
 }
+
+
+/* =================================================================
+ * Layout stability pass
+ * Fixes:
+ *  - Sidebar scrolling away on long forms ("sidebar stops halfway").
+ *  - Top sidebar items disappearing under the fixed navbar.
+ *  - Body content sliding under the sidebar / navbar.
+ *  - Brand strip floating disconnected from the rest of the sidebar.
+ * Strategy:
+ *  - Pin the sidebar to the viewport (position: fixed, full height).
+ *  - Make the nav list scroll internally so every menu item stays
+ *    reachable regardless of page length.
+ *  - Offset the page body wrapper by the sidebar width + navbar height.
+ * ================================================================= */
+
+.kfms-template .container-scroller {
+    align-items: stretch;
+    min-height: 100vh;
+    overflow: visible;
+}
+
+.kfms-template .sidebar,
+.kfms-template .sidebar.sidebar-offcanvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    height: 100vh;
+    min-height: 100vh;
+    z-index: 1030;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* Pull the brand strip back into the sidebar flex column.
+   The markup carries Bootstrap's .fixed-top on the brand wrapper,
+   which would otherwise detach it from the rest of the sidebar. */
+.kfms-template .sidebar .sidebar-brand-wrapper {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    flex: 0 0 64px;
+    height: 64px;
+    z-index: auto;
+}
+
+/* Nav list takes the remaining height and scrolls on its own. */
+.kfms-template .sidebar .nav {
+    flex: 1 1 auto;
+    margin-bottom: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding: 18px 12px 28px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
+}
+
+.kfms-template .sidebar .nav::-webkit-scrollbar {
+    width: 6px;
+}
+
+.kfms-template .sidebar .nav::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.22);
+    border-radius: 3px;
+}
+
+.kfms-template .sidebar .nav::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+/* Body wrapper offset for the fixed sidebar + fixed navbar. */
+.kfms-template .page-body-wrapper {
+    margin-left: var(--kfms-sidebar-width);
+    min-height: 100vh;
+    padding-top: 64px;
+    width: calc(100% - var(--kfms-sidebar-width)) !important;
+}
+
+.kfms-template .main-panel {
+    min-height: calc(100vh - 64px);
+    padding-top: 0;
+}
+
+/* Navbar covers the area to the right of the sidebar. */
+.kfms-template .navbar.fixed-top {
+    left: var(--kfms-sidebar-width) !important;
+    right: 0 !important;
+    z-index: 1040;
+}
+
+/* Icon-only sidebar � same idea, narrower. */
+.kfms-template.sidebar-icon-only .sidebar,
+.kfms-template.sidebar-icon-only .sidebar .sidebar-brand-wrapper {
+    width: 70px !important;
+}
+
+.kfms-template.sidebar-icon-only .page-body-wrapper {
+    margin-left: 70px;
+    width: calc(100% - 70px) !important;
+}
+
+.kfms-template.sidebar-icon-only .navbar.fixed-top {
+    left: 70px !important;
+}
+
+/* Footer should sit at the bottom of the main panel, not on the side. */
+.kfms-template .main-panel > .footer {
+    margin-top: auto;
+}
+
+/* Mobile: off-canvas sidebar, full-width body. */
+@media (max-width: 991px) {
+    .kfms-template .sidebar,
+    .kfms-template .sidebar.sidebar-offcanvas {
+        left: auto;
+        right: calc(var(--kfms-sidebar-width) * -1);
+        transition: right 0.2s ease;
+    }
+
+    .kfms-template .sidebar.sidebar-offcanvas.active {
+        right: 0;
+    }
+
+    .kfms-template .page-body-wrapper {
+        margin-left: 0;
+        padding-top: 64px;
+        width: 100% !important;
+    }
+
+    .kfms-template .navbar.fixed-top {
+        left: 0 !important;
+    }
+}
+
+/* =================================================================
+ * Icon-only sidebar polish
+ * Hide labels/arrows/submenus by default in collapsed mode so the
+ * 70px-wide sidebar only shows icons. The fly-out menu-title on
+ * .hover-open is already styled higher up in this file.
+ * ================================================================= */
+
+.kfms-template.sidebar-icon-only .sidebar .nav .nav-item {
+    position: relative;
+}
+
+.kfms-template.sidebar-icon-only .sidebar .nav .nav-item .menu-title,
+.kfms-template.sidebar-icon-only .sidebar .nav .kfms-submenu-arrow,
+.kfms-template.sidebar-icon-only .sidebar .kfms-sidebar-submenu,
+.kfms-template.sidebar-icon-only .sidebar .nav .nav-item.nav-category,
+.kfms-template.sidebar-icon-only .sidebar .sidebar-brand-wrapper .kfms-brand strong {
+    display: none !important;
+}
+
+.kfms-template.sidebar-icon-only .sidebar .kfms-sidebar-group > summary {
+    list-style: none;
+}
+
+.kfms-template.sidebar-icon-only .sidebar .kfms-sidebar-group > summary::-webkit-details-marker {
+    display: none;
+}
+
+.kfms-template.sidebar-icon-only .sidebar .sidebar-brand-wrapper {
+    justify-content: center;
+    padding: 0;
+}
+
+/* Only the hover-open fly-out re-shows the menu-title. */
+.kfms-template.sidebar-icon-only .sidebar .nav .nav-item.hover-open .nav-link .menu-title {
+    display: flex !important;
+    position: absolute;
+    z-index: 1050;
+}
+
+/* Smooth transition when the user toggles the minimize button. */
+.kfms-template .sidebar,
+.kfms-template .page-body-wrapper,
+.kfms-template .navbar.fixed-top {
+    transition: width 0.18s ease, margin-left 0.18s ease, left 0.18s ease;
+}
+
+/* Make the minimize button look like the other navbar icons so it
+   is obviously interactive and matches the design language. */
+.kfms-template .navbar .navbar-toggler[data-toggle="minimize"] {
+    align-items: center;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    color: #41516a;
+    display: inline-flex;
+    height: 38px;
+    justify-content: center;
+    margin-right: 6px;
+    padding: 0;
+    width: 38px;
+}
+
+.kfms-template .navbar .navbar-toggler[data-toggle="minimize"]:hover,
+.kfms-template .navbar .navbar-toggler[data-toggle="minimize"]:focus {
+    background: #eaf6ff;
+    border-color: #9bd0f2;
+    color: #071426;
+    outline: 0;
+}
+
+.kfms-template .navbar .navbar-toggler[data-toggle="minimize"] .mdi {
+    font-size: 22px;
+    line-height: 1;
+}
+
+/* =================================================================
+ * Mobile responsiveness pass
+ *  - Off-canvas backdrop + tap-to-close.
+ *  - Body scroll lock while the sidebar is open on mobile.
+ *  - Table wrappers: iOS momentum scrolling + a faint right-edge
+ *    shadow so users know they can swipe horizontally.
+ *  - Approval-modal summary drops to 1 column on small phones.
+ * ================================================================= */
+
+.kfms-sidebar-backdrop {
+    background: rgba(7, 20, 38, 0.45);
+    inset: 0;
+    opacity: 0;
+    pointer-events: none;
+    position: fixed;
+    transition: opacity 0.18s ease;
+    z-index: 1029;
+}
+
+.kfms-sidebar-backdrop.is-visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+@media (min-width: 992px) {
+    .kfms-sidebar-backdrop {
+        display: none !important;
+    }
+}
+
+body.kfms-no-scroll {
+    overflow: hidden;
+}
+
+.kfms-table-wrap {
+    -webkit-overflow-scrolling: touch;
+    position: relative;
+}
+
+@media (max-width: 767px) {
+    .kfms-table-wrap {
+        background:
+            linear-gradient(90deg, #fff 0%, rgba(255, 255, 255, 0) 16px) left center / 24px 100% no-repeat,
+            linear-gradient(-90deg, #fff 0%, rgba(255, 255, 255, 0) 16px) right center / 24px 100% no-repeat,
+            radial-gradient(farthest-side at 0 50%, rgba(15, 23, 42, 0.18), rgba(15, 23, 42, 0)) left center / 12px 100% no-repeat,
+            radial-gradient(farthest-side at 100% 50%, rgba(15, 23, 42, 0.18), rgba(15, 23, 42, 0)) right center / 12px 100% no-repeat;
+        background-attachment: local, local, scroll, scroll;
+    }
+}
+
+@media (max-width: 480px) {
+    .kfms-review-summary {
+        grid-template-columns: 1fr;
+    }
+
+    .kfms-detail-grid > div {
+        padding: 12px;
+    }
+
+    .kfms-panel {
+        padding: 14px;
+    }
+
+    .kfms-panel-header h2 {
+        font-size: 15px;
+    }
+}
+
+/* =================================================================
+ * Permission picker (role + user edit modals)
+ * Collapsible per-module groups inside a scrollable container.
+ * ================================================================= */
+
+.kfms-permission-grid {
+    background: #fbfdff;
+    display: grid;
+    gap: 6px;
+    max-height: 340px;
+    padding: 8px;
+}
+
+.kfms-permission-group {
+    background: #fff;
+    border: 1px solid #dfe7ef;
+    border-radius: 6px;
+}
+
+.kfms-permission-group > summary {
+    align-items: center;
+    color: #071426;
+    cursor: pointer;
+    display: flex;
+    font-size: 13px;
+    font-weight: 700;
+    gap: 8px;
+    list-style: none;
+    padding: 8px 12px;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.kfms-permission-group > summary::-webkit-details-marker {
+    display: none;
+}
+
+.kfms-permission-group > summary::before {
+    content: "\F0142"; /* mdi-chevron-right */
+    font-family: "Material Design Icons";
+    font-size: 16px;
+    transition: transform 0.15s ease;
+}
+
+.kfms-permission-group[open] > summary::before {
+    transform: rotate(90deg);
+}
+
+.kfms-permission-group > summary span {
+    color: #6b7280;
+    font-weight: 600;
+    margin-left: auto;
+}
+
+.kfms-permission-options {
+    border-top: 1px solid #eef1f5;
+    display: grid;
+    gap: 4px;
+    padding: 8px 12px 10px 30px;
+}
+
+.kfms-permission-options label {
+    align-items: center;
+    display: flex !important;
+    gap: 8px;
+    margin: 0;
+}
+
+.kfms-permission-options input {
+    min-height: auto !important;
+    width: auto !important;
+}
+
+.kfms-permission-options span {
+    color: #1f2937;
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    font-size: 12.5px;
+    word-break: break-all;
+}
+
+/* =================================================================
+ * Litigation Firm Calendar
+ * Month grid (7 columns), day cells with stacked event chips and a
+ * compact month/year jump form in the panel header.
+ * ================================================================= */
+
+.kfms-calendar-jump {
+    align-items: center;
+    display: inline-flex;
+    gap: 6px;
+}
+
+.kfms-calendar-jump select {
+    background: #fff;
+    border: 1px solid #cfd8e3;
+    border-radius: 6px;
+    color: #071426;
+    font-size: 13px;
+    font-weight: 700;
+    min-height: 32px;
+    padding: 5px 8px;
+}
+
+.kfms-calendar-jump select:focus {
+    border-color: #9bd0f2;
+    outline: 0;
+}
+
+.kfms-calendar {
+    margin-top: 18px;
+}
+
+.kfms-calendar-head {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 6px;
+    margin-bottom: 6px;
+}
+
+.kfms-calendar-head span {
+    color: #6b7280;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 4px 6px;
+    text-align: left;
+    text-transform: uppercase;
+}
+
+.kfms-calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 6px;
+}
+
+.kfms-calendar-cell {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-height: 104px;
+    padding: 6px;
+}
+
+.kfms-calendar-cell.is-muted {
+    background: #f8fafc;
+    color: #9aa5b1;
+}
+
+.kfms-calendar-cell.is-today {
+    border-color: #9bd0f2;
+    box-shadow: inset 0 0 0 1px #9bd0f2;
+}
+
+.kfms-calendar-date {
+    color: #6b7280;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.kfms-calendar-cell.is-today .kfms-calendar-date {
+    color: #0b69b6;
+}
+
+.kfms-calendar-event {
+    background: #eef2ff;
+    border-left: 3px solid #6366f1;
+    border-radius: 4px;
+    color: #1f2937;
+    display: block;
+    font-size: 11.5px;
+    font-weight: 700;
+    overflow: hidden;
+    padding: 3px 6px;
+    text-decoration: none;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.kfms-calendar-event:hover {
+    filter: brightness(0.97);
+}
+
+.kfms-calendar-event.kfms-status-scheduled {
+    background: #eff6ff;
+    border-left-color: #2563eb;
+}
+
+.kfms-calendar-event.kfms-status-adjourned {
+    background: #fff8e6;
+    border-left-color: #d97706;
+}
+
+.kfms-calendar-event.kfms-status-completed {
+    background: #eefbf3;
+    border-left-color: #16a34a;
+}
+
+.kfms-calendar-event.kfms-status-cancelled {
+    background: #f8fafc;
+    border-left-color: #94a3b8;
+    color: #64748b;
+}
+
+/* Firm calendar additions: weekends, holidays, event kinds & legend */
+a.kfms-calendar-date {
+    align-self: flex-start;
+    border-radius: 4px;
+    text-decoration: none;
+}
+
+a.kfms-calendar-date:hover {
+    background: #eef2ff;
+    color: #0b69b6;
+}
+
+.kfms-calendar-cell.is-weekend {
+    background: #f6f8fb;
+}
+
+.kfms-calendar-cell.is-holiday {
+    background: #fff5f5;
+    border-color: #f3c2c2;
+}
+
+.kfms-calendar-holiday {
+    background: #fde8e8;
+    border-radius: 4px;
+    color: #b42318;
+    font-size: 11px;
+    font-weight: 700;
+    overflow: hidden;
+    padding: 2px 6px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.kfms-calendar-event.kfms-event-court {
+    background: #f3e8ff;
+    border-left-color: #7c3aed;
+}
+
+.kfms-calendar-legend {
+    align-items: center;
+    color: #6b7280;
+    display: flex;
+    flex-wrap: wrap;
+    font-size: 12px;
+    gap: 16px;
+    margin-top: 14px;
+}
+
+.kfms-calendar-legend span {
+    align-items: center;
+    display: inline-flex;
+    gap: 6px;
+}
+
+.kfms-dot {
+    border-radius: 50%;
+    display: inline-block;
+    height: 10px;
+    width: 10px;
+}
+
+.kfms-dot.kfms-event-calendar {
+    background: #2563eb;
+}
+
+.kfms-dot.kfms-event-court {
+    background: #7c3aed;
+}
+
+.kfms-dot.kfms-dot-holiday {
+    background: #e02424;
+}
+
+.kfms-dot.kfms-dot-weekend {
+    background: #cbd5e1;
+}
+
+.kfms-row-actions {
+    align-items: center;
+    display: flex;
+    gap: 8px;
+}
+
+.kfms-link-btn.kfms-danger {
+    color: #b42318;
+}
+
+@media (max-width: 767px) {
+    .kfms-calendar-head {
+        display: none;
+    }
+
+    .kfms-calendar-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .kfms-calendar-cell {
+        min-height: auto;
+    }
+
+    .kfms-calendar-cell.is-muted:not(:has(.kfms-calendar-event)) {
+        display: none;
+    }
+}
