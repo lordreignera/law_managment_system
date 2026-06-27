@@ -160,6 +160,9 @@
                             <div>
                                 <i class="mdi mdi-lock-outline"></i>
                                 <input id="password" type="password" name="password" placeholder="Create your password" required autocomplete="new-password">
+                                <button class="jf-password-toggle" type="button" data-password-toggle="password" aria-label="Show password">
+                                    <i class="mdi mdi-eye-outline"></i>
+                                </button>
                             </div>
                         </label>
 
@@ -168,6 +171,9 @@
                             <div>
                                 <i class="mdi mdi-lock-check-outline"></i>
                                 <input id="password_confirmation" type="password" name="password_confirmation" placeholder="Confirm your password" required autocomplete="new-password">
+                                <button class="jf-password-toggle" type="button" data-password-toggle="password_confirmation" aria-label="Show password confirmation">
+                                    <i class="mdi mdi-eye-outline"></i>
+                                </button>
                             </div>
                         </label>
                     </div>

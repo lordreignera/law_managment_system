@@ -1826,3 +1826,114 @@ body.kfms-template {
 .kfms-action-menu summary::after {
     content: "v" !important;
 }
+
+/* Responsive shell refinements */
+.kfms-template .container-scroller {
+    overflow-x: hidden;
+}
+
+.kfms-template .main-panel,
+.kfms-template .navbar .navbar-menu-wrapper {
+    min-width: 0;
+}
+
+.kfms-template .sidebar {
+    max-height: 100vh;
+    overflow-y: auto;
+}
+
+.kfms-template .sidebar .nav .nav-item .nav-link,
+.kfms-template .sidebar .kfms-sidebar-group > summary.nav-link {
+    width: 100%;
+}
+
+.kfms-template .navbar-nav-right {
+    flex-shrink: 0;
+}
+
+@media (max-width: 991px) {
+    body.kfms-template,
+    .kfms-template .container-scroller {
+        overflow-x: hidden;
+    }
+
+    .kfms-template .sidebar.sidebar-offcanvas {
+        bottom: 0;
+        height: calc(100vh - 64px);
+        height: calc(100dvh - 64px);
+        left: auto !important;
+        max-height: calc(100vh - 64px);
+        max-height: calc(100dvh - 64px);
+        overflow-y: auto;
+        position: fixed;
+        top: 64px;
+        z-index: 1045;
+    }
+
+    .kfms-template .navbar {
+        width: 100%;
+    }
+
+    .kfms-template .navbar .navbar-menu-wrapper {
+        gap: 8px;
+        min-width: 0;
+    }
+
+    .kfms-template .navbar .navbar-nav.w-100 {
+        display: none;
+    }
+
+    .kfms-navbar-actions {
+        margin-left: auto;
+        min-width: 0;
+    }
+
+    .kfms-template .dropdown-menu {
+        max-width: calc(100vw - 24px);
+    }
+
+    .kfms-content {
+        padding: 20px;
+    }
+}
+
+@media (max-width: 575px) {
+    .kfms-template .navbar .navbar-brand-wrapper {
+        min-width: 56px;
+        width: 56px;
+    }
+
+    .kfms-template .navbar .navbar-menu-wrapper {
+        padding-left: 8px;
+        padding-right: 8px;
+    }
+
+    .kfms-template .navbar .navbar-toggler {
+        flex: 0 0 36px;
+        height: 38px;
+        padding: 0;
+    }
+
+    .kfms-navbar-actions {
+        gap: 5px;
+    }
+
+    .kfms-nav-icon {
+        height: 36px;
+        width: 36px;
+    }
+
+    .kfms-content {
+        padding: 14px;
+    }
+
+    .kfms-table-actions {
+        flex-wrap: wrap;
+    }
+
+    .kfms-action-menu-list {
+        left: 0;
+        min-width: min(220px, calc(100vw - 32px));
+        right: auto;
+    }
+}

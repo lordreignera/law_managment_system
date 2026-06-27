@@ -25,8 +25,8 @@ body.kfms-auth-body {
 
 .jf-login-stage {
     background:
-        linear-gradient(180deg, rgba(255, 255, 255, 0.045) 0 1px, transparent 1px) 0 0 / 100% 46px,
-        linear-gradient(135deg, #031b3c 0%, #06162f 52%, #082449 100%);
+        linear-gradient(180deg, rgba(213, 163, 58, 0.12) 0 1px, transparent 1px) 0 0 / 100% 46px,
+        linear-gradient(135deg, #f8fafc 0%, #ffffff 50%, #eef3f9 100%);
     overflow: hidden;
     position: relative;
 }
@@ -64,7 +64,7 @@ body.kfms-auth-body {
 
 .jf-login-refined {
     border-color: rgba(213, 163, 58, 0.38);
-    box-shadow: 0 26px 72px rgba(0, 0, 0, 0.34);
+    box-shadow: 0 24px 62px rgba(9, 24, 50, 0.14);
     position: relative;
 }
 
@@ -100,7 +100,7 @@ body.kfms-auth-body {
 
 .jf-register-refined {
     border-color: rgba(213, 163, 58, 0.38);
-    box-shadow: 0 26px 72px rgba(0, 0, 0, 0.34);
+    box-shadow: 0 24px 62px rgba(9, 24, 50, 0.14);
     position: relative;
 }
 
@@ -112,10 +112,10 @@ body.kfms-auth-body {
 
 .jf-brand-panel {
     background:
-        linear-gradient(90deg, rgba(3, 27, 60, 0.98), rgba(3, 27, 60, 0.84)),
-        radial-gradient(circle at 80% 20%, rgba(213, 163, 58, 0.18), transparent 28%),
-        var(--jf-navy);
-    color: #fff;
+        linear-gradient(180deg, rgba(255, 248, 232, 0.96), rgba(255, 255, 255, 0.98) 46%, #f8fbff),
+        radial-gradient(circle at 86% 12%, rgba(213, 163, 58, 0.16), transparent 30%);
+    border-right: 1px solid #e7edf4;
+    color: var(--jf-text);
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -126,11 +126,11 @@ body.kfms-auth-body {
 
 .jf-brand-panel::before {
     background:
-        linear-gradient(115deg, transparent 0 48%, rgba(255, 255, 255, 0.08) 48% 49%, transparent 49%),
-        repeating-linear-gradient(90deg, transparent 0 42px, rgba(255, 255, 255, 0.06) 42px 46px, transparent 46px 88px);
+        linear-gradient(115deg, transparent 0 48%, rgba(3, 27, 60, 0.04) 48% 49%, transparent 49%),
+        repeating-linear-gradient(90deg, transparent 0 42px, rgba(213, 163, 58, 0.08) 42px 46px, transparent 46px 88px);
     content: "";
     inset: 0;
-    opacity: 0.38;
+    opacity: 0.58;
     position: absolute;
 }
 
@@ -184,6 +184,7 @@ body.kfms-auth-body {
 
 .jf-brand-copy h1,
 .jf-brand-copy h2 {
+    color: var(--jf-navy);
     font-size: 28px;
     font-weight: 800;
     letter-spacing: 0;
@@ -197,7 +198,7 @@ body.kfms-auth-body {
 }
 
 .jf-brand-copy p {
-    color: rgba(255, 255, 255, 0.86);
+    color: #4d5d76;
     font-size: 15px;
     line-height: 1.55;
     margin: 28px 0 0;
@@ -236,7 +237,7 @@ body.kfms-auth-body {
 .jf-feature-row strong,
 .jf-feature-list strong,
 .jf-help-box strong {
-    color: #fff;
+    color: var(--jf-navy);
     font-size: 13px;
     font-weight: 800;
 }
@@ -244,7 +245,7 @@ body.kfms-auth-body {
 .jf-feature-row span,
 .jf-feature-list small,
 .jf-help-box small {
-    color: rgba(255, 255, 255, 0.78);
+    color: #607086;
     font-size: 13px;
     line-height: 1.45;
 }
@@ -682,7 +683,7 @@ body.kfms-auth-body {
     background: rgba(255, 255, 255, 0.98);
     border: 1px solid rgba(213, 163, 58, 0.45);
     border-radius: 8px;
-    box-shadow: 0 18px 36px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 16px 34px rgba(9, 24, 50, 0.12);
     height: 104px;
     object-fit: contain;
     object-position: center;
@@ -694,7 +695,7 @@ body.kfms-auth-body {
     background: rgba(255, 255, 255, 0.98);
     border-color: rgba(213, 163, 58, 0.72);
     border-radius: 8px;
-    box-shadow: 0 18px 36px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 16px 34px rgba(9, 24, 50, 0.12);
     font-size: 24px;
     height: 82px;
     min-width: 110px;
@@ -733,7 +734,8 @@ body.kfms-auth-body {
 }
 
 .jf-help-box {
-    border: 1px solid rgba(255, 255, 255, 0.24);
+    background: rgba(255, 255, 255, 0.74);
+    border: 1px solid #e4ebf4;
     border-radius: 8px;
     margin-top: auto;
     padding: 14px;
@@ -827,6 +829,25 @@ body.kfms-auth-body {
     margin: 0;
 }
 
+.jf-register-panel .jf-field {
+    gap: 9px;
+}
+
+.jf-register-panel .jf-field > div {
+    min-height: 52px;
+    padding: 0 16px;
+}
+
+.jf-register-panel .jf-field input,
+.jf-register-panel .jf-field select {
+    font-size: 15px;
+}
+
+.jf-register-panel .jf-password-toggle {
+    height: 38px;
+    width: 38px;
+}
+
 .jf-terms {
     margin: 18px 0 0;
 }
@@ -874,11 +895,13 @@ body.kfms-auth-body {
 
 @media (max-width: 620px) {
     .jf-auth-stage {
-        padding: 10px;
+        align-items: flex-start;
+        min-height: 100dvh;
+        padding: 12px;
     }
 
     .jf-auth-card {
-        border-radius: 14px;
+        border-radius: 8px;
     }
 
     .jf-login-refined {
@@ -921,5 +944,41 @@ body.kfms-auth-body {
 
     .jf-register-heading {
         align-items: flex-start;
+    }
+
+    .jf-register-brand {
+        padding: 22px;
+    }
+
+    .jf-register-brand .jf-product-lockup img,
+    .jf-register-brand .jf-product-logo {
+        height: 88px;
+        max-width: 100%;
+        width: 220px;
+    }
+
+    .jf-register-brand .jf-brand-copy {
+        margin-top: 18px;
+    }
+
+    .jf-feature-list {
+        gap: 14px;
+        margin-top: 22px;
+    }
+
+    .jf-help-box {
+        margin-top: 18px;
+    }
+
+    .jf-register-panel {
+        padding: 22px 18px;
+    }
+
+    .jf-register-top-link {
+        text-align: left;
+    }
+
+    .jf-register-panel .jf-field > div {
+        min-height: 50px;
     }
 }
