@@ -1,6 +1,12 @@
 <x-guest-layout>
-    <main class="jf-auth-stage">
-        <section class="jf-auth-card jf-register-card">
+    @php
+        $registerHeading = $companySetting->login_heading ?: 'Request staff access';
+        $registerCopy = $companySetting->login_subheading ?: 'Your request will be reviewed before access is granted.';
+    @endphp
+
+    <main class="jf-auth-stage jf-login-stage jf-register-stage">
+        <section class="jf-auth-card jf-register-card jf-register-refined">
+            <div class="jf-login-card-accent" aria-hidden="true"></div>
             <aside class="jf-brand-panel jf-register-brand">
                 <div class="jf-product-lockup">
                     <x-company-logo mark-class="jf-product-mark" image-class="jf-product-logo" />
@@ -8,30 +14,30 @@
 
                 <div class="jf-brand-copy">
                     <h1>{{ $companySetting->company_name }}</h1>
-                    <h2>{{ $companySetting->tagline }}</h2>
-                    <p>{{ $companySetting->login_subheading }}</p>
+                    <h2>{{ $companySetting->tagline ?: $companySetting->short_name }}</h2>
+                    <p>{{ $registerCopy }}</p>
                 </div>
 
                 <div class="jf-feature-list">
                     <div>
                         <i class="mdi mdi-shield-check-outline"></i>
                         <span>
-                            <strong>Secure & Confidential</strong>
-                            <small>Bank-level security to keep client data protected.</small>
+                            <strong>Reviewed Access</strong>
+                            <small>Every account is checked by an administrator before activation.</small>
                         </span>
                     </div>
                     <div>
-                        <i class="mdi mdi-account-group-outline"></i>
+                        <i class="mdi mdi-shield-account-outline"></i>
                         <span>
-                            <strong>Streamlined Workflows</strong>
-                            <small>Automate tasks and manage practice with ease.</small>
+                            <strong>Role Based Permissions</strong>
+                            <small>Your department, branch, and role determine what you can access.</small>
                         </span>
                     </div>
                     <div>
-                        <i class="mdi mdi-chart-line"></i>
+                        <i class="mdi mdi-scale-balance"></i>
                         <span>
-                            <strong>Insightful Reports</strong>
-                            <small>Make informed decisions with powerful analytics.</small>
+                            <strong>Client Confidentiality</strong>
+                            <small>Matter, client, and finance records stay inside the approved workspace.</small>
                         </span>
                     </div>
                 </div>
@@ -60,10 +66,12 @@
                 </div>
 
                 <div class="jf-register-heading">
-                    <span><i class="mdi mdi-account-plus-outline"></i></span>
+                    <span class="jf-register-heading-logo">
+                        <x-company-logo mark-class="jf-register-logo-mark" image-class="jf-register-logo-image" />
+                    </span>
                     <div>
                         <h2>Request Staff Access</h2>
-                        <p>Fill in the form below to request access to {{ $companySetting->company_name }}.</p>
+                        <p>{{ $registerHeading }}</p>
                     </div>
                 </div>
 

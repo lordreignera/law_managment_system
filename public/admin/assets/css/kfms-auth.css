@@ -98,6 +98,18 @@ body.kfms-auth-body {
     min-height: 690px;
 }
 
+.jf-register-refined {
+    border-color: rgba(213, 163, 58, 0.38);
+    box-shadow: 0 26px 72px rgba(0, 0, 0, 0.34);
+    position: relative;
+}
+
+.jf-register-refined .jf-register-panel {
+    background:
+        linear-gradient(180deg, rgba(213, 163, 58, 0.08), rgba(255, 255, 255, 0) 110px),
+        #ffffff;
+}
+
 .jf-brand-panel {
     background:
         linear-gradient(90deg, rgba(3, 27, 60, 0.98), rgba(3, 27, 60, 0.84)),
@@ -740,13 +752,41 @@ body.kfms-auth-body {
 .jf-register-heading > span {
     align-items: center;
     background: #eef6ff;
-    border-radius: 999px;
+    border-radius: 8px;
     color: var(--jf-navy);
     display: inline-flex;
     font-size: 34px;
     height: 64px;
     justify-content: center;
     width: 64px;
+}
+
+.jf-register-heading > .jf-register-heading-logo {
+    background: #fff;
+    border: 1px solid rgba(213, 163, 58, 0.34);
+    box-shadow: 0 10px 24px rgba(3, 27, 60, 0.09);
+    overflow: hidden;
+}
+
+.jf-register-logo-image {
+    display: block;
+    height: 46px;
+    max-width: 108px;
+    object-fit: contain;
+    padding: 6px;
+    width: 100%;
+}
+
+.jf-register-logo-mark {
+    align-items: center;
+    color: var(--kfms-primary, var(--jf-navy));
+    display: inline-flex;
+    font-size: 23px;
+    font-weight: 900;
+    height: 100%;
+    justify-content: center;
+    letter-spacing: 0;
+    width: 100%;
 }
 
 .jf-register-heading h2 {

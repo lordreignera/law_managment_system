@@ -53,7 +53,7 @@ class CompanySettingTest extends TestCase
             ->assertOk()
             ->assertSee('Test Firm Advocates')
             ->assertSee('Welcome to Test Firm')
-            ->assertSee('Sign in to TFA')
+            ->assertSee('Sign In')
             ->assertSee($setting->logo_url, false)
             ->assertDontSee('A branded workspace for matters and finance.')
             ->assertDontSee('hello@testfirm.test')
@@ -66,8 +66,10 @@ class CompanySettingTest extends TestCase
             ->assertSee('Test Firm Advocates')
             ->assertSee('Legal Operations')
             ->assertSee('A branded workspace for matters and finance.')
+            ->assertSee('Welcome to Test Firm')
             ->assertSee('hello@testfirm.test')
-            ->assertSee('request access to Test Firm Advocates');
+            ->assertSee('Reviewed Access')
+            ->assertSee($setting->logo_url, false);
 
         File::delete(public_path($setting->logo_path));
     }
