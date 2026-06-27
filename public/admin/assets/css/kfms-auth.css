@@ -23,10 +23,28 @@ body.kfms-auth-body {
     padding: 18px;
 }
 
+.jf-login-stage {
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.045) 0 1px, transparent 1px) 0 0 / 100% 46px,
+        linear-gradient(135deg, #031b3c 0%, #06162f 52%, #082449 100%);
+    overflow: hidden;
+    position: relative;
+}
+
+.jf-login-stage::before {
+    background: linear-gradient(90deg, transparent, var(--jf-gold), transparent);
+    content: "";
+    height: 3px;
+    left: 0;
+    position: absolute;
+    right: 0;
+    top: 0;
+}
+
 .jf-auth-card {
     background: var(--jf-surface);
     border: 1px solid #e6ebf2;
-    border-radius: 20px;
+    border-radius: 8px;
     box-shadow: 0 22px 70px rgba(9, 24, 50, 0.16);
     display: grid;
     overflow: hidden;
@@ -44,12 +62,34 @@ body.kfms-auth-body {
     width: min(100%, 470px);
 }
 
+.jf-login-refined {
+    border-color: rgba(213, 163, 58, 0.38);
+    box-shadow: 0 26px 72px rgba(0, 0, 0, 0.34);
+    position: relative;
+}
+
+.jf-login-card-accent {
+    background: linear-gradient(90deg, #8b6418, #d5a33a 42%, #f4d98e 50%, #d5a33a 58%, #8b6418);
+    height: 5px;
+    left: 0;
+    position: absolute;
+    right: 0;
+    top: 0;
+    z-index: 2;
+}
+
 .jf-login-card-centered .jf-form-panel {
-    padding: 30px 42px;
+    padding: 34px 40px 30px;
 }
 
 .jf-login-card-centered .jf-form-wrap {
     margin: 0;
+}
+
+.jf-login-refined .jf-form-panel {
+    background:
+        linear-gradient(180deg, rgba(213, 163, 58, 0.08), rgba(255, 255, 255, 0) 90px),
+        #ffffff;
 }
 
 .jf-register-card {
@@ -282,6 +322,57 @@ body.kfms-auth-body {
     margin-top: 8px;
 }
 
+.jf-login-kicker {
+    align-items: center;
+    color: var(--jf-navy);
+    display: inline-flex;
+    font-size: 12px;
+    font-weight: 800;
+    gap: 7px;
+    justify-content: center;
+    margin-bottom: 12px;
+}
+
+.jf-login-kicker i {
+    color: var(--jf-gold);
+    font-size: 18px;
+}
+
+.jf-login-refined .jf-form-title {
+    margin-bottom: 20px;
+}
+
+.jf-login-refined .jf-form-title h2 {
+    color: var(--jf-navy);
+    font-size: 28px;
+    margin-bottom: 8px;
+}
+
+.jf-login-refined .jf-form-title p {
+    color: #5d6b80;
+    font-size: 14px;
+    line-height: 1.45;
+}
+
+.jf-login-refined .jf-form-logo {
+    margin-bottom: 14px;
+}
+
+.jf-login-refined .jf-form-logo-image,
+.jf-login-refined .jf-form-logo-mark {
+    border-color: rgba(213, 163, 58, 0.34);
+    border-radius: 8px;
+    box-shadow: 0 10px 24px rgba(3, 27, 60, 0.09);
+}
+
+.jf-login-refined .jf-form-logo-image {
+    height: 54px;
+}
+
+.jf-login-refined .jf-form-logo-mark {
+    height: 54px;
+}
+
 .jf-field {
     display: grid;
     gap: 8px;
@@ -313,6 +404,30 @@ body.kfms-auth-body {
 .jf-field > div:focus-within {
     border-color: #6e8bb5;
     box-shadow: 0 0 0 3px rgba(3, 27, 60, 0.08);
+}
+
+.jf-login-refined .jf-field {
+    margin-bottom: 15px;
+}
+
+.jf-login-refined .jf-field > span {
+    color: #17233a;
+}
+
+.jf-login-refined .jf-field > div {
+    background: #fbfcfe;
+    border-color: #cfd8e5;
+    min-height: 46px;
+}
+
+.jf-login-refined .jf-field > div:focus-within {
+    background: #fff;
+    border-color: var(--jf-gold);
+    box-shadow: 0 0 0 3px rgba(213, 163, 58, 0.16);
+}
+
+.jf-login-refined .jf-field i {
+    color: var(--jf-navy);
 }
 
 .jf-field i {
@@ -408,6 +523,19 @@ body.kfms-auth-body {
     filter: brightness(1.08);
 }
 
+.jf-login-refined .jf-primary-button {
+    background: var(--jf-navy);
+    border: 1px solid #06162f;
+    border-bottom: 3px solid var(--jf-gold);
+    box-shadow: 0 12px 22px rgba(3, 27, 60, 0.24);
+    min-height: 50px;
+}
+
+.jf-login-refined .jf-primary-button i {
+    color: var(--jf-gold);
+    font-size: 19px;
+}
+
 .jf-divider {
     align-items: center;
     color: #516079;
@@ -435,6 +563,30 @@ body.kfms-auth-body {
 .jf-outline-button:hover {
     background: #f8fbff;
     color: var(--jf-text);
+}
+
+.jf-login-refined .jf-divider {
+    margin: 16px 0;
+}
+
+.jf-login-refined .jf-divider span {
+    color: #68768d;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.jf-login-refined .jf-outline-button {
+    border-color: #c8d2df;
+    color: var(--jf-navy);
+    min-height: 46px;
+}
+
+.jf-login-refined .jf-outline-button:hover {
+    border-color: var(--jf-gold);
+}
+
+.jf-login-refined .jf-outline-button i {
+    color: var(--jf-gold);
 }
 
 .jf-outline-button i {
@@ -487,6 +639,25 @@ body.kfms-auth-body {
     font-size: 13px;
     margin-bottom: 18px;
     padding: 11px 13px;
+}
+
+.jf-login-support {
+    align-items: center;
+    border-top: 1px solid #e8edf4;
+    color: #627087;
+    display: flex;
+    font-size: 12px;
+    gap: 8px;
+    justify-content: center;
+    line-height: 1.4;
+    margin-top: 18px;
+    padding-top: 16px;
+    text-align: center;
+}
+
+.jf-login-support i {
+    color: var(--jf-gold);
+    font-size: 17px;
 }
 
 .jf-register-brand {
@@ -657,6 +828,23 @@ body.kfms-auth-body {
 
     .jf-auth-card {
         border-radius: 14px;
+    }
+
+    .jf-login-refined {
+        border-radius: 8px;
+    }
+
+    .jf-login-card-centered .jf-form-panel {
+        padding: 28px 22px 24px;
+    }
+
+    .jf-login-refined .jf-form-title h2 {
+        font-size: 24px;
+    }
+
+    .jf-login-support {
+        align-items: flex-start;
+        text-align: left;
     }
 
     .jf-product-lockup img {

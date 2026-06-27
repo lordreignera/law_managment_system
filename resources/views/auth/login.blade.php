@@ -1,20 +1,19 @@
 <x-guest-layout>
-    <main class="jf-auth-stage">
-        <section class="jf-auth-card jf-login-card jf-login-card-centered">
+    <main class="jf-auth-stage jf-login-stage">
+        <section class="jf-auth-card jf-login-card jf-login-card-centered jf-login-refined">
+            <div class="jf-login-card-accent" aria-hidden="true"></div>
             <section class="jf-form-panel">
-                <div class="jf-language">
-                    <i class="mdi mdi-web"></i>
-                    <span>English</span>
-                    <i class="mdi mdi-chevron-down"></i>
-                </div>
-
                 <div class="jf-form-wrap">
                     <div class="jf-form-title">
+                        <div class="jf-login-kicker">
+                            <i class="mdi mdi-shield-lock-outline"></i>
+                            <span>Secure legal workspace</span>
+                        </div>
                         <div class="jf-form-logo">
                             <x-company-logo mark-class="jf-form-logo-mark" image-class="jf-form-logo-image" />
                         </div>
-                        <h2>{{ $companySetting->login_heading ?: 'Welcome Back' }}</h2>
-                        <p>Sign in to access your {{ $companySetting->company_name }} account</p>
+                        <h2>{{ $companySetting->login_heading ?: 'Sign in' }}</h2>
+                        <p>{{ $companySetting->company_name }} matter and client management portal.</p>
                     </div>
 
                     @if ($errors->any())
@@ -59,18 +58,23 @@
                         </div>
 
                         <button class="jf-primary-button" type="submit">
-                            <i class="mdi mdi-account-outline"></i>
-                            Sign in to {{ $companySetting->short_name }}
+                            <i class="mdi mdi-login"></i>
+                            Sign In Securely
                         </button>
                     </form>
 
                     @if (Route::has('register'))
-                        <div class="jf-divider"><span>OR</span></div>
+                        <div class="jf-divider"><span>New here?</span></div>
                         <a class="jf-outline-button" href="{{ route('register') }}">
                             <i class="mdi mdi-account-plus-outline"></i>
-                            <strong>Request Staff Access</strong>
+                            <strong>Request Access</strong>
                         </a>
                     @endif
+
+                    <div class="jf-login-support">
+                        <i class="mdi mdi-scale-balance"></i>
+                        <span>Private access for approved users only.</span>
+                    </div>
                 </div>
             </section>
         </section>
