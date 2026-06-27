@@ -3,10 +3,13 @@
 namespace Tests\Feature;
 
 use App\Models\CompanySetting;
+use App\Models\StaffProfile;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class CompanySettingTest extends TestCase
@@ -15,7 +18,7 @@ class CompanySettingTest extends TestCase
 
     public function test_company_branding_can_be_updated_with_a_logo(): void
     {
-        $user = User::factory()->create();
+        $user = $this->settingsUser();
         CompanySetting::current();
 
         $response = $this->actingAs($user)->put(route('settings.company.update'), [
@@ -48,15 +51,30 @@ class CompanySettingTest extends TestCase
 
         $this->get('/login')
             ->assertOk()
+            ->assertSee('Test Firm Advocates')
             ->assertSee('Welcome to Test Firm')
-            ->assertSee($setting->logo_url, false);
+            ->assertSee('Sign in to TFA')
+            ->assertSee($setting->logo_url, false)
+            ->assertDontSee('A branded workspace for matters and finance.')
+            ->assertDontSee('hello@testfirm.test')
+            ->assertDontSee('+256700000000')
+            ->assertDontSee('Bank-level security')
+            ->assertDontSee('Streamline workflow');
+
+        $this->get('/register')
+            ->assertOk()
+            ->assertSee('Test Firm Advocates')
+            ->assertSee('Legal Operations')
+            ->assertSee('A branded workspace for matters and finance.')
+            ->assertSee('hello@testfirm.test')
+            ->assertSee('request access to Test Firm Advocates');
 
         File::delete(public_path($setting->logo_path));
     }
 
     public function test_company_logo_can_be_removed(): void
     {
-        $user = User::factory()->create();
+        $user = $this->settingsUser();
         $logoPath = 'uploads/company-logos/test-remove-logo.png';
 
         File::ensureDirectoryExists(dirname(public_path($logoPath)));
@@ -86,5 +104,20 @@ class CompanySettingTest extends TestCase
 
         $this->assertNull($setting->logo_path);
         $this->assertFileDoesNotExist(public_path($logoPath));
+    }
+
+    private function settingsUser(): User
+    {
+        $role = Role::findOrCreate('Settings Manager');
+        $role->givePermissionTo(Permission::findOrCreate('manage settings'));
+
+        $user = User::factory()->create();
+        $user->assignRole($role);
+        StaffProfile::create([
+            'user_id' => $user->id,
+            'employment_status' => 'active',
+        ]);
+
+        return $user;
     }
 }

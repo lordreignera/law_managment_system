@@ -13,5 +13,11 @@ document.addEventListener('click', function (event) {
 
     const passwordIsVisible = input.type === 'text';
     input.type = passwordIsVisible ? 'password' : 'text';
-    toggle.textContent = passwordIsVisible ? 'SHOW' : 'HIDE';
+
+    const icon = toggle.querySelector('i');
+
+    if (icon) {
+        icon.classList.toggle('mdi-eye-outline', passwordIsVisible);
+        icon.classList.toggle('mdi-eye-off-outline', ! passwordIsVisible);
+    }
 });

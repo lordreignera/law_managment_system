@@ -16,7 +16,7 @@ class DashboardController extends Controller
     {
         return view('dashboard', [
             'stats' => [
-                'Open Matters' => Matter::where('status', 'open')->count(),
+                'Open Matters' => Matter::whereNotIn('status', ['closed', 'archived'])->count(),
                 'Clients' => Client::count(),
                 'Recovery Accounts' => RecoveryAccount::where('status', 'active')->count(),
                 'Pending Titles' => LandTitle::where('status', 'pending')->count(),

@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('phone')->nullable();
             $table->date('joined_on')->nullable();
             $table->string('employment_status')->default('active');
+            $table->string('requested_role', 125)->nullable();
             $table->timestamps();
         });
     }

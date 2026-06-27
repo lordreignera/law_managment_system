@@ -11,6 +11,7 @@ return new class extends Migration
         Schema::create('zonal_offices', function (Blueprint $table) {
             $table->id();
             $table->string('name')->unique();
+            $table->string('code', 40)->unique();
             $table->string('region')->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamps();

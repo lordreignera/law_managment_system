@@ -10,10 +10,12 @@
                 <h2>Client Register</h2>
                 <span>{{ $clients->total() }} records</span>
             </div>
-            <a class="kfms-btn" href="{{ route('clients.create') }}">
-                <i class="mdi mdi-plus"></i>
-                Add Client
-            </a>
+            @can('manage intakes')
+                <a class="kfms-btn" href="{{ route('intakes.create') }}">
+                    <i class="mdi mdi-plus"></i>
+                    New Client Intake
+                </a>
+            @endcan
         </div>
 
         @if (session('status'))
@@ -23,7 +25,7 @@
         <form class="kfms-table-toolbar" method="GET" action="{{ route('clients.index') }}">
             <label class="kfms-search-box">
                 <i class="mdi mdi-magnify"></i>
-                <input type="search" name="search" value="{{ $filters['search'] ?? '' }}" placeholder="Search name, phone, or email">
+                <input type="search" name="search" value="{{ $filters['search'] ?? '' }}" placeholder="Search number, name, phone, or email">
             </label>
             <label>
                 <span>Type</span>
@@ -47,10 +49,60 @@
             </div>
         </form>
 
-        @include('modules.partials.table', [
-            'headers' => ['Name', 'Type', 'Phone', 'Email', 'Status'],
-            'rows' => $clients->map(fn ($client) => [$client->display_name, $client->client_type, $client->phone, $client->email, $client->status]),
-        ])
+        <div class="kfms-table-wrap">
+            <table class="kfms-table">
+                <thead>
+                    <tr>
+                        <th>Client No</th>
+                        <th>Name</th>
+                        <th>Type</th>
+                        <th>Phone</th>
+                        <th>Email</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse ($clients as $client)
+                        <tr>
+                            <td>{{ $client->client_no }}</td>
+                            <td>{{ $client->display_name }}</td>
+                            <td>{{ ucfirst($client->client_type) }}</td>
+                            <td>{{ $client->phone ?: '-' }}</td>
+                            <td>{{ $client->email ?: '-' }}</td>
+                            <td>{{ ucfirst($client->status) }}</td>
+                            <td>
+                                <details class="kfms-action-menu">
+                                    <summary>
+                                        Options
+                                    </summary>
+                                    <div class="kfms-action-menu-list">
+                                        <a class="dropdown-item" href="{{ route('clients.show', $client) }}">
+                                            <i class="mdi mdi-eye"></i>
+                                            View Client Details
+                                        </a>
+                                        <a class="dropdown-item" href="{{ route('clients.details.edit', $client) }}">
+                                            <i class="mdi mdi-pencil"></i>
+                                            Add More Details
+                                        </a>
+                                        @can('manage matters')
+                                            <a class="dropdown-item" href="{{ route('clients.engagements.create', $client) }}">
+                                                <i class="mdi mdi-briefcase-plus"></i>
+                                                Add Engagement
+                                            </a>
+                                        @endcan
+                                    </div>
+                                </details>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="7" class="kfms-empty">No clients found.</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
         {{ $clients->links() }}
     </section>
 @endsection

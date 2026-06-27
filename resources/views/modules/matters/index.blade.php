@@ -10,10 +10,12 @@
                 <h2>Matter Register</h2>
                 <span>{{ $matters->total() }} records</span>
             </div>
-            <a class="kfms-btn" href="{{ route('matters.create') }}">
-                <i class="mdi mdi-plus"></i>
-                Add Matter
-            </a>
+            @can('manage intakes')
+                <a class="kfms-btn" href="{{ route('intakes.create') }}">
+                    <i class="mdi mdi-plus"></i>
+                    Start Client Intake
+                </a>
+            @endcan
         </div>
 
         @if (session('status'))
@@ -28,9 +30,9 @@
                 <span>Status</span>
                 <select name="status">
                     <option value="">All Statuses</option>
-                    <option value="open" @selected(($filters['status'] ?? '') === 'open')>Open</option>
-                    <option value="closed" @selected(($filters['status'] ?? '') === 'closed')>Closed</option>
-                    <option value="on_hold" @selected(($filters['status'] ?? '') === 'on_hold')>On Hold</option>
+                    @foreach ($statuses as $value => $label)
+                        <option value="{{ $value }}" @selected(($filters['status'] ?? '') === $value)>{{ $label }}</option>
+                    @endforeach
                 </select>
             </label>
             <div class="kfms-toolbar-actions">
@@ -38,10 +40,36 @@
                 <a class="kfms-link-btn" href="{{ route('matters.index') }}">Reset</a>
             </div>
         </form>
-        @include('modules.partials.table', [
-            'headers' => ['Reference', 'Title', 'Client', 'Practice Area', 'Status'],
-            'rows' => $matters->map(fn ($matter) => [$matter->reference_no, $matter->title, $matter->client?->name, $matter->practiceArea?->name, $matter->status]),
-        ])
+        <div class="kfms-table-wrap">
+            <table class="kfms-table">
+                <thead>
+                    <tr>
+                        <th>Reference</th>
+                        <th>Title</th>
+                        <th>Client</th>
+                        <th>Practice Area</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse ($matters as $matter)
+                        <tr>
+                            <td>{{ $matter->reference_no }}</td>
+                            <td>{{ $matter->title }}</td>
+                            <td>{{ $matter->client?->name ?: '-' }}</td>
+                            <td>{{ $matter->practiceArea?->name ?: '-' }}</td>
+                            <td>{{ $matter->statusLabel() }}</td>
+                            <td><a class="kfms-link-btn" href="{{ route('matters.show', $matter) }}">Review</a></td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="6" class="kfms-empty">No matters found.</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
         {{ $matters->links() }}
     </section>
 @endsection

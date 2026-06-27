@@ -4,8 +4,11 @@ namespace Tests\Feature;
 
 use App\Models\CompanySetting;
 use App\Models\InstructionType;
+use App\Models\StaffProfile;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class SystemSettingTest extends TestCase
@@ -14,10 +17,11 @@ class SystemSettingTest extends TestCase
 
     public function test_system_setting_records_can_be_created_with_company_codes(): void
     {
-        $user = User::factory()->create();
+        $user = $this->settingsUser();
         CompanySetting::current()->update(['initials' => 'KC']);
 
         $response = $this->actingAs($user)->post(route('settings.system.store', 'instruction-types'), [
+            'code' => 'MANUAL-CODE',
             'name' => 'Fresh Client Instruction',
             'description' => 'Instruction received directly from a client.',
             'sort_order' => 1,
@@ -31,11 +35,14 @@ class SystemSettingTest extends TestCase
             'code' => 'KC-IT-0001',
             'is_active' => true,
         ]);
+        $this->assertDatabaseMissing('instruction_types', [
+            'code' => 'MANUAL-CODE',
+        ]);
     }
 
     public function test_system_setting_records_can_be_updated_and_deleted(): void
     {
-        $user = User::factory()->create();
+        $user = $this->settingsUser();
         $record = InstructionType::create([
             'name' => 'Old Instruction',
             'description' => 'Old wording.',
@@ -62,5 +69,20 @@ class SystemSettingTest extends TestCase
         $this->assertDatabaseMissing('instruction_types', [
             'id' => $record->id,
         ]);
+    }
+
+    private function settingsUser(): User
+    {
+        $role = Role::findOrCreate('Settings Manager');
+        $role->givePermissionTo(Permission::findOrCreate('manage settings'));
+
+        $user = User::factory()->create();
+        $user->assignRole($role);
+        StaffProfile::create([
+            'user_id' => $user->id,
+            'employment_status' => 'active',
+        ]);
+
+        return $user;
     }
 }

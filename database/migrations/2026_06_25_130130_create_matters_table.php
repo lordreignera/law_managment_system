@@ -25,7 +25,7 @@ return new class extends Migration
             $table->date('closed_on')->nullable();
             $table->string('privacy_status')->default('public');
             $table->string('opposite_counsel')->nullable();
-            $table->string('status')->default('open');
+            $table->string('status')->default('inquiry');
             $table->string('priority')->default('normal');
             $table->text('description')->nullable();
             $table->timestamps();

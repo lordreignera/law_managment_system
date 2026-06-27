@@ -49,7 +49,7 @@ class SystemSettingController extends Controller
             'setting' => $setting,
             'definition' => $definition,
             'records' => $records,
-            'newRecord' => new $definition['model'],
+            'newRecord' => $this->newRecord($definition),
             'currencyTypes' => CurrencyType::orderBy('name')->get(),
             'filters' => $request->only(['search', 'status']),
         ]);
@@ -62,7 +62,7 @@ class SystemSettingController extends Controller
         return view('modules.system-settings.create', [
             'setting' => $setting,
             'definition' => $definition,
-            'record' => new $definition['model'],
+            'record' => $this->newRecord($definition),
             'currencyTypes' => CurrencyType::orderBy('name')->get(),
         ]);
     }
@@ -177,6 +177,17 @@ class SystemSettingController extends Controller
         }
 
         return $data;
+    }
+
+    private function newRecord(array $definition): Model
+    {
+        $model = new $definition['model'];
+
+        if (method_exists($definition['model'], 'nextCompanyCode')) {
+            $model->code = $definition['model']::nextCompanyCode();
+        }
+
+        return $model;
     }
 
     private function syncDefaultLetterhead(array $definition, Model $record, array $data): void

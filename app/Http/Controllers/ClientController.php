@@ -8,6 +8,7 @@ use App\Models\Country;
 use App\Models\RelationshipType;
 use App\Models\Salutation;
 use App\Models\User;
+use App\Support\MonthlyReferenceNumber;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -22,7 +23,8 @@ class ClientController extends Controller
 
                 $query->where(function ($query) use ($search) {
                     $query
-                        ->where('name', 'like', "%{$search}%")
+                        ->where('client_no', 'like', "%{$search}%")
+                        ->orWhere('name', 'like', "%{$search}%")
                         ->orWhere('organization_name', 'like', "%{$search}%")
                         ->orWhere('first_name', 'like', "%{$search}%")
                         ->orWhere('last_name', 'like', "%{$search}%")
@@ -45,12 +47,121 @@ class ClientController extends Controller
     public function create()
     {
         return view('modules.clients.create', [
+            'clientNumber' => MonthlyReferenceNumber::make(Client::class, 'client_no', 'CL'),
             'salutations' => Salutation::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
             'positions' => ContactPosition::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
             'countries' => Country::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
             'relationships' => RelationshipType::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
             'users' => User::orderBy('name')->get(),
         ]);
+    }
+
+    public function show(Client $client)
+    {
+        return view('modules.clients.show', [
+            'client' => $client->load([
+                'clientInCharge',
+                'country',
+                'position',
+                'salutation',
+                'nextOfKin.relationshipType',
+                'nextOfKin.salutation',
+                'nextOfKin.country',
+                'contacts',
+                'matters.practiceArea',
+                'matters.engagement',
+            ]),
+        ]);
+    }
+
+    public function editDetails(Client $client)
+    {
+        return view('modules.clients.details', [
+            'client' => $client->load('nextOfKin'),
+            'salutations' => Salutation::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
+            'positions' => ContactPosition::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
+            'countries' => Country::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
+            'relationships' => RelationshipType::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
+            'users' => User::orderBy('name')->get(),
+        ]);
+    }
+
+    public function updateDetails(Request $request, Client $client)
+    {
+        $data = $request->validate([
+            'client_type' => ['required', Rule::in(['individual', 'organization'])],
+            'is_prospect' => ['nullable', 'boolean'],
+            'salutation_id' => ['nullable', 'exists:salutations,id'],
+            'position_id' => ['nullable', 'exists:contact_positions,id'],
+            'country_id' => ['nullable', 'exists:countries,id'],
+            'client_in_charge_id' => ['nullable', 'exists:users,id'],
+            'organization_name' => ['required_if:client_type,organization', 'nullable', 'string', 'max:191'],
+            'first_name' => ['required_if:client_type,individual', 'nullable', 'string', 'max:191'],
+            'last_name' => ['required_if:client_type,individual', 'nullable', 'string', 'max:191'],
+            'middle_name' => ['nullable', 'string', 'max:191'],
+            'gender' => ['required_if:client_type,individual', 'nullable', Rule::in(['female', 'male'])],
+            'nin_passport_no' => ['nullable', 'string', 'max:191'],
+            'date_of_birth' => ['nullable', 'date'],
+            'email' => ['required', 'email', 'max:191'],
+            'phone' => ['required', 'string', 'max:60'],
+            'address' => ['required', 'string', 'max:1000'],
+            'occupation' => ['nullable', 'string', 'max:191'],
+            'tin' => ['nullable', 'string', 'max:191'],
+            'status' => ['required', Rule::in(['active', 'inactive'])],
+            'add_next_of_kin' => ['nullable', 'boolean'],
+            'next_of_kin.relationship_type_id' => ['required_if:add_next_of_kin,1', 'nullable', 'exists:relationship_types,id'],
+            'next_of_kin.salutation_id' => ['nullable', 'exists:salutations,id'],
+            'next_of_kin.country_id' => ['nullable', 'exists:countries,id'],
+            'next_of_kin.first_name' => ['required_if:add_next_of_kin,1', 'nullable', 'string', 'max:191'],
+            'next_of_kin.last_name' => ['required_if:add_next_of_kin,1', 'nullable', 'string', 'max:191'],
+            'next_of_kin.middle_name' => ['nullable', 'string', 'max:191'],
+            'next_of_kin.gender' => ['nullable', Rule::in(['female', 'male'])],
+            'next_of_kin.phone' => ['nullable', 'string', 'max:60'],
+            'next_of_kin.email' => ['nullable', 'email', 'max:191'],
+            'next_of_kin.nin_passport_no' => ['nullable', 'string', 'max:191'],
+            'next_of_kin.date_of_birth' => ['nullable', 'date'],
+            'next_of_kin.address' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        DB::transaction(function () use ($request, $client, $data) {
+            $clientData = collect($data)->except(['add_next_of_kin', 'next_of_kin'])->toArray();
+            $clientData['is_prospect'] = $request->boolean('is_prospect');
+
+            if ($clientData['client_type'] === 'organization') {
+                $clientData['name'] = $clientData['organization_name'];
+                $clientData['salutation_id'] = null;
+                $clientData['first_name'] = null;
+                $clientData['middle_name'] = null;
+                $clientData['last_name'] = null;
+                $clientData['gender'] = null;
+                $clientData['date_of_birth'] = null;
+            } else {
+                $clientData['organization_name'] = null;
+                $clientData['name'] = $this->clientName($clientData);
+            }
+
+            $client->update($clientData);
+
+            if ($request->boolean('add_next_of_kin')) {
+                $nextOfKin = $data['next_of_kin'] ?? [];
+                $nextOfKin['contact_type'] = 'next_of_kin';
+                $nextOfKin['is_primary'] = true;
+                $nextOfKin['name'] = trim(collect([
+                    $nextOfKin['first_name'] ?? null,
+                    $nextOfKin['middle_name'] ?? null,
+                    $nextOfKin['last_name'] ?? null,
+                ])->filter()->implode(' '));
+
+                $client->contacts()->updateOrCreate(
+                    ['contact_type' => 'next_of_kin'],
+                    $nextOfKin
+                );
+            }
+        });
+
+        return redirect()
+            ->route('clients.show', $client)
+            ->with('status', 'Client details updated.');
     }
 
     public function store(Request $request)
@@ -91,6 +202,7 @@ class ClientController extends Controller
 
         $client = DB::transaction(function () use ($request, $data) {
             $clientData = collect($data)->except('next_of_kin')->toArray();
+            $clientData['client_no'] = MonthlyReferenceNumber::make(Client::class, 'client_no', 'CL');
             $clientData['is_prospect'] = $request->boolean('is_prospect');
             $clientData['name'] = $this->clientName($clientData);
 

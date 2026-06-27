@@ -4,6 +4,10 @@
 @section('page-title', 'Add Client')
 
 @section('content')
+    @php
+        $showNextOfKin = old('add_next_of_kin') || collect(old('next_of_kin', []))->filter()->isNotEmpty();
+    @endphp
+
     <section class="kfms-panel">
         <div class="kfms-panel-header">
             <div>
@@ -20,6 +24,11 @@
             @csrf
 
             <div class="kfms-form-grid">
+                <label>
+                    <span>Client Number</span>
+                    <input type="text" value="{{ $clientNumber }}" readonly disabled>
+                </label>
+
                 <label>
                     <span>Type</span>
                     <select name="client_type" required data-client-type-toggle>
@@ -165,7 +174,12 @@
             </div>
 
             <div class="kfms-form-section-title">Next of Kin</div>
-            <div class="kfms-form-grid">
+            <label class="kfms-check-row">
+                <input type="checkbox" name="add_next_of_kin" value="1" data-next-of-kin-toggle @checked($showNextOfKin)>
+                <span>Add next of kin</span>
+            </label>
+
+            <div class="kfms-form-grid" data-next-of-kin-fields>
                 <label>
                     <span>Relationship</span>
                     <select name="next_of_kin[relationship_type_id]">
@@ -259,6 +273,8 @@
         document.addEventListener('DOMContentLoaded', function () {
             const clientType = document.querySelector('[data-client-type-toggle]');
             const fields = document.querySelectorAll('[data-client-type-field]');
+            const nextOfKinToggle = document.querySelector('[data-next-of-kin-toggle]');
+            const nextOfKinFields = document.querySelector('[data-next-of-kin-fields]');
 
             function syncClientTypeFields() {
                 const selectedType = clientType.value;
@@ -276,9 +292,27 @@
                 });
             }
 
+            function syncNextOfKinFields() {
+                if (! nextOfKinToggle || ! nextOfKinFields) {
+                    return;
+                }
+
+                const isVisible = nextOfKinToggle.checked;
+                nextOfKinFields.hidden = ! isVisible;
+
+                nextOfKinFields.querySelectorAll('input, select, textarea').forEach(function (input) {
+                    input.disabled = ! isVisible;
+                });
+            }
+
             if (clientType) {
                 clientType.addEventListener('change', syncClientTypeFields);
                 syncClientTypeFields();
+            }
+
+            if (nextOfKinToggle) {
+                nextOfKinToggle.addEventListener('change', syncNextOfKinFields);
+                syncNextOfKinFields();
             }
         });
     </script>

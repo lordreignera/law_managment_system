@@ -9,10 +9,6 @@ trait HasCompanyCode
     protected static function bootHasCompanyCode(): void
     {
         static::creating(function ($model) {
-            if (! empty($model->code)) {
-                return;
-            }
-
             $model->code = static::nextCompanyCode();
         });
     }

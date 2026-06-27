@@ -28,9 +28,19 @@ class Client extends Model
         return $this->hasMany(ClientContact::class);
     }
 
+    public function nextOfKin()
+    {
+        return $this->hasOne(ClientContact::class)->where('contact_type', 'next_of_kin');
+    }
+
     public function matters()
     {
         return $this->hasMany(Matter::class);
+    }
+
+    public function engagements()
+    {
+        return $this->hasMany(Engagement::class);
     }
 
     public function salutation()

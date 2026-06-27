@@ -4,9 +4,9 @@
 @endphp
 
 <div class="kfms-form-grid">
-    @if ($record->exists)
+    @if ($record->code)
         <label>
-            <span>Code</span>
+            <span>{{ $record->exists ? 'Code' : 'Generated Code' }}</span>
             <input type="text" value="{{ $record->code }}" disabled>
         </label>
     @endif

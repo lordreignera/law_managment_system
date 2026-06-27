@@ -33,7 +33,7 @@
 
                 <label>
                     <span>Matter Number</span>
-                    <input type="text" name="reference_no" value="{{ old('reference_no', $matterNumber) }}" required>
+                    <input type="text" value="{{ $matterNumber }}" readonly disabled>
                     @error('reference_no') <small>{{ $message }}</small> @enderror
                 </label>
 
@@ -116,6 +116,16 @@
                     <span>Date Opened</span>
                     <input type="date" name="opened_on" value="{{ old('opened_on', now()->toDateString()) }}" required>
                     @error('opened_on') <small>{{ $message }}</small> @enderror
+                </label>
+
+                <label>
+                    <span>Lifecycle Status</span>
+                    <select name="status" required>
+                        @foreach ($statuses as $value => $label)
+                            <option value="{{ $value }}" @selected(old('status', 'inquiry') === $value)>{{ $label }}</option>
+                        @endforeach
+                    </select>
+                    @error('status') <small>{{ $message }}</small> @enderror
                 </label>
 
                 <label>

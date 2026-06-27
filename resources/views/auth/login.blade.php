@@ -1,55 +1,56 @@
 <x-guest-layout>
-    <main class="kfms-auth-stage">
-        <section class="kfms-auth-showcase">
-            <div class="kfms-auth-blue">
-                <x-company-logo mark-class="kfms-auth-logo-mark" image-class="kfms-auth-logo-image" />
-                <div class="kfms-auth-welcome">
-                    <h1>WELCOME</h1>
-                    <h3>{{ strtoupper($companySetting->short_name) }}</h3>
-                    <p>{{ $companySetting->login_heading }}</p>
-                    <p>{{ $companySetting->login_subheading }}</p>
+    <main class="jf-auth-stage">
+        <section class="jf-auth-card jf-login-card jf-login-card-centered">
+            <section class="jf-form-panel">
+                <div class="jf-language">
+                    <i class="mdi mdi-web"></i>
+                    <span>English</span>
+                    <i class="mdi mdi-chevron-down"></i>
                 </div>
-                <span class="kfms-orb kfms-orb-large"></span>
-                <span class="kfms-orb kfms-orb-small"></span>
-            </div>
 
-            <div class="kfms-auth-white">
-                <div class="kfms-auth-form-card">
-                    <div class="kfms-auth-title">
-                        <h2>Staff Portal</h2>
-                        <p>{{ $companySetting->company_name }}</p>
+                <div class="jf-form-wrap">
+                    <div class="jf-form-title">
+                        <div class="jf-form-logo">
+                            <x-company-logo mark-class="jf-form-logo-mark" image-class="jf-form-logo-image" />
+                        </div>
+                        <h2>{{ $companySetting->login_heading ?: 'Welcome Back' }}</h2>
+                        <p>Sign in to access your {{ $companySetting->company_name }} account</p>
                     </div>
 
                     @if ($errors->any())
-                        <div class="alert alert-light border text-dark py-2">
-                            {{ $errors->first() }}
-                        </div>
+                        <div class="jf-alert">{{ $errors->first() }}</div>
                     @endif
 
                     @session('status')
-                        <div class="alert alert-light border text-dark py-2">
-                            {{ $value }}
-                        </div>
+                        <div class="jf-alert">{{ $value }}</div>
                     @endsession
 
                     <form method="POST" action="{{ route('login') }}">
                         @csrf
 
-                        <label class="kfms-input-group" for="email">
-                            <i class="mdi mdi-account"></i>
-                            <input id="email" type="email" name="email" value="{{ old('email') }}" placeholder="Email address" required autofocus autocomplete="username">
+                        <label class="jf-field" for="email">
+                            <span>Email Address</span>
+                            <div>
+                                <i class="mdi mdi-email-outline"></i>
+                                <input id="email" type="email" name="email" value="{{ old('email') }}" placeholder="Enter your email" required autofocus autocomplete="username">
+                            </div>
                         </label>
 
-                        <label class="kfms-input-group" for="password">
-                            <i class="mdi mdi-lock"></i>
-                            <input id="password" type="password" name="password" placeholder="Password" required autocomplete="current-password">
-                            <button class="kfms-show-password" type="button" data-password-toggle="password">SHOW</button>
+                        <label class="jf-field" for="password">
+                            <span>Password</span>
+                            <div>
+                                <i class="mdi mdi-lock-outline"></i>
+                                <input id="password" type="password" name="password" placeholder="Enter your password" required autocomplete="current-password">
+                                <button class="jf-password-toggle" type="button" data-password-toggle="password" aria-label="Show password">
+                                    <i class="mdi mdi-eye-outline"></i>
+                                </button>
+                            </div>
                         </label>
 
-                        <div class="kfms-auth-row">
-                            <label class="form-check mb-0" for="remember_me">
-                                <input id="remember_me" class="form-check-input" type="checkbox" name="remember">
-                                <span class="form-check-label">Remember me</span>
+                        <div class="jf-auth-row">
+                            <label for="remember_me">
+                                <input id="remember_me" type="checkbox" name="remember">
+                                <span>Remember me</span>
                             </label>
 
                             @if (Route::has('password.request'))
@@ -57,15 +58,21 @@
                             @endif
                         </div>
 
-                        <button class="kfms-primary-button" type="submit">Access Dashboard</button>
+                        <button class="jf-primary-button" type="submit">
+                            <i class="mdi mdi-account-outline"></i>
+                            Sign in to {{ $companySetting->short_name }}
+                        </button>
                     </form>
 
                     @if (Route::has('register'))
-                        <div class="kfms-divider"><span>Or</span></div>
-                        <a class="kfms-outline-button" href="{{ route('register') }}">Request Access</a>
+                        <div class="jf-divider"><span>OR</span></div>
+                        <a class="jf-outline-button" href="{{ route('register') }}">
+                            <i class="mdi mdi-account-plus-outline"></i>
+                            <strong>Request Staff Access</strong>
+                        </a>
                     @endif
                 </div>
-            </div>
+            </section>
         </section>
     </main>
 </x-guest-layout>

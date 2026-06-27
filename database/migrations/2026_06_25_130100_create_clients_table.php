@@ -10,6 +10,7 @@ return new class extends Migration
     {
         Schema::create('clients', function (Blueprint $table) {
             $table->id();
+            $table->string('client_no')->unique();
             $table->string('client_type')->default('individual');
             $table->boolean('is_prospect')->default(false);
             $table->foreignId('salutation_id')->nullable()->constrained()->nullOnDelete();
