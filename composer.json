@@ -13,7 +13,7 @@
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.10.1",
         "livewire/livewire": "^3.6.4",
-        "maatwebsite/excel": "^3.1",
+        "maatwebsite/excel": "4.x-dev",
         "spatie/laravel-permission": "^6.25"
     },
     "require-dev": {
@@ -81,6 +81,9 @@
         "allow-plugins": {
             "pestphp/pest-plugin": true,
             "php-http/discovery": true
+        },
+        "platform": {
+            "php": "8.5.7"
         }
     },
     "minimum-stability": "dev",
