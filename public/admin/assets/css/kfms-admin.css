@@ -836,6 +836,74 @@ body.kfms-template {
     }
 }
 
+/* Mobile navbar / brand fixes: ensure logo and actions align on small screens */
+@media (max-width: 991px) {
+    .kfms-template .navbar {
+        position: fixed;
+        top: 0;
+        left: 0 !important;
+        right: 0;
+        z-index: 1030;
+    }
+
+    .kfms-template .navbar .navbar-brand-wrapper {
+        position: absolute;
+        left: 0;
+        top: 0;
+        height: 64px;
+        width: 64px;
+        min-width: 64px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        background: transparent;
+        border-right: 0;
+        z-index: 1031;
+    }
+
+    /* Push the menu content to the right of the brand */
+    .kfms-template .navbar .navbar-menu-wrapper {
+        margin-left: 64px;
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+
+    /* Slightly reduce brand image on smaller phones */
+    .kfms-brand-mini-image {
+        width: 28px !important;
+        height: 28px !important;
+        padding: 2px !important;
+    }
+
+    /* Hide non-essential text in compact view to save space */
+    .kfms-quick-action span,
+    .kfms-navbar-actions .nav-link span,
+    .navbar-profile .navbar-profile-name {
+        display: none !important;
+    }
+
+    /* Tweak spacing of right-side icons */
+    .kfms-navbar-actions {
+        gap: 6px;
+        align-items: center;
+    }
+}
+
+@media (max-width: 575px) {
+    .kfms-template .navbar .navbar-brand-wrapper {
+        width: 56px;
+        min-width: 56px;
+        height: 56px;
+    }
+
+    .kfms-brand-mini-image {
+        width: 24px !important;
+        height: 24px !important;
+        padding: 2px !important;
+    }
+}
+
 /* Dashboard polish pass */
 body.kfms-template {
     background: #f6f8fb;
@@ -2526,3 +2594,48 @@ a.kfms-calendar-date:hover {
         display: none;
     }
 }
+
+/* ------------------------------------------------------------------
+   Overrides: mobile table scrolling and left-side off-canvas sidebar
+   - Ensure table wrappers scroll smoothly on small screens.
+   - Keep table cells on one line and allow horizontal swipe.
+   - Force the off-canvas sidebar to slide in from the LEFT on mobile.
+   These are intentionally low-risk CSS overrides applied at file end.
+   ------------------------------------------------------------------ */
+
+@media (max-width: 767px) {
+    .kfms-table-wrap {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+        position: relative;
+    }
+
+    .kfms-table {
+        width: max-content;
+        min-width: 0 !important;
+    }
+
+    .kfms-table th,
+    .kfms-table td {
+        white-space: nowrap;
+    }
+}
+
+@media (max-width: 991px) {
+    /* Slide the off-canvas sidebar in from the left on mobile devices */
+    .kfms-template .sidebar.sidebar-offcanvas {
+        left: calc(var(--kfms-sidebar-width) * -1) !important;
+        right: auto !important;
+        transition: left 0.2s ease !important;
+    }
+
+    .kfms-template .sidebar.sidebar-offcanvas.active {
+        left: 0 !important;
+        right: auto !important;
+    }
+
+    .kfms-template .navbar.fixed-top {
+        left: 0 !important;
+    }
+}
+
