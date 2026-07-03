@@ -15,4 +15,17 @@ class AttachmentController extends Controller
 
         return $disk->download($attachment->path, $attachment->original_name);
     }
+
+    public function view(Attachment $attachment)
+    {
+        $disk = Storage::disk($attachment->disk ?: config('filesystems.default'));
+
+        abort_unless($disk->exists($attachment->path), 404);
+
+        return $disk->response(
+            $attachment->path,
+            $attachment->original_name,
+            ['Content-Type' => $attachment->mime_type ?: 'application/octet-stream']
+        );
+    }
 }

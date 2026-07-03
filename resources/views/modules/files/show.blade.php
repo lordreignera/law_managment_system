@@ -80,7 +80,7 @@
                             <td>{{ $attachment->uploader?->name ?: '-' }}</td>
                             <td>{{ number_format(($attachment->size ?? 0) / 1024, 1) }} KB</td>
                             <td>{{ $attachment->created_at?->format('d M Y, H:i') }}</td>
-                            <td><a class="kfms-link-btn" href="{{ route('attachments.download', $attachment) }}"><i class="mdi mdi-download"></i> Download</a></td>
+                            <td><a class="kfms-link-btn" href="{{ route('attachments.view', $attachment) }}" target="_blank" rel="noopener"><i class="mdi mdi-eye-outline"></i> View</a> <a class="kfms-link-btn" href="{{ route('attachments.download', $attachment) }}"><i class="mdi mdi-download"></i> Download</a></td>
                         </tr>
                     @empty
                         <tr>

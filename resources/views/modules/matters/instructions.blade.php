@@ -123,20 +123,27 @@
                         <th>Uploaded By</th>
                         <th>Size</th>
                         <th>Date</th>
+                        <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse ($matter->attachments as $attachment)
                         <tr>
-                            <td><a href="{{ route('attachments.download', $attachment) }}">{{ $attachment->original_name }}</a></td>
+                            <td>{{ $attachment->original_name }}</td>
                             <td>{{ str($attachment->category ?: 'matter-document')->headline() }}</td>
                             <td>{{ $attachment->uploader?->name ?: '-' }}</td>
                             <td>{{ number_format(($attachment->size ?? 0) / 1024, 1) }} KB</td>
                             <td>{{ $attachment->created_at?->format('d M Y, H:i') }}</td>
+                            <td>
+                                <div class="kfms-table-actions">
+                                    <a href="{{ route('attachments.view', $attachment) }}" target="_blank" rel="noopener"><i class="mdi mdi-eye-outline"></i> View</a>
+                                    <a href="{{ route('attachments.download', $attachment) }}"><i class="mdi mdi-download"></i> Download</a>
+                                </div>
+                            </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="kfms-empty">No documents have been uploaded for this matter.</td>
+                            <td colspan="6" class="kfms-empty">No documents have been uploaded for this matter.</td>
                         </tr>
                     @endforelse
                 </tbody>

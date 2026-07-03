@@ -6,10 +6,32 @@ use App\Models\Court;
 use App\Models\CourtEvent;
 use App\Models\Matter;
 use App\Models\User;
+use App\Exports\LitigationExport;
+use App\Imports\LitigationImport;
 use Illuminate\Http\Request;
+use Maatwebsite\Excel\Facades\Excel;
 
 class LitigationController extends Controller
 {
+    public function export(Request $request)
+    {
+        return Excel::download(new LitigationExport(), 'litigation-'.now()->format('Ymd-His').'.xlsx');
+    }
+
+    public function import(Request $request)
+    {
+        $request->validate([
+            'file' => ['required', 'file', 'mimes:xlsx,xls,csv', 'max:10240'],
+        ]);
+
+        $import = new LitigationImport();
+        Excel::import($import, $request->file('file'));
+
+        return redirect()
+            ->route('litigation.index')
+            ->with('status', "Imported {$import->imported} court event(s); skipped {$import->skipped}.");
+    }
+
     public function dashboard(Request $request)
     {
         $user = $request->user();

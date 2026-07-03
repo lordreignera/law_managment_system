@@ -20,6 +20,19 @@
                 <span>{{ $events->total() }} court events</span>
             </div>
             <div class="kfms-toolbar-actions">
+                @can('litigation.export')
+                    <a class="kfms-link-btn" href="{{ route('litigation.export') }}">
+                        <i class="mdi mdi-microsoft-excel"></i>
+                        Export
+                    </a>
+                @endcan
+                @can('litigation.import')
+                    <form class="kfms-inline-upload" method="POST" action="{{ route('litigation.import') }}" enctype="multipart/form-data">
+                        @csrf
+                        <input type="file" name="file" accept=".xlsx,.xls,.csv" required>
+                        <button type="submit"><i class="mdi mdi-upload"></i> Import</button>
+                    </form>
+                @endcan
                 <a class="kfms-link-btn" href="{{ route('calendar.index') }}">
                     <i class="mdi mdi-calendar-month"></i>
                     Calendar

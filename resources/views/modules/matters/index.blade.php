@@ -11,6 +11,19 @@
                 <span>{{ $matters->total() }} internal firm files</span>
             </div>
             <div class="kfms-toolbar-actions">
+                @can('matters.export')
+                    <a class="kfms-link-btn" href="{{ route('matters.export') }}">
+                        <i class="mdi mdi-microsoft-excel"></i>
+                        Export
+                    </a>
+                @endcan
+                @can('matters.import')
+                    <form class="kfms-inline-upload" method="POST" action="{{ route('matters.import') }}" enctype="multipart/form-data">
+                        @csrf
+                        <input type="file" name="file" accept=".xlsx,.xls,.csv" required>
+                        <button type="submit"><i class="mdi mdi-upload"></i> Import</button>
+                    </form>
+                @endcan
                 @can('intakes.create')
                     <a class="kfms-link-btn" href="{{ route('intakes.create') }}">
                         <i class="mdi mdi-account-plus-outline"></i>

@@ -10,10 +10,13 @@ use App\Models\MatterCategory;
 use App\Models\PracticeArea;
 use App\Models\Shelf;
 use App\Models\User;
+use App\Exports\MattersExport;
+use App\Imports\MattersImport;
 use App\Support\MonthlyReferenceNumber;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Maatwebsite\Excel\Facades\Excel;
 
 class MatterController extends Controller
 {
@@ -41,6 +44,25 @@ class MatterController extends Controller
             'filters' => $request->only(['search', 'status']),
             'statuses' => Matter::STATUSES,
         ]);
+    }
+
+    public function export(Request $request)
+    {
+        return Excel::download(new MattersExport($request->user()), 'matters-'.now()->format('Ymd-His').'.xlsx');
+    }
+
+    public function import(Request $request)
+    {
+        $request->validate([
+            'file' => ['required', 'file', 'mimes:xlsx,xls,csv', 'max:10240'],
+        ]);
+
+        $import = new MattersImport($request->user());
+        Excel::import($import, $request->file('file'));
+
+        return redirect()
+            ->route('matters.index')
+            ->with('status', "Imported {$import->imported} matter(s); skipped {$import->skipped}.");
     }
 
     public function show(Matter $matter)

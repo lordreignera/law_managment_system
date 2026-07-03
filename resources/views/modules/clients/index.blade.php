@@ -10,12 +10,27 @@
                 <h2>Approved Client Register</h2>
                 <span>{{ $clients->total() }} approved client records</span>
             </div>
-            @can('intakes.create')
-                <a class="kfms-btn" href="{{ route('intakes.create') }}">
-                    <i class="mdi mdi-plus"></i>
-                    New Client Intake
-                </a>
-            @endcan
+            <div class="kfms-toolbar-actions">
+                @can('clients.export')
+                    <a class="kfms-link-btn" href="{{ route('clients.export') }}">
+                        <i class="mdi mdi-microsoft-excel"></i>
+                        Export
+                    </a>
+                @endcan
+                @can('clients.import')
+                    <form class="kfms-inline-upload" method="POST" action="{{ route('clients.import') }}" enctype="multipart/form-data">
+                        @csrf
+                        <input type="file" name="file" accept=".xlsx,.xls,.csv" required>
+                        <button type="submit"><i class="mdi mdi-upload"></i> Import</button>
+                    </form>
+                @endcan
+                @can('intakes.create')
+                    <a class="kfms-btn" href="{{ route('intakes.create') }}">
+                        <i class="mdi mdi-plus"></i>
+                        New Client Intake
+                    </a>
+                @endcan
+            </div>
         </div>
 
         @if (session('status'))

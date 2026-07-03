@@ -9,10 +9,13 @@ use App\Models\Country;
 use App\Models\RelationshipType;
 use App\Models\Salutation;
 use App\Models\User;
+use App\Exports\ClientsExport;
+use App\Imports\ClientsImport;
 use App\Support\MonthlyReferenceNumber;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Maatwebsite\Excel\Facades\Excel;
 
 class ClientController extends Controller
 {
@@ -44,6 +47,25 @@ class ClientController extends Controller
             'clients' => $clients,
             'filters' => $request->only(['search', 'client_type', 'status']),
         ]);
+    }
+
+    public function export(Request $request)
+    {
+        return Excel::download(new ClientsExport($request->user()), 'clients-'.now()->format('Ymd-His').'.xlsx');
+    }
+
+    public function import(Request $request)
+    {
+        $request->validate([
+            'file' => ['required', 'file', 'mimes:xlsx,xls,csv', 'max:10240'],
+        ]);
+
+        $import = new ClientsImport($request->user());
+        Excel::import($import, $request->file('file'));
+
+        return redirect()
+            ->route('clients.index')
+            ->with('status', "Imported {$import->imported} client(s); skipped {$import->skipped}.");
     }
 
     public function create()

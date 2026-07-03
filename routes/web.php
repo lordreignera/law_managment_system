@@ -46,6 +46,9 @@ Route::middleware([
         Route::get('/attachments/{attachment}/download', [AttachmentController::class, 'download'])
             ->middleware('active.staff')
             ->name('attachments.download');
+        Route::get('/attachments/{attachment}/view', [AttachmentController::class, 'view'])
+            ->middleware('active.staff')
+            ->name('attachments.view');
     // `php artisan kfms:sync-route-permissions` to create a matching
     // permission record.
     Route::middleware(['active.staff', 'route.permission'])->group(function () {
@@ -55,6 +58,8 @@ Route::middleware([
         Route::get('/clients', [ClientController::class, 'index'])->name('clients.index');
         Route::get('/clients/create', [ClientController::class, 'create'])->name('clients.create');
         Route::post('/clients', [ClientController::class, 'store'])->name('clients.store');
+        Route::get('/clients/export', [ClientController::class, 'export'])->name('clients.export');
+        Route::post('/clients/import', [ClientController::class, 'import'])->name('clients.import');
         Route::get('/clients/{client}', [ClientController::class, 'show'])->name('clients.show');
         Route::get('/clients/{client}/details', [ClientController::class, 'editDetails'])->name('clients.details.edit');
         Route::put('/clients/{client}/details', [ClientController::class, 'updateDetails'])->name('clients.details.update');
@@ -79,6 +84,8 @@ Route::middleware([
         Route::get('/matters', [MatterController::class, 'index'])->name('matters.index');
         Route::get('/matters/create', [MatterController::class, 'create'])->name('matters.create');
         Route::post('/matters', [MatterController::class, 'store'])->name('matters.store');
+        Route::get('/matters/export', [MatterController::class, 'export'])->name('matters.export');
+        Route::post('/matters/import', [MatterController::class, 'import'])->name('matters.import');
         Route::get('/matters/{matter}/billing', [MatterBillingController::class, 'show'])->name('matters.billing.show');
         Route::post('/matters/{matter}/billing/invoices', [MatterBillingController::class, 'storeInvoice'])->name('matters.billing.invoices.store');
         Route::post('/matters/{matter}/billing/costs', [MatterBillingController::class, 'storeCost'])->name('matters.billing.costs.store');
@@ -92,6 +99,8 @@ Route::middleware([
         Route::get('/litigation', [LitigationController::class, 'index'])->name('litigation.index');
         Route::get('/litigation/create', [LitigationController::class, 'create'])->name('litigation.create');
         Route::post('/litigation', [LitigationController::class, 'store'])->name('litigation.store');
+        Route::get('/litigation/export', [LitigationController::class, 'export'])->name('litigation.export');
+        Route::post('/litigation/import', [LitigationController::class, 'import'])->name('litigation.import');
         Route::get('/litigation/{litigation}', [LitigationController::class, 'show'])->name('litigation.show');
         Route::get('/litigation/{litigation}/edit', [LitigationController::class, 'edit'])->name('litigation.edit');
         Route::put('/litigation/{litigation}', [LitigationController::class, 'update'])->name('litigation.update');
@@ -121,7 +130,9 @@ Route::middleware([
         Route::delete('/recoveries/{recovery}', [RecoveryController::class, 'destroy'])->name('recoveries.destroy');
         Route::post('/recoveries/{recovery}/activities', [RecoveryActivityController::class, 'store'])->name('recoveries.activities.store');
         Route::get('/land-titles', [LandTitleController::class, 'index'])->name('land-titles.index');
-        Route::get('/finance', [FinanceController::class, 'index'])->name('finance.index');        Route::get('/staff', [StaffController::class, 'index'])->name('staff.index');
+        Route::get('/finance/dashboard', [FinanceController::class, 'dashboard'])->name('finance.dashboard');
+        Route::get('/finance', [FinanceController::class, 'index'])->name('finance.index');
+        Route::get('/staff', [StaffController::class, 'index'])->name('staff.index');
 
         // Leave management
         Route::get('/leave', [LeaveController::class, 'index'])->name('leave.index');

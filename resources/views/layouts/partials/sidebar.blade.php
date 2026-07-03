@@ -61,12 +61,13 @@
             'route' => 'finance.index',
             'active' => ['finance.*', 'expenses.*', 'petty-cash.*', 'ledger.*'],
             'children' => [
-                ['label' => 'Overview', 'route' => 'finance.index', 'active' => 'finance.*', 'permission' => 'finance.index'],
+                ['label' => 'Dashboard', 'route' => 'finance.dashboard', 'active' => 'finance.dashboard', 'permission' => 'finance.dashboard'],
+                ['label' => 'Overview', 'route' => 'finance.index', 'active' => 'finance.index', 'permission' => 'finance.index'],
                 ['label' => 'Expenses', 'route' => 'expenses.index', 'active' => 'expenses.*', 'permission' => 'expenses.index'],
                 ['label' => 'Petty Cash', 'route' => 'petty-cash.index', 'active' => 'petty-cash.*', 'permission' => 'petty-cash.index'],
                 ['label' => 'Ledger', 'route' => 'ledger.index', 'active' => 'ledger.*', 'permission' => 'ledger.index'],
             ],
-            'permission_any' => ['finance.index', 'expenses.index', 'petty-cash.index', 'ledger.index'],
+            'permission_any' => ['finance.dashboard', 'finance.index', 'expenses.index', 'petty-cash.index', 'ledger.index'],
         ],
         [
             'label' => 'Human Resources',
