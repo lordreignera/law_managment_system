@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Branch;
 use App\Models\CurrencyType;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
@@ -51,6 +52,7 @@ class SystemSettingController extends Controller
             'records' => $records,
             'newRecord' => $this->newRecord($definition),
             'currencyTypes' => CurrencyType::orderBy('name')->get(),
+            'branches' => Branch::orderBy('name')->get(),
             'filters' => $request->only(['search', 'status']),
         ]);
     }
@@ -64,6 +66,7 @@ class SystemSettingController extends Controller
             'definition' => $definition,
             'record' => $this->newRecord($definition),
             'currencyTypes' => CurrencyType::orderBy('name')->get(),
+            'branches' => Branch::orderBy('name')->get(),
         ]);
     }
 
@@ -90,6 +93,7 @@ class SystemSettingController extends Controller
             'definition' => $definition,
             'record' => $record,
             'currencyTypes' => CurrencyType::orderBy('name')->get(),
+            'branches' => Branch::orderBy('name')->get(),
         ]);
     }
 
@@ -165,6 +169,10 @@ class SystemSettingController extends Controller
 
         if (in_array('currency_type_id', $extraFields, true)) {
             $rules['currency_type_id'] = ['nullable', 'exists:currency_types,id'];
+        }
+
+        if (in_array('branch_id', $extraFields, true)) {
+            $rules['branch_id'] = ['nullable', 'exists:branches,id'];
         }
 
         $data = $request->validate($rules);

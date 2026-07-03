@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 
-@section('title', 'Add Engagement')
-@section('page-title', 'Add Engagement')
+@section('title', 'Open Matter')
+@section('page-title', 'Open Matter')
 
 @section('content')
     @php
@@ -12,7 +12,7 @@
     <section class="kfms-panel">
         <div class="kfms-panel-header">
             <div>
-                <h2>New Engagement</h2>
+                <h2>Open Matter</h2>
                 <span>{{ $client->client_no }} - {{ $client->display_name }}</span>
             </div>
             <a class="kfms-link-btn" href="{{ route('clients.show', $client) }}">
@@ -21,7 +21,9 @@
             </a>
         </div>
 
-        <form class="kfms-form" method="POST" action="{{ route('clients.engagements.store', $client) }}">
+        <p class="kfms-muted-text">This is the single matter for {{ $client->display_name }}. Every file opened for this client is kept under it.</p>
+
+        <form class="kfms-form" method="POST" action="{{ route('clients.matters.store', $client) }}">
             @csrf
 
             <div class="kfms-form-grid">
@@ -31,8 +33,8 @@
                 </label>
 
                 <label>
-                    <span>Engagement Title</span>
-                    <input type="text" name="title" value="{{ old('title') }}" required>
+                    <span>Matter Title</span>
+                    <input type="text" name="title" value="{{ old('title', $suggestedTitle ?: $client->display_name) }}" required>
                     @error('title') <small>{{ $message }}</small> @enderror
                 </label>
 
@@ -45,17 +47,6 @@
                         @endforeach
                     </select>
                     @error('practice_area_id') <small>{{ $message }}</small> @enderror
-                </label>
-
-                <label>
-                    <span>Engagement Type</span>
-                    <select name="engagement_type_id">
-                        <option value="">Select engagement type</option>
-                        @foreach ($engagementTypes as $type)
-                            <option value="{{ $type->id }}" @selected((string) old('engagement_type_id') === (string) $type->id)>{{ $type->name }}</option>
-                        @endforeach
-                    </select>
-                    @error('engagement_type_id') <small>{{ $message }}</small> @enderror
                 </label>
 
                 <label>
@@ -133,7 +124,7 @@
                 </label>
 
                 <label class="kfms-span-2">
-                    <span>Scope / Summary</span>
+                    <span>About the Matter</span>
                     <textarea name="description" rows="5" required>{{ old('description') }}</textarea>
                     @error('description') <small>{{ $message }}</small> @enderror
                 </label>
@@ -141,7 +132,7 @@
 
             <div class="kfms-form-actions">
                 <a class="kfms-link-btn" href="{{ route('clients.show', $client) }}">Cancel</a>
-                <button type="submit">Create Engagement</button>
+                <button type="submit">Open Matter</button>
             </div>
         </form>
     </section>

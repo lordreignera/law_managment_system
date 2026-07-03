@@ -41,6 +41,21 @@
         </label>
     @endif
 
+    @if (in_array('branch_id', $extraFields, true))
+        <label>
+            <span>Branch</span>
+            <select name="branch_id">
+                <option value="">All branches</option>
+                @foreach (($branches ?? []) as $branch)
+                    <option value="{{ $branch->id }}" @selected((string) old('branch_id', $record->branch_id) === (string) $branch->id)>
+                        {{ $branch->name }}
+                    </option>
+                @endforeach
+            </select>
+            @error('branch_id') <small>{{ $message }}</small> @enderror
+        </label>
+    @endif
+
     @if (in_array('hourly_rate', $extraFields, true))
         <label>
             <span>Hourly Rate</span>

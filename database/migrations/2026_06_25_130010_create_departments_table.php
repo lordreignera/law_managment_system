@@ -14,6 +14,7 @@ return new class extends Migration
             $table->string('name');
             $table->string('code', 30)->unique();
             $table->text('description')->nullable();
+            $table->unsignedInteger('sort_order')->default(0);
             $table->boolean('is_active')->default(true);
             $table->timestamps();
         });

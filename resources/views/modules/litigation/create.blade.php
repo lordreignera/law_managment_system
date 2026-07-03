@@ -1,14 +1,14 @@
 @extends('layouts.admin')
 
-@section('title', 'Schedule Court Event')
-@section('page-title', 'Schedule Court Event')
+@section('title', 'Add Cause List / Court File')
+@section('page-title', 'Add Cause List / Court File')
 
 @section('content')
     <section class="kfms-panel">
         <div class="kfms-panel-header">
             <div>
-                <h2>Schedule Court Event</h2>
-                <span>Add a mention, hearing or deadline to the cause list.</span>
+                <h2>Add Cause List / Court File</h2>
+                <span>Capture court, case number, judge, filing, service, hearing, or deadline for this matter.</span>
             </div>
             <a class="kfms-link-btn" href="{{ route('litigation.index') }}">
                 <i class="mdi mdi-arrow-left"></i>
@@ -23,7 +23,7 @@
             <div class="kfms-form-actions">
                 <button class="kfms-btn" type="submit">
                     <i class="mdi mdi-calendar-plus"></i>
-                    Schedule Event
+                    Save Cause List Entry
                 </button>
             </div>
         </form>

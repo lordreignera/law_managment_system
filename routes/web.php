@@ -1,9 +1,12 @@
 <?php
 
 use App\Http\Controllers\AccessControlController;
+use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\BranchController;
 use App\Http\Controllers\CalendarController;
+use App\Http\Controllers\ClientAdrController;
 use App\Http\Controllers\ClientController;
+use App\Http\Controllers\ClientFileController;
 use App\Http\Controllers\ClientIntakeController;
 use App\Http\Controllers\CompanySettingController;
 use App\Http\Controllers\DashboardController;
@@ -14,6 +17,8 @@ use App\Http\Controllers\LeaveController;
 use App\Http\Controllers\LedgerController;
 use App\Http\Controllers\LitigationController;
 use App\Http\Controllers\MatterController;
+use App\Http\Controllers\MatterBillingController;
+use App\Http\Controllers\MatterInstructionController;
 use App\Http\Controllers\PettyCashController;
 use App\Http\Controllers\PublicHolidayController;
 use App\Http\Controllers\RecoveryActivityController;
@@ -37,8 +42,10 @@ Route::middleware([
     // active staff profile and without any module permission.
     Route::view('/access-pending', 'auth.access-pending')->name('access.pending');
 
-    // Every route below carries the route.permission middleware: the route
-    // name itself is the permission key. Add a new route then run
+        // Document downloads from the storage bucket (auth + active staff, no per-route permission).
+        Route::get('/attachments/{attachment}/download', [AttachmentController::class, 'download'])
+            ->middleware('active.staff')
+            ->name('attachments.download');
     // `php artisan kfms:sync-route-permissions` to create a matching
     // permission record.
     Route::middleware(['active.staff', 'route.permission'])->group(function () {
@@ -51,25 +58,37 @@ Route::middleware([
         Route::get('/clients/{client}', [ClientController::class, 'show'])->name('clients.show');
         Route::get('/clients/{client}/details', [ClientController::class, 'editDetails'])->name('clients.details.edit');
         Route::put('/clients/{client}/details', [ClientController::class, 'updateDetails'])->name('clients.details.update');
+        Route::get('/clients/{client}/adr/create', [ClientAdrController::class, 'create'])->name('clients.adr.create');
+        Route::post('/clients/{client}/adr', [ClientAdrController::class, 'store'])->name('clients.adr.store');
+        Route::get('/clients/{client}/files/create', [ClientFileController::class, 'create'])->name('clients.files.create');
+        Route::post('/clients/{client}/files', [ClientFileController::class, 'store'])->name('clients.files.store');
+        Route::get('/files/{file}', [ClientFileController::class, 'show'])->name('clients.files.show');
+        Route::post('/files/{file}/documents', [ClientFileController::class, 'storeDocument'])->name('clients.files.documents.store');
+        Route::get('/adr/{adr}', [ClientAdrController::class, 'show'])->name('clients.adr.show');
+        Route::get('/clients/{client}/matter/create', [MatterController::class, 'createForClient'])->name('clients.matters.create');
+        Route::post('/clients/{client}/matter', [MatterController::class, 'storeForClient'])->name('clients.matters.store');
 
         // Client intakes
         Route::get('/intakes', [ClientIntakeController::class, 'index'])->name('intakes.index');
         Route::get('/intakes/create', [ClientIntakeController::class, 'create'])->name('intakes.create');
         Route::post('/intakes', [ClientIntakeController::class, 'store'])->name('intakes.store');
         Route::get('/intakes/{intake}', [ClientIntakeController::class, 'show'])->name('intakes.show');
-        Route::patch('/intakes/{intake}/conflict-review', [ClientIntakeController::class, 'reviewConflict'])->name('intakes.conflict-review');
-        Route::post('/intakes/{intake}/convert-matter', [ClientIntakeController::class, 'convertToMatter'])->name('intakes.convert-matter');
+        Route::patch('/intakes/{intake}/review', [ClientIntakeController::class, 'review'])->name('intakes.review');
 
         // Matters
         Route::get('/matters', [MatterController::class, 'index'])->name('matters.index');
         Route::get('/matters/create', [MatterController::class, 'create'])->name('matters.create');
         Route::post('/matters', [MatterController::class, 'store'])->name('matters.store');
-        Route::get('/clients/{client}/engagements/create', [MatterController::class, 'createForClient'])->name('clients.engagements.create');
-        Route::post('/clients/{client}/engagements', [MatterController::class, 'storeForClient'])->name('clients.engagements.store');
+        Route::get('/matters/{matter}/billing', [MatterBillingController::class, 'show'])->name('matters.billing.show');
+        Route::post('/matters/{matter}/billing/invoices', [MatterBillingController::class, 'storeInvoice'])->name('matters.billing.invoices.store');
+        Route::post('/matters/{matter}/billing/costs', [MatterBillingController::class, 'storeCost'])->name('matters.billing.costs.store');
+        Route::get('/matters/{matter}/instructions', [MatterInstructionController::class, 'show'])->name('matters.instructions.show');
+        Route::patch('/matters/{matter}/instructions', [MatterInstructionController::class, 'update'])->name('matters.instructions.update');
+        Route::post('/matters/{matter}/documents', [MatterInstructionController::class, 'storeDocument'])->name('matters.documents.store');
         Route::get('/matters/{matter}', [MatterController::class, 'show'])->name('matters.show');
-        Route::patch('/matters/{matter}/engagement', [MatterController::class, 'updateEngagement'])->name('matters.engagement.update');
 
         // Litigation (court diary)
+        Route::get('/litigation/dashboard', [LitigationController::class, 'dashboard'])->name('litigation.dashboard');
         Route::get('/litigation', [LitigationController::class, 'index'])->name('litigation.index');
         Route::get('/litigation/create', [LitigationController::class, 'create'])->name('litigation.create');
         Route::post('/litigation', [LitigationController::class, 'store'])->name('litigation.store');

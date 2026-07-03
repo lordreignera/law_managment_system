@@ -19,7 +19,7 @@
             'active' => 'matters.*',
             'children' => [
                 ['label' => 'Matter Register', 'route' => 'matters.index', 'active' => 'matters.*'],
-                ['label' => 'Engagement Pending', 'route' => 'matters.index', 'query' => ['status' => 'engagement_pending']],
+                ['label' => 'File Pending', 'route' => 'matters.index', 'query' => ['status' => 'file_pending']],
                 ['label' => 'Open Matters', 'route' => 'matters.index', 'query' => ['status' => 'open']],
                 ['label' => 'Planning', 'route' => 'matters.index', 'query' => ['status' => 'planning']],
                 ['label' => 'Active Work', 'route' => 'matters.index', 'query' => ['status' => 'active']],
@@ -32,9 +32,14 @@
         [
             'label' => 'Litigation',
             'icon' => 'mdi-gavel',
-            'route' => 'litigation.index',
+            'route' => 'litigation.dashboard',
             'active' => ['litigation.*'],
-            'permission' => 'litigation.index',
+            'children' => [
+                ['label' => 'Litigation Dashboard', 'route' => 'litigation.dashboard', 'active' => 'litigation.dashboard', 'permission' => 'litigation.dashboard'],
+                ['label' => 'Cause List', 'route' => 'litigation.index', 'active' => 'litigation.index', 'permission' => 'litigation.index'],
+                ['label' => 'Add Cause List / Court File', 'route' => 'litigation.create', 'active' => 'litigation.create', 'permission' => 'litigation.create'],
+            ],
+            'permission_any' => ['litigation.dashboard', 'litigation.index', 'litigation.create'],
         ],
         ['label' => 'Firm Calendar', 'icon' => 'mdi-calendar-month', 'route' => 'calendar.index', 'active' => 'calendar.*', 'permission' => 'calendar.index'],
         [
@@ -63,8 +68,17 @@
             ],
             'permission_any' => ['finance.index', 'expenses.index', 'petty-cash.index', 'ledger.index'],
         ],
-        ['label' => 'Staff', 'icon' => 'mdi-account-multiple', 'route' => 'staff.index', 'permission' => 'staff.index'],
-        ['label' => 'Leave', 'icon' => 'mdi-calendar-account', 'route' => 'leave.index', 'active' => 'leave.*', 'permission' => 'leave.index'],
+        [
+            'label' => 'Human Resources',
+            'icon' => 'mdi-account-tie',
+            'route' => 'staff.index',
+            'active' => ['staff.*', 'leave.*'],
+            'children' => [
+                ['label' => 'Staff Register', 'route' => 'staff.index', 'active' => 'staff.*', 'permission' => 'staff.index'],
+                ['label' => 'Leave Management', 'route' => 'leave.index', 'active' => 'leave.*', 'permission' => 'leave.index'],
+            ],
+            'permission_any' => ['staff.index', 'leave.index'],
+        ],
         ['label' => 'Requisitions', 'icon' => 'mdi-clipboard-text', 'route' => 'requisitions.index', 'active' => 'requisitions.*', 'permission' => 'requisitions.index'],
         [
             'label' => 'Access Control',

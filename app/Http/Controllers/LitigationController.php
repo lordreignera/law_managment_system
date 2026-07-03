@@ -10,6 +10,47 @@ use Illuminate\Http\Request;
 
 class LitigationController extends Controller
 {
+    public function dashboard(Request $request)
+    {
+        $user = $request->user();
+        $litigationMatters = $this->litigationMatterQuery();
+
+        $myEvents = CourtEvent::with(['matter', 'court'])
+            ->where('assigned_to', $user->id)
+            ->open()
+            ->orderBy('starts_at')
+            ->limit(8)
+            ->get();
+
+        $upcomingEvents = CourtEvent::with(['matter', 'court', 'assignee'])
+            ->open()
+            ->whereDate('starts_at', '>=', today())
+            ->orderBy('starts_at')
+            ->limit(8)
+            ->get();
+
+        $nextSteps = CourtEvent::with(['matter', 'assignee'])
+            ->whereNotNull('next_step')
+            ->whereNotNull('next_step_due')
+            ->whereIn('status', ['scheduled', 'adjourned', 'completed'])
+            ->orderBy('next_step_due')
+            ->limit(8)
+            ->get();
+
+        return view('modules.litigation.dashboard', [
+            'stats' => [
+                'My Open Events' => CourtEvent::open()->where('assigned_to', $user->id)->count(),
+                'Today' => CourtEvent::open()->whereDate('starts_at', today())->count(),
+                'This Week' => CourtEvent::open()->whereBetween('starts_at', [now()->startOfWeek(), now()->endOfWeek()])->count(),
+                'Overdue' => CourtEvent::where('status', 'scheduled')->where('starts_at', '<', now())->count(),
+            ],
+            'lifecycle' => $this->litigationLifecycleSummary($litigationMatters),
+            'myEvents' => $myEvents,
+            'upcomingEvents' => $upcomingEvents,
+            'nextSteps' => $nextSteps,
+        ]);
+    }
+
     public function index(Request $request)
     {
         $events = CourtEvent::with(['matter', 'court', 'assignee'])
@@ -47,7 +88,7 @@ class LitigationController extends Controller
         ]);
     }
 
-    public function create()
+    public function create(Request $request)
     {
         return view('modules.litigation.create', [
             'matters' => Matter::orderByDesc('id')->limit(300)->get(['id', 'reference_no', 'title']),
@@ -55,6 +96,7 @@ class LitigationController extends Controller
             'officers' => User::orderBy('name')->get(['id', 'name']),
             'statuses' => CourtEvent::STATUSES,
             'eventTypes' => CourtEvent::EVENT_TYPES,
+            'selectedMatterId' => $request->integer('matter_id') ?: null,
         ]);
     }
 
@@ -144,5 +186,51 @@ class LitigationController extends Controller
         unset($data['attachment']);
 
         return $data;
+    }
+
+    private function litigationMatterQuery()
+    {
+        return Matter::query()
+            ->where(function ($query) {
+                $query
+                    ->whereHas('practiceArea', fn ($query) => $query->where('name', 'like', '%Litigation%'))
+                    ->orWhereHas('courtEvents');
+            });
+    }
+
+    private function litigationLifecycleSummary($query): array
+    {
+        return [
+            [
+                'stage' => 'Instructions & File Opening',
+                'description' => 'Instructions received, accepted, documents requested, and internal file opened.',
+                'count' => (clone $query)->whereIn('status', ['inquiry', 'consultation', 'conflict_check', 'file_pending'])->count(),
+                'route' => route('matters.index', ['status' => 'file_pending']),
+            ],
+            [
+                'stage' => 'Review, Opinion & Pleadings',
+                'description' => 'Facts reviewed, legal opinion prepared, pleadings drafted, and client approval sought.',
+                'count' => (clone $query)->whereIn('status', ['open', 'planning', 'waiting_for_client'])->count(),
+                'route' => route('matters.index', ['status' => 'planning']),
+            ],
+            [
+                'stage' => 'Filing, Service & Court Process',
+                'description' => 'Court filing, summons/service, hearings, mentions, conferences, and submissions.',
+                'count' => CourtEvent::open()->count(),
+                'route' => route('litigation.index'),
+            ],
+            [
+                'stage' => 'Judgment / Ruling',
+                'description' => 'Rulings and judgments delivered, with outcomes and next steps captured.',
+                'count' => CourtEvent::where('status', 'completed')->whereIn('event_type', ['judgment', 'ruling'])->count(),
+                'route' => route('litigation.index', ['status' => 'completed']),
+            ],
+            [
+                'stage' => 'Taxation & Execution',
+                'description' => 'Bill of costs, pre-taxation, taxation, garnishee, attachment, or committal follow-up.',
+                'count' => (clone $query)->whereIn('status', ['billing_pending', 'under_review'])->count(),
+                'route' => route('matters.index', ['status' => 'billing_pending']),
+            ],
+        ];
     }
 }

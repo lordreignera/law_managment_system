@@ -4,8 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\BusinessIndustry;
 use App\Models\Client;
-use App\Models\Engagement;
-use App\Models\EngagementType;
+use App\Models\File;
 use App\Models\Matter;
 use App\Models\MatterCategory;
 use App\Models\PracticeArea;
@@ -47,8 +46,7 @@ class MatterController extends Controller
     public function show(Matter $matter)
     {
         return view('modules.matters.show', [
-            'matter' => $matter->load(['client', 'practiceArea', 'engagement.engagementType', 'assignments.user']),
-            'engagementTypes' => EngagementType::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
+            'matter' => $matter->load(['client', 'practiceArea', 'files.billingType', 'files.attachments', 'assignments.user', 'courtEvents.court', 'courtEvents.assignee']),
         ]);
     }
 
@@ -66,71 +64,38 @@ class MatterController extends Controller
         ]);
     }
 
-    public function updateEngagement(Request $request, Matter $matter)
-    {
-        abort_unless($matter->status === 'engagement_pending', 422, 'Only engagement-pending matters can be opened from engagement review.');
-
-        $data = $request->validate([
-            'engagement_type_id' => ['nullable', 'exists:engagement_types,id'],
-            'engagement_letter_sent_on' => ['required', 'date'],
-            'fee_agreement_sent_on' => ['required', 'date'],
-            'retainer_required' => ['nullable', 'boolean'],
-            'retainer_amount' => ['nullable', 'numeric', 'min:0', 'required_if:retainer_required,1'],
-            'client_accepted_on' => ['required', 'date'],
-            'engagement_notes' => ['nullable', 'string', 'max:3000'],
-        ]);
-
-        $engagement = $matter->engagement ?: Engagement::create([
-            'client_id' => $matter->client_id,
-            'matter_id' => $matter->id,
-            'created_by' => auth()->id(),
-            'engagement_no' => MonthlyReferenceNumber::make(Engagement::class, 'engagement_no', 'EG'),
-            'title' => $matter->title,
-            'status' => 'pending',
-        ]);
-
-        $engagement->update([
-            'engagement_type_id' => $data['engagement_type_id'] ?? null,
-            'engagement_letter_sent_on' => $data['engagement_letter_sent_on'],
-            'fee_agreement_sent_on' => $data['fee_agreement_sent_on'],
-            'retainer_required' => $request->boolean('retainer_required'),
-            'retainer_amount' => $request->boolean('retainer_required') ? ($data['retainer_amount'] ?? 0) : null,
-            'client_accepted_on' => $data['client_accepted_on'],
-            'notes' => $data['engagement_notes'] ?? null,
-            'status' => 'accepted',
-        ]);
-
-        $matter->update([
-            'status' => 'open',
-        ]);
-
-        return redirect()
-            ->route('matters.show', $matter)
-            ->with('status', 'Engagement accepted. Matter is now open.');
-    }
-
     public function createForClient(Client $client)
     {
-        return view('modules.clients.engagement', [
+        if ($client->matter) {
+            return redirect()
+                ->route('matters.show', $client->matter)
+                ->with('status', 'This client already has a matter.');
+        }
+
+        abort_if($client->files()->doesntExist(), 422, 'Open a file for this client before opening a matter.');
+
+        return view('modules.matters.open', [
             'client' => $client,
             'matterNumber' => MonthlyReferenceNumber::make(Matter::class, 'reference_no', 'MT'),
             'practiceAreas' => PracticeArea::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
             'businessIndustries' => BusinessIndustry::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
             'matterCategories' => MatterCategory::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
-            'engagementTypes' => EngagementType::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
             'shelves' => Shelf::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
             'users' => User::orderBy('name')->get(),
+            'suggestedTitle' => $client->files()->latest()->value('file_name'),
         ]);
     }
 
     public function storeForClient(Request $request, Client $client)
     {
+        abort_if((bool) $client->matter, 422, 'This client already has a matter.');
+        abort_if($client->files()->doesntExist(), 422, 'Open a file for this client before opening a matter.');
+
         $data = $request->validate([
             'title' => ['required', 'string', 'max:191'],
             'practice_area_id' => ['required', 'exists:practice_areas,id'],
             'business_industry_id' => ['nullable', 'exists:business_industries,id'],
             'matter_category_id' => ['nullable', 'exists:matter_categories,id'],
-            'engagement_type_id' => ['nullable', 'exists:engagement_types,id'],
             'shelf_id' => ['nullable', 'exists:shelves,id'],
             'opened_on' => ['required', 'date'],
             'privacy_status' => ['required', Rule::in(['public', 'private'])],
@@ -147,26 +112,16 @@ class MatterController extends Controller
             $associateIds = $data['associate_ids'] ?? [];
 
             $matter = Matter::create(collect($data)
-                ->except(['partner_ids', 'associate_ids', 'engagement_type_id'])
+                ->except(['partner_ids', 'associate_ids'])
                 ->merge([
                     'client_id' => $client->id,
                     'opened_by' => auth()->id(),
                     'branch_id' => auth()->user()->branch_id,
                     'department_id' => auth()->user()->department_id,
                     'reference_no' => MonthlyReferenceNumber::make(Matter::class, 'reference_no', 'MT'),
-                    'status' => 'engagement_pending',
+                    'status' => 'open',
                 ])
                 ->toArray());
-
-            Engagement::create([
-                'client_id' => $client->id,
-                'matter_id' => $matter->id,
-                'engagement_type_id' => $data['engagement_type_id'] ?? null,
-                'created_by' => auth()->id(),
-                'engagement_no' => MonthlyReferenceNumber::make(Engagement::class, 'engagement_no', 'EG'),
-                'title' => $matter->title,
-                'status' => 'pending',
-            ]);
 
             foreach ($partnerIds as $index => $userId) {
                 $matter->assignments()->create([
@@ -185,19 +140,29 @@ class MatterController extends Controller
                 ]);
             }
 
+            $client->files()->whereNull('matter_id')->update(['matter_id' => $matter->id]);
+
             return $matter;
         });
 
         return redirect()
             ->route('matters.show', $matter)
-            ->with('status', 'New engagement created for '.$client->display_name.'.');
+            ->with('status', 'Matter '.$matter->reference_no.' opened. All files for this client are now under it.');
     }
 
     public function store(Request $request)
     {
         $data = $request->validate([
             'title' => ['required', 'string', 'max:191'],
-            'client_id' => ['required', 'exists:clients,id'],
+            'client_id' => [
+                'required',
+                'exists:clients,id',
+                function ($attribute, $value, $fail) {
+                    if (Matter::where('client_id', $value)->exists()) {
+                        $fail('This client already has a matter. Add files to the existing matter instead.');
+                    }
+                },
+            ],
             'ultimate_client_id' => ['nullable', 'exists:clients,id'],
             'practice_area_id' => ['required', 'exists:practice_areas,id'],
             'business_industry_id' => ['nullable', 'exists:business_industries,id'],

@@ -15,4 +15,14 @@ class Invoice extends Model
         'invoice_date' => 'date',
         'due_date' => 'date',
     ];
+
+    public function client()
+    {
+        return $this->belongsTo(Client::class);
+    }
+
+    public function matter()
+    {
+        return $this->belongsTo(Matter::class);
+    }
 }

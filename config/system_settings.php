@@ -2,13 +2,13 @@
 
 use App\Models\Bank;
 use App\Models\BillableRate;
+use App\Models\BillingType;
 use App\Models\BudgetCategory;
 use App\Models\BusinessIndustry;
 use App\Models\ContactPosition;
 use App\Models\Country;
 use App\Models\Court;
 use App\Models\CurrencyType;
-use App\Models\EngagementType;
 use App\Models\ExpenseCategory;
 use App\Models\InstructionType;
 use App\Models\JobTitle;
@@ -114,11 +114,11 @@ return [
         'model' => PaymentMode::class,
         'description' => 'Ways the firm receives or makes payments.',
     ],
-    'engagement-types' => [
-        'title' => 'Engagement Types',
-        'singular' => 'Engagement Type',
-        'model' => EngagementType::class,
-        'description' => 'Billing and engagement arrangements for clients.',
+    'billing-types' => [
+        'title' => 'Billing Types',
+        'singular' => 'Billing Type',
+        'model' => BillingType::class,
+        'description' => 'Billing arrangements applied to client files.',
     ],
     'currency-types' => [
         'title' => 'Currency Types',
@@ -152,5 +152,12 @@ return [
         'model' => BillableRate::class,
         'description' => 'Hourly rates used for professional fee billing.',
         'extra_fields' => ['hourly_rate', 'currency_type_id'],
+    ],
+    'departments' => [
+        'title' => 'Departments',
+        'singular' => 'Department',
+        'model' => \App\Models\Department::class,
+        'description' => 'Organizational departments within branches.',
+        'extra_fields' => ['branch_id'],
     ],
 ];

@@ -73,6 +73,7 @@
                         <th>Outstanding</th>
                         <th>Recovered</th>
                         <th>Status</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -85,10 +86,38 @@
                             <td>{{ number_format($account->outstanding_amount) }}</td>
                             <td>{{ number_format($account->amount_recovered) }}</td>
                             <td><span class="kfms-status kfms-status-{{ $account->status }}">{{ $account->statusLabel() }}</span></td>
+                            <td>
+                                <div class="kfms-table-actions">
+                                    @can('recoveries.show')
+                                        <a href="{{ route('recoveries.show', $account) }}">
+                                            <i class="mdi mdi-eye-outline"></i>
+                                            View
+                                        </a>
+                                    @endcan
+
+                                    @can('recoveries.update')
+                                        <a href="{{ route('recoveries.edit', $account) }}">
+                                            <i class="mdi mdi-account-switch-outline"></i>
+                                            Edit / Assign
+                                        </a>
+                                    @endcan
+
+                                    @can('recoveries.destroy')
+                                        <form method="POST" action="{{ route('recoveries.destroy', $account) }}">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button class="is-danger" type="submit" onclick="return confirm('Delete this recovery account?')">
+                                                <i class="mdi mdi-delete-outline"></i>
+                                                Delete
+                                            </button>
+                                        </form>
+                                    @endcan
+                                </div>
+                            </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="kfms-empty">No recovery accounts yet.</td>
+                            <td colspan="8" class="kfms-empty">No recovery accounts yet.</td>
                         </tr>
                     @endforelse
                 </tbody>

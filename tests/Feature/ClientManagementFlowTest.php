@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Client;
 use App\Models\ContactPosition;
 use App\Models\Country;
+use App\Models\BillingType;
 use App\Models\PracticeArea;
 use App\Models\RelationshipType;
 use App\Models\Salutation;
@@ -24,7 +25,9 @@ class ClientManagementFlowTest extends TestCase
         $role = Role::findOrCreate('Client Manager');
         foreach ([
             'clients.index', 'clients.show', 'clients.details.edit', 'clients.details.update',
-            'clients.engagements.create', 'clients.engagements.store',
+            'clients.adr.create', 'clients.adr.store', 'clients.adr.show',
+            'clients.files.create', 'clients.files.store',
+            'clients.matters.create', 'clients.matters.store',
             'matters.index', 'matters.show',
         ] as $permissionName) {
             $role->givePermissionTo(Permission::findOrCreate($permissionName));
@@ -42,6 +45,7 @@ class ClientManagementFlowTest extends TestCase
         $salutation = Salutation::create(['name' => 'Ms']);
         $relationship = RelationshipType::create(['name' => 'Sibling']);
         $practiceArea = PracticeArea::create(['name' => 'Corporate']);
+        $billingType = BillingType::create(['name' => 'Fixed Fee', 'code' => 'fixed_fee', 'is_active' => true]);
 
         $client = Client::create([
             'client_no' => 'CL26060001',
@@ -105,7 +109,45 @@ class ClientManagementFlowTest extends TestCase
         $this->assertSame('Mary Relative', $client->nextOfKin->name);
 
         $this->actingAs($user)
-            ->post(route('clients.engagements.store', $client), [
+            ->post(route('clients.adr.store', $client), [
+                'title' => 'Shareholder agreement',
+                'conflict_party_name' => 'Acme Holdings',
+                'conflict_party_contact' => 'legal@acme.example',
+                'method' => 'email',
+                'resolved_on' => now()->toDateString(),
+                'response' => 'accepted_negotiation',
+                'response_notes' => 'Conflict party agreed to resolve before filing.',
+            ])
+            ->assertRedirect();
+
+        $adr = $client->fresh()->adrResolutions()->first();
+
+        $this->assertNotNull($adr);
+        $this->assertMatchesRegularExpression('/^ADR\d{8}$/', $adr->adr_no);
+        $this->assertSame('Acme Holdings', $adr->conflict_party_name);
+        $this->assertSame('accepted_negotiation', $adr->response);
+        $this->assertNull($client->fresh()->matters()->first());
+
+        $this->actingAs($user)
+            ->post(route('clients.files.store', $client), [
+                'file_name' => 'Shareholder agreement',
+                'billing_type_id' => $billingType->id,
+                'agreed_fee_amount' => 1500000,
+                'client_accepted_on' => now()->toDateString(),
+                'notes' => 'Client accepted the file terms.',
+            ])
+            ->assertRedirect(route('clients.show', $client, absolute: false));
+
+        $file = $client->fresh()->files()->first();
+
+        $this->assertNotNull($file);
+        $this->assertMatchesRegularExpression('/^FL\d{8}$/', $file->file_number);
+        $this->assertSame('1500000.00', $file->agreed_fee_amount);
+        $this->assertNull($file->adr_resolution_id);
+        $this->assertNull($file->matter_id);
+
+        $this->actingAs($user)
+            ->post(route('clients.matters.store', $client), [
                 'title' => 'Shareholder agreement',
                 'practice_area_id' => $practiceArea->id,
                 'opened_on' => now()->toDateString(),
@@ -118,9 +160,9 @@ class ClientManagementFlowTest extends TestCase
         $matter = $client->fresh()->matters()->first();
 
         $this->assertNotNull($matter);
-        $this->assertSame('engagement_pending', $matter->status);
+        $this->assertSame('open', $matter->status);
         $this->assertSame('Shareholder agreement', $matter->title);
-        $this->assertNotNull($matter->engagement);
-        $this->assertMatchesRegularExpression('/^EG\d{8}$/', $matter->engagement->engagement_no);
+        $this->assertSame($matter->id, $file->fresh()->matter_id);
+        $this->assertTrue($matter->files->contains($file));
     }
 }

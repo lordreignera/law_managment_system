@@ -39,7 +39,7 @@
             <div class="kfms-panel-subheader"><h3>Attachments</h3></div>
             <ul class="kfms-file-list">
                 @foreach ($expense->attachments as $attachment)
-                    <li><i class="mdi mdi-paperclip"></i> {{ $attachment->original_name }}</li>
+                    <li><i class="mdi mdi-paperclip"></i> <a href="{{ route('attachments.download', $attachment) }}">{{ $attachment->original_name }}</a></li>
                 @endforeach
             </ul>
         @endif

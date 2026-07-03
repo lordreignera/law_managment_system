@@ -8,7 +8,7 @@
         <div class="kfms-panel-header">
             <div>
                 <h2>Intake Register</h2>
-                <span>{{ $intakes->total() }} records</span>
+                <span>{{ $intakes->total() }} intake requests</span>
             </div>
             <a class="kfms-btn" href="{{ route('intakes.create') }}">
                 <i class="mdi mdi-plus"></i>
@@ -35,11 +35,11 @@
                 </select>
             </label>
             <label>
-                <span>Conflict</span>
-                <select name="conflict_status">
-                    <option value="">All Conflict Results</option>
-                    @foreach ($conflictStatuses as $value => $label)
-                        <option value="{{ $value }}" @selected(($filters['conflict_status'] ?? '') === $value)>{{ $label }}</option>
+                <span>Decision</span>
+                <select name="review_decision">
+                    <option value="">All Decisions</option>
+                    @foreach ($reviewDecisions as $value => $label)
+                        <option value="{{ $value }}" @selected(($filters['review_decision'] ?? '') === $value)>{{ $label }}</option>
                     @endforeach
                 </select>
             </label>
@@ -58,7 +58,7 @@
                         <th>Legal Issue</th>
                         <th>Practice Area</th>
                         <th>Status</th>
-                        <th>Conflict</th>
+                        <th>Decision</th>
                         <th>Action</th>
                     </tr>
                 </thead>
@@ -70,9 +70,9 @@
                             <td>{{ $intake->legal_issue }}</td>
                             <td>{{ $intake->practiceArea?->name ?: '-' }}</td>
                             <td>{{ $intake->statusLabel() }}</td>
-                            <td>{{ $intake->conflictStatusLabel() }}</td>
+                            <td>{{ $intake->reviewDecisionLabel() }}</td>
                             <td>
-                                <a class="kfms-link-btn" href="{{ route('intakes.show', $intake) }}">Review</a>
+                                <a class="kfms-link-btn" href="{{ route('intakes.show', $intake) }}">Review / Decide</a>
                             </td>
                         </tr>
                     @empty

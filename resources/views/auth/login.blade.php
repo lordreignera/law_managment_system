@@ -9,11 +9,10 @@
                             <i class="mdi mdi-shield-lock-outline"></i>
                             <span>Secure legal workspace</span>
                         </div>
-                        <div class="jf-form-logo">
-                            <x-company-logo mark-class="jf-form-logo-mark" image-class="jf-form-logo-image" />
+                        <div class="jf-login-brandmark">
+                            <x-company-logo mark-class="jf-login-logo-mark" image-class="jf-login-logo-image" />
                         </div>
-                        <h2>{{ $companySetting->login_heading ?: 'Sign in' }}</h2>
-                        <p>{{ $companySetting->company_name }}</p>
+                        <p>Sign in to continue to your workspace.</p>
                     </div>
 
                     @if ($errors->any())

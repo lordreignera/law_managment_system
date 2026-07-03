@@ -1,16 +1,16 @@
 @extends('layouts.admin')
 
-@section('title', 'Clients')
-@section('page-title', 'Clients')
+@section('title', 'Approved Clients')
+@section('page-title', 'Approved Clients')
 
 @section('content')
     <section class="kfms-panel">
         <div class="kfms-panel-header">
             <div>
-                <h2>Client Register</h2>
-                <span>{{ $clients->total() }} records</span>
+                <h2>Approved Client Register</h2>
+                <span>{{ $clients->total() }} approved client records</span>
             </div>
-            @can('manage intakes')
+            @can('intakes.create')
                 <a class="kfms-btn" href="{{ route('intakes.create') }}">
                     <i class="mdi mdi-plus"></i>
                     New Client Intake
@@ -85,10 +85,16 @@
                                             <i class="mdi mdi-pencil"></i>
                                             Add More Details
                                         </a>
-                                        @can('manage matters')
-                                            <a class="dropdown-item" href="{{ route('clients.engagements.create', $client) }}">
-                                                <i class="mdi mdi-briefcase-plus"></i>
-                                                Add Engagement
+                                        @can('clients.adr.create')
+                                            <a class="dropdown-item" href="{{ route('clients.adr.create', $client) }}">
+                                                <i class="mdi mdi-handshake-outline"></i>
+                                                Start ADR
+                                            </a>
+                                        @endcan
+                                        @can('clients.files.create')
+                                            <a class="dropdown-item" href="{{ route('clients.files.create', $client) }}">
+                                                <i class="mdi mdi-folder-plus"></i>
+                                                Open File
                                             </a>
                                         @endcan
                                     </div>

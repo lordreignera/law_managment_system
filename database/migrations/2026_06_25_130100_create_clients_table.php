@@ -17,6 +17,7 @@ return new class extends Migration
             $table->foreignId('position_id')->nullable()->constrained('contact_positions')->nullOnDelete();
             $table->foreignId('country_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('client_in_charge_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('branch_id')->nullable()->constrained()->nullOnDelete();
             $table->string('name')->nullable();
             $table->string('organization_name')->nullable();
             $table->string('first_name')->nullable();

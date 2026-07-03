@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\BranchScoped;
+use App\Models\Concerns\HasAttachments;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -11,13 +12,14 @@ class Matter extends Model
 {
     use BranchScoped;
     use HasFactory;
+    use HasAttachments;
     use SoftDeletes;
 
     public const STATUSES = [
         'inquiry' => 'Inquiry',
         'consultation' => 'Consultation',
         'conflict_check' => 'Conflict Check',
-        'engagement_pending' => 'Engagement Pending',
+        'file_pending' => 'File Pending',
         'open' => 'Open',
         'planning' => 'Planning',
         'active' => 'Active',
@@ -66,14 +68,14 @@ class Matter extends Model
         return $this->belongsTo(MatterCategory::class);
     }
 
-    public function engagement()
+    public function file()
     {
-        return $this->hasOne(Engagement::class);
+        return $this->hasOne(File::class);
     }
 
-    public function engagements()
+    public function files()
     {
-        return $this->hasMany(Engagement::class);
+        return $this->hasMany(File::class);
     }
 
     public function shelf()
@@ -89,6 +91,16 @@ class Matter extends Model
     public function courtEvents()
     {
         return $this->hasMany(CourtEvent::class);
+    }
+
+    public function invoices()
+    {
+        return $this->hasMany(Invoice::class)->latest('invoice_date');
+    }
+
+    public function expenses()
+    {
+        return $this->hasMany(Expense::class)->latest('spent_on');
     }
 
     public function statusLabel(): string

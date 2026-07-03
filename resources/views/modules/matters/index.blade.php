@@ -8,14 +8,16 @@
         <div class="kfms-panel-header">
             <div>
                 <h2>Matter Register</h2>
-                <span>{{ $matters->total() }} records</span>
+                <span>{{ $matters->total() }} internal firm files</span>
             </div>
-            @can('manage intakes')
-                <a class="kfms-btn" href="{{ route('intakes.create') }}">
-                    <i class="mdi mdi-plus"></i>
-                    Start Client Intake
-                </a>
-            @endcan
+            <div class="kfms-toolbar-actions">
+                @can('intakes.create')
+                    <a class="kfms-link-btn" href="{{ route('intakes.create') }}">
+                        <i class="mdi mdi-account-plus-outline"></i>
+                        Walk-in Intake
+                    </a>
+                @endcan
+            </div>
         </div>
 
         @if (session('status'))
@@ -60,7 +62,7 @@
                             <td>{{ $matter->client?->name ?: '-' }}</td>
                             <td>{{ $matter->practiceArea?->name ?: '-' }}</td>
                             <td>{{ $matter->statusLabel() }}</td>
-                            <td><a class="kfms-link-btn" href="{{ route('matters.show', $matter) }}">Review</a></td>
+                            <td><a class="kfms-link-btn" href="{{ route('matters.show', $matter) }}">Open Workspace</a></td>
                         </tr>
                     @empty
                         <tr>

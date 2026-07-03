@@ -52,7 +52,6 @@ class CompanySettingTest extends TestCase
         $this->get('/login')
             ->assertOk()
             ->assertSee('Test Firm Advocates')
-            ->assertSee('Welcome to Test Firm')
             ->assertSee('Sign In')
             ->assertSee($setting->logo_url, false)
             ->assertDontSee('A branded workspace for matters and finance.')

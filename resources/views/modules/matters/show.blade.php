@@ -1,11 +1,14 @@
 @extends('layouts.admin')
 
-@section('title', 'Review Matter')
-@section('page-title', 'Review Matter')
+@section('title', 'Matter Workspace')
+@section('page-title', 'Matter Workspace')
 
 @section('content')
     @php
-        $engagement = $matter->engagement;
+        $files = $matter->files;
+        $totalAgreedFee = $files->sum('agreed_fee_amount');
+        $isLitigation = str($matter->practiceArea?->name ?? '')->contains('Litigation', true);
+        $openCourtEvents = $matter->courtEvents->whereIn('status', ['scheduled', 'adjourned']);
     @endphp
 
     <section class="kfms-panel">
@@ -14,10 +17,20 @@
                 <h2>{{ $matter->reference_no }}</h2>
                 <span>{{ $matter->title }} - {{ $matter->statusLabel() }}</span>
             </div>
-            <a class="kfms-link-btn" href="{{ route('matters.index') }}">
-                <i class="mdi mdi-arrow-left"></i>
-                Back to Matters
-            </a>
+            <div class="kfms-toolbar-actions">
+                @if ($isLitigation)
+                    @can('litigation.create')
+                        <a class="kfms-btn" href="{{ route('litigation.create', ['matter_id' => $matter->id]) }}">
+                            <i class="mdi mdi-calendar-plus"></i>
+                            Schedule Court Event
+                        </a>
+                    @endcan
+                @endif
+                <a class="kfms-link-btn" href="{{ route('matters.index') }}">
+                    <i class="mdi mdi-arrow-left"></i>
+                    Back to Matters
+                </a>
+            </div>
         </div>
 
         @if (session('status'))
@@ -34,107 +47,160 @@
                 <strong>{{ $matter->practiceArea?->name ?: '-' }}</strong>
             </div>
             <div>
-                <span>Status</span>
+                <span>Matter Status</span>
                 <strong>{{ $matter->statusLabel() }}</strong>
             </div>
             <div>
-                <span>Engagement</span>
-                <strong>{{ str($engagement?->status ?? 'pending')->headline() }}</strong>
+                <span>Files</span>
+                <strong>{{ $files->count() }}</strong>
+            </div>
+            <div>
+                <span>Total Agreed Fee</span>
+                <strong>{{ number_format($totalAgreedFee, 2) }}</strong>
             </div>
             <div>
                 <span>Opened On</span>
                 <strong>{{ $matter->opened_on?->format('d M Y') ?: '-' }}</strong>
             </div>
             <div>
-                <span>Engagement Type</span>
-                <strong>{{ $engagement?->engagementType?->name ?: '-' }}</strong>
+                <span>Responsible Team</span>
+                <strong>{{ $matter->assignments->count() }} assigned</strong>
             </div>
             <div>
-                <span>Client Accepted</span>
-                <strong>{{ $engagement?->client_accepted_on?->format('d M Y') ?: '-' }}</strong>
+                <span>Court Events</span>
+                <strong>{{ $matter->courtEvents->count() }}</strong>
             </div>
             <div>
-                <span>Retainer</span>
-                <strong>{{ $engagement?->retainer_required ? number_format($engagement->retainer_amount ?? 0, 2) : 'Not required' }}</strong>
-            </div>
-            <div>
-                <span>Engagement No</span>
-                <strong>{{ $engagement?->engagement_no ?: '-' }}</strong>
+                <span>Open Court Work</span>
+                <strong>{{ $openCourtEvents->count() }}</strong>
             </div>
         </div>
 
         <div class="kfms-section-heading">
-            <h3>Description</h3>
+            <h3>File Summary</h3>
         </div>
         <p class="kfms-muted-text">{{ $matter->description ?: 'No description recorded.' }}</p>
 
-        @if ($matter->status === 'engagement_pending')
-            <div class="kfms-section-heading">
-                <h3>Engagement Review</h3>
-                <span>Complete this before the matter becomes open.</span>
-            </div>
-
-            <form class="kfms-form" method="POST" action="{{ route('matters.engagement.update', $matter) }}">
-                @csrf
-                @method('PATCH')
-
-                <div class="kfms-form-grid">
-                    <label>
-                        <span>Engagement Type</span>
-                        <select name="engagement_type_id">
-                            <option value="">Select engagement type</option>
-                            @foreach ($engagementTypes as $engagementType)
-                                <option value="{{ $engagementType->id }}" @selected((string) old('engagement_type_id', $engagement?->engagement_type_id) === (string) $engagementType->id)>{{ $engagementType->name }}</option>
-                            @endforeach
-                        </select>
-                        @error('engagement_type_id') <small>{{ $message }}</small> @enderror
-                    </label>
-
-                    <label>
-                        <span>Engagement Letter Sent</span>
-                        <input type="date" name="engagement_letter_sent_on" value="{{ old('engagement_letter_sent_on', $engagement?->engagement_letter_sent_on?->toDateString()) }}" required>
-                        @error('engagement_letter_sent_on') <small>{{ $message }}</small> @enderror
-                    </label>
-
-                    <label>
-                        <span>Fee Agreement Sent</span>
-                        <input type="date" name="fee_agreement_sent_on" value="{{ old('fee_agreement_sent_on', $engagement?->fee_agreement_sent_on?->toDateString()) }}" required>
-                        @error('fee_agreement_sent_on') <small>{{ $message }}</small> @enderror
-                    </label>
-
-                    <label>
-                        <span>Client Accepted On</span>
-                        <input type="date" name="client_accepted_on" value="{{ old('client_accepted_on', $engagement?->client_accepted_on?->toDateString()) }}" required>
-                        @error('client_accepted_on') <small>{{ $message }}</small> @enderror
-                    </label>
-
-                    <label class="kfms-check-row">
-                        <input type="checkbox" name="retainer_required" value="1" @checked(old('retainer_required', $engagement?->retainer_required))>
-                        <span>Retainer Required</span>
-                    </label>
-
-                    <label>
-                        <span>Retainer Amount</span>
-                        <input type="number" step="0.01" min="0" name="retainer_amount" value="{{ old('retainer_amount', $engagement?->retainer_amount) }}">
-                        @error('retainer_amount') <small>{{ $message }}</small> @enderror
-                    </label>
-
-                    <label class="kfms-span-2">
-                        <span>Engagement Notes</span>
-                        <textarea name="engagement_notes" rows="4">{{ old('engagement_notes', $engagement?->notes) }}</textarea>
-                        @error('engagement_notes') <small>{{ $message }}</small> @enderror
-                    </label>
-                </div>
-
-                <div class="kfms-form-actions">
-                    <button type="submit">Accept Engagement and Open Matter</button>
-                </div>
-            </form>
-        @else
-            <div class="kfms-section-heading">
-                <h3>Engagement Details</h3>
-            </div>
-            <p class="kfms-muted-text">{{ $engagement?->notes ?: 'No engagement notes recorded.' }}</p>
-        @endif
+        <div class="kfms-section-heading">
+            <h3>Files Under This Matter</h3>
+        </div>
+        <div class="kfms-table-wrap">
+            <table class="kfms-table">
+                <thead>
+                    <tr>
+                        <th>File No</th>
+                        <th>File Name</th>
+                        <th>Billing Type</th>
+                        <th>Agreed Fee</th>
+                        <th>Documents</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse ($files as $matterFile)
+                        <tr>
+                            <td><a href="{{ route('clients.files.show', $matterFile) }}">{{ $matterFile->file_number }}</a></td>
+                            <td>{{ $matterFile->file_name }}</td>
+                            <td>{{ $matterFile->billingType?->name ?: '-' }}</td>
+                            <td>{{ $matterFile->agreed_fee_amount ? number_format($matterFile->agreed_fee_amount, 2) : '-' }}</td>
+                            <td>{{ $matterFile->attachments->count() }}</td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="5" class="kfms-empty">No files linked to this matter.</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
     </section>
+
+    <section class="kfms-panel">
+            <div class="kfms-panel-header">
+                <div>
+                    <h2>What Happens Next</h2>
+                    <span>The matter is open. Use this workspace to move the file through the correct work stream.</span>
+                </div>
+            </div>
+
+            <div class="kfms-workflow-actions">
+                <a href="{{ route('matters.instructions.show', $matter) }}">
+                    <i class="mdi mdi-file-document-outline"></i>
+                    <strong>Instructions / Documents</strong>
+                    <span>Review or add instructions, file notes, and supporting documents.</span>
+                </a>
+
+                @if ($isLitigation)
+                    @can('litigation.create')
+                        <a href="{{ route('litigation.create', ['matter_id' => $matter->id]) }}">
+                            <i class="mdi mdi-gavel"></i>
+                            <strong>Add Cause List / Court File</strong>
+                            <span>Capture court, case number, judge, filing, service, or next hearing.</span>
+                        </a>
+                    @endcan
+                    @can('litigation.index')
+                        <a href="{{ route('litigation.index', ['search' => $matter->reference_no]) }}">
+                            <i class="mdi mdi-calendar-search"></i>
+                            <strong>Open Cause List</strong>
+                            <span>Track hearings, rulings, judgments, outcomes, and next steps for this file.</span>
+                        </a>
+                    @endcan
+                @else
+                    <a href="{{ route('matters.index', ['status' => 'active']) }}">
+                        <i class="mdi mdi-briefcase-check-outline"></i>
+                        <strong>Proceed With Matter Work</strong>
+                        <span>Keep this as a non-litigation file unless it later needs court action.</span>
+                    </a>
+                @endif
+
+                <a href="{{ route('matters.billing.show', $matter) }}">
+                    <i class="mdi mdi-cash-register"></i>
+                    <strong>Billing / Costs</strong>
+                    <span>Create invoices and record costs, disbursements, taxation, or recovery follow-up.</span>
+                </a>
+            </div>
+        </section>
+
+        @if ($isLitigation)
+            <section class="kfms-panel">
+                <div class="kfms-panel-header">
+                    <div>
+                        <h2>Court Work</h2>
+                        <span>Diary and litigation activity linked to this matter</span>
+                    </div>
+                </div>
+
+                <div class="kfms-table-wrap">
+                    <table class="kfms-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Type</th>
+                                <th>Court</th>
+                                <th>Case No.</th>
+                                <th>Advocate</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse ($matter->courtEvents->sortBy('starts_at') as $event)
+                                <tr>
+                                    <td>{{ $event->starts_at?->format('d M Y, H:i') }}</td>
+                                    <td>{{ $event->eventTypeLabel() }}</td>
+                                    <td>{{ $event->court?->name ?: $event->court_name ?: '-' }}</td>
+                                    <td>{{ $event->case_number ?: '-' }}</td>
+                                    <td>{{ $event->assignee?->name ?: '-' }}</td>
+                                    <td><span class="kfms-status kfms-status-{{ $event->status }}">{{ $event->statusLabel() }}</span></td>
+                                    <td><a class="kfms-link-btn" href="{{ route('litigation.show', $event) }}">View</a></td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="7" class="kfms-empty">No court events have been scheduled for this matter yet.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        @endif
 @endsection

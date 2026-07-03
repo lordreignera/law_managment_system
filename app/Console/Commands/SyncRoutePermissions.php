@@ -35,16 +35,18 @@ class SyncRoutePermissions extends Command
         }
 
         $created = 0;
-        $existing = Permission::pluck('name')->all();
 
         foreach ($routeNames as $name) {
-            if (in_array($name, $existing, true)) {
-                continue;
-            }
-            Permission::create(['name' => $name, 'guard_name' => 'web']);
-            $created++;
-            if (! $this->option('quiet-output')) {
-                $this->line("  + {$name}");
+            $permission = Permission::firstOrCreate([
+                'name' => $name,
+                'guard_name' => 'web',
+            ]);
+
+            if ($permission->wasRecentlyCreated) {
+                $created++;
+                if (! $this->option('quiet-output')) {
+                    $this->line("  + {$name}");
+                }
             }
         }
 

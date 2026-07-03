@@ -1,4 +1,7 @@
-@php $event = $event ?? null; @endphp
+@php
+    $event = $event ?? null;
+    $selectedMatterId = $selectedMatterId ?? null;
+@endphp
 
 <div class="kfms-form-grid">
     <label>
@@ -6,7 +9,9 @@
         <select name="matter_id" required>
             <option value="">Select matter</option>
             @foreach ($matters as $matter)
-                <option value="{{ $matter->id }}" @selected(old('matter_id', $event?->matter_id) == $matter->id)>{{ $matter->reference_no }} — {{ \Illuminate\Support\Str::limit($matter->title, 40) }}</option>
+                <option value="{{ $matter->id }}" @selected((string) old('matter_id', $event?->matter_id ?? $selectedMatterId) === (string) $matter->id)>
+                    {{ $matter->reference_no }} - {{ \Illuminate\Support\Str::limit($matter->title, 40) }}
+                </option>
             @endforeach
         </select>
         @error('matter_id') <small>{{ $message }}</small> @enderror

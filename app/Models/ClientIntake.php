@@ -12,17 +12,16 @@ class ClientIntake extends Model
     use SoftDeletes;
 
     public const STATUSES = [
-        'inquiry' => 'Inquiry',
-        'consultation' => 'Consultation',
-        'conflict_check' => 'Conflict Check',
-        'engagement_pending' => 'Engagement Pending',
+        'pending_review' => 'Pending Review',
+        'approved' => 'Approved',
         'rejected' => 'Rejected',
+        'more_information_needed' => 'More Information Needed',
     ];
 
-    public const CONFLICT_STATUSES = [
+    public const REVIEW_DECISIONS = [
         'pending' => 'Pending Review',
-        'cleared' => 'Cleared',
-        'conflict_found' => 'Conflict Found',
+        'approved' => 'Approve Client',
+        'rejected' => 'Reject Client',
         'more_information_needed' => 'More Information Needed',
     ];
 
@@ -31,6 +30,17 @@ class ClientIntake extends Model
         'normal' => 'Normal',
         'urgent' => 'Urgent',
         'critical' => 'Critical',
+    ];
+
+    public const REFERRAL_SOURCES = [
+        'walk_in' => 'Walk-in',
+        'phone_call' => 'Phone Call',
+        'email' => 'Email',
+        'website' => 'Website',
+        'existing_client' => 'Existing Client',
+        'staff_referral' => 'Staff Referral',
+        'social_media' => 'Social Media',
+        'other' => 'Other',
     ];
 
     protected $guarded = [];
@@ -65,11 +75,6 @@ class ClientIntake extends Model
         return $this->belongsTo(User::class, 'reviewed_by');
     }
 
-    public function convertedMatter()
-    {
-        return $this->belongsTo(Matter::class, 'converted_matter_id');
-    }
-
     public function conflictParties()
     {
         return $this->hasMany(IntakeConflictParty::class);
@@ -80,8 +85,13 @@ class ClientIntake extends Model
         return self::STATUSES[$this->status] ?? str($this->status)->headline()->toString();
     }
 
-    public function conflictStatusLabel(): string
+    public function reviewDecisionLabel(): string
     {
-        return self::CONFLICT_STATUSES[$this->conflict_status] ?? str($this->conflict_status)->headline()->toString();
+        return self::REVIEW_DECISIONS[$this->review_decision] ?? str($this->review_decision)->headline()->toString();
+    }
+
+    public function referralSourceLabel(): string
+    {
+        return self::REFERRAL_SOURCES[$this->referral_source] ?? str($this->referral_source)->headline()->toString();
     }
 }

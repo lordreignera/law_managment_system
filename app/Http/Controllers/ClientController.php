@@ -71,8 +71,12 @@ class ClientController extends Controller
                 'nextOfKin.salutation',
                 'nextOfKin.country',
                 'contacts',
+                'matter',
                 'matters.practiceArea',
-                'matters.engagement',
+                'files.billingType',
+                'files.matter',
+                'adrResolutions.file.billingType',
+                'adrResolutions.file.matter',
             ]),
         ]);
     }

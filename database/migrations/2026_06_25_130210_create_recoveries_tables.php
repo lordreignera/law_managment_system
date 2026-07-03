@@ -35,6 +35,7 @@ return new class extends Migration
             $table->foreignId('recovery_client_id')->constrained()->cascadeOnDelete();
             $table->foreignId('recovery_import_batch_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('assigned_to')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('branch_id')->nullable()->constrained()->nullOnDelete();
             $table->string('account_number')->nullable()->index();
             $table->string('customer_number')->nullable()->index();
             $table->string('debtor_name');

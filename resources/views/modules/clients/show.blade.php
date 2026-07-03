@@ -23,10 +23,25 @@
                     <i class="mdi mdi-pencil"></i>
                     Add More Details
                 </a>
-                <a class="kfms-btn" href="{{ route('clients.engagements.create', $client) }}">
-                    <i class="mdi mdi-briefcase-plus"></i>
-                    Add Engagement
+                <a class="kfms-btn" href="{{ route('clients.adr.create', $client) }}">
+                    <i class="mdi mdi-handshake-outline"></i>
+                    Start ADR
                 </a>
+                <a class="kfms-btn" href="{{ route('clients.files.create', $client) }}">
+                    <i class="mdi mdi-folder-plus"></i>
+                    Open File
+                </a>
+                @if ($client->matter)
+                    <a class="kfms-btn" href="{{ route('matters.show', $client->matter) }}">
+                        <i class="mdi mdi-briefcase-eye"></i>
+                        View Matter
+                    </a>
+                @elseif ($client->files->isNotEmpty())
+                    <a class="kfms-btn" href="{{ route('clients.matters.create', $client) }}">
+                        <i class="mdi mdi-briefcase-plus"></i>
+                        Open Matter
+                    </a>
+                @endif
             </div>
         </div>
 
@@ -80,35 +95,122 @@
         @endif
 
         <div class="kfms-section-heading">
-            <h3>Engagements</h3>
+            <h3>Alternative Dispute Resolution (ADR)</h3>
         </div>
         <div class="kfms-table-wrap">
             <table class="kfms-table">
                 <thead>
                     <tr>
-                        <th>Engagement No</th>
+                        <th>ADR No</th>
+                        <th>Title</th>
+                        <th>Conflict Party</th>
+                        <th>Response</th>
+                        <th>File</th>
+                        <th>Matter</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse ($client->adrResolutions as $adr)
+                        @php
+                            $adrFile = $adr->file;
+                            $adrMatter = $adrFile?->matter;
+                        @endphp
+                        <tr>
+                            <td>{{ $adr->adr_no }}</td>
+                            <td>{{ $adr->title }}</td>
+                            <td>{{ $adr->conflict_party_name }}</td>
+                            <td>{{ str($adr->response)->headline() }}</td>
+                            <td>{{ $adrFile?->file_number ?: '-' }}</td>
+                            <td>{{ $adrMatter?->reference_no ?: '-' }}</td>
+                            <td>
+                                <div class="kfms-table-actions">
+                                    <a href="{{ route('clients.adr.show', $adr) }}">Review</a>
+                                    @if (! $adrFile)
+                                        <a href="{{ route('clients.files.create', ['client' => $client, 'adr' => $adr->id]) }}">Open File</a>
+                                    @elseif (! $client->matter)
+                                        <a href="{{ route('clients.matters.create', $client) }}">Open Matter</a>
+                                    @endif
+                                </div>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="7" class="kfms-empty">No ADR resolutions recorded for this client.</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+
+        <div class="kfms-section-heading">
+            <h3>Files</h3>
+        </div>
+        <div class="kfms-table-wrap">
+            <table class="kfms-table">
+                <thead>
+                    <tr>
+                        <th>File No</th>
+                        <th>File Name</th>
+                        <th>Billing Type</th>
+                        <th>Agreed Fee</th>
+                        <th>Matter</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse ($client->files as $file)
+                        <tr>
+                            <td><a href="{{ route('clients.files.show', $file) }}">{{ $file->file_number }}</a></td>
+                            <td>{{ $file->file_name }}</td>
+                            <td>{{ $file->billingType?->name ?: '-' }}</td>
+                            <td>{{ $file->agreed_fee_amount ? number_format($file->agreed_fee_amount, 2) : '-' }}</td>
+                            <td>{{ $file->matter?->reference_no ?: 'Not in a matter yet' }}</td>
+                            <td>
+                                <div class="kfms-table-actions">
+                                    @if ($file->matter)
+                                        <a href="{{ route('matters.show', $file->matter) }}">View Matter</a>
+                                    @else
+                                        <a href="{{ route('clients.matters.create', $client) }}">Open Matter</a>
+                                    @endif
+                                </div>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="6" class="kfms-empty">No files opened for this client.</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+
+        <div class="kfms-section-heading">
+            <h3>Matters</h3>
+        </div>
+        <div class="kfms-table-wrap">
+            <table class="kfms-table">
+                <thead>
+                    <tr>
                         <th>Matter No</th>
                         <th>Title</th>
                         <th>Practice Area</th>
-                        <th>Engagement</th>
-                        <th>Matter Status</th>
+                        <th>Status</th>
                         <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse ($client->matters as $matter)
                         <tr>
-                            <td>{{ $matter->engagement?->engagement_no ?: '-' }}</td>
                             <td>{{ $matter->reference_no }}</td>
                             <td>{{ $matter->title }}</td>
                             <td>{{ $matter->practiceArea?->name ?: '-' }}</td>
-                            <td>{{ str($matter->engagement?->status ?? 'pending')->headline() }}</td>
                             <td>{{ $matter->statusLabel() }}</td>
-                            <td><a class="kfms-link-btn" href="{{ route('matters.show', $matter) }}">Review</a></td>
+                            <td><a class="kfms-link-btn" href="{{ route('matters.show', $matter) }}">Open Matter</a></td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="kfms-empty">No engagements recorded for this client.</td>
+                            <td colspan="5" class="kfms-empty">No matters opened for this client.</td>
                         </tr>
                     @endforelse
                 </tbody>

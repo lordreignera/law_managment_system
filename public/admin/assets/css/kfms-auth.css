@@ -25,20 +25,62 @@ body.kfms-auth-body {
 
 .jf-login-stage {
     background:
-        linear-gradient(180deg, rgba(213, 163, 58, 0.12) 0 1px, transparent 1px) 0 0 / 100% 46px,
-        linear-gradient(135deg, #f8fafc 0%, #ffffff 50%, #eef3f9 100%);
+        radial-gradient(1100px 520px at 50% -8%, rgba(213, 163, 58, 0.12), transparent 60%),
+        radial-gradient(900px 520px at 50% 118%, rgba(3, 27, 60, 0.10), transparent 58%),
+        #eef1f6;
     overflow: hidden;
     position: relative;
 }
 
 .jf-login-stage::before {
-    background: linear-gradient(90deg, transparent, var(--jf-gold), transparent);
+    background:
+        radial-gradient(circle at 18% 22%, rgba(3, 27, 60, 0.05), transparent 42%),
+        radial-gradient(circle at 82% 78%, rgba(213, 163, 58, 0.07), transparent 45%);
     content: "";
-    height: 3px;
-    left: 0;
+    display: block;
+    inset: 0;
     position: absolute;
-    right: 0;
-    top: 0;
+    z-index: 0;
+}
+
+.jf-login-shell {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+    position: relative;
+    width: min(100%, 468px);
+    z-index: 1;
+}
+
+.jf-login-brandmark {
+    display: flex;
+    justify-content: center;
+    margin: 2px 0 14px;
+    width: 100%;
+}
+
+.jf-login-logo-image {
+    display: block;
+    filter: drop-shadow(0 14px 26px rgba(3, 27, 60, 0.16));
+    height: auto;
+    max-width: 300px;
+    object-fit: contain;
+    width: 82%;
+}
+
+.jf-login-logo-mark {
+    align-items: center;
+    background: var(--jf-navy);
+    border-radius: 18px;
+    box-shadow: 0 22px 50px rgba(3, 27, 60, 0.26);
+    color: #ffffff;
+    display: inline-flex;
+    font-size: 48px;
+    font-weight: 900;
+    height: 128px;
+    justify-content: center;
+    min-width: 128px;
 }
 
 .jf-auth-card {
@@ -69,13 +111,7 @@ body.kfms-auth-body {
 }
 
 .jf-login-card-accent {
-    background: linear-gradient(90deg, #8b6418, #d5a33a 42%, #f4d98e 50%, #d5a33a 58%, #8b6418);
-    height: 5px;
-    left: 0;
-    position: absolute;
-    right: 0;
-    top: 0;
-    z-index: 2;
+    display: none;
 }
 
 .jf-login-card-centered .jf-form-panel {
@@ -111,9 +147,7 @@ body.kfms-auth-body {
 }
 
 .jf-brand-panel {
-    background:
-        linear-gradient(180deg, rgba(255, 248, 232, 0.96), rgba(255, 255, 255, 0.98) 46%, #f8fbff),
-        radial-gradient(circle at 86% 12%, rgba(213, 163, 58, 0.16), transparent 30%);
+    background: #ffffff;
     border-right: 1px solid #e7edf4;
     color: var(--jf-text);
     display: flex;
@@ -125,23 +159,11 @@ body.kfms-auth-body {
 }
 
 .jf-brand-panel::before {
-    background:
-        linear-gradient(115deg, transparent 0 48%, rgba(3, 27, 60, 0.04) 48% 49%, transparent 49%),
-        repeating-linear-gradient(90deg, transparent 0 42px, rgba(213, 163, 58, 0.08) 42px 46px, transparent 46px 88px);
-    content: "";
-    inset: 0;
-    opacity: 0.58;
-    position: absolute;
+    display: none;
 }
 
 .jf-brand-panel::after {
-    background: var(--jf-gold);
-    bottom: 0;
-    content: "";
-    height: 8px;
-    left: 0;
-    position: absolute;
-    right: 0;
+    display: none;
 }
 
 .jf-product-lockup,

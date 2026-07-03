@@ -7,7 +7,7 @@ use App\Models\Client;
 use App\Models\ClientIntake;
 use App\Models\CompanySetting;
 use App\Models\Department;
-use App\Models\Engagement;
+use App\Models\File;
 use App\Models\Matter;
 use App\Models\PracticeArea;
 use App\Models\PublicHoliday;
@@ -47,7 +47,7 @@ class DatabaseSeeder extends Seeder
             BankSeeder::class,
             LeaveTypeSeeder::class,
             PaymentModeSeeder::class,
-            EngagementTypeSeeder::class,
+            BillingTypeSeeder::class,
             CurrencyTypeSeeder::class,
             RequisitionCategorySeeder::class,
             ExpenseCategorySeeder::class,
@@ -84,6 +84,7 @@ class DatabaseSeeder extends Seeder
 
             'Managing Partner' => ['dashboard', 'clients', 'intakes', 'matters', 'litigation', 'recoveries', 'land-titles', 'finance', 'expenses', 'petty-cash', 'ledger', 'staff', 'leave', 'requisitions', 'branches', 'holidays'],
             'Senior Partner' => ['dashboard', 'clients', 'intakes', 'matters', 'litigation'],
+            'Litigation Officer' => ['dashboard', 'clients', 'intakes', 'matters', 'litigation', 'calendar'],
             'Advocate' => ['dashboard', 'clients', 'intakes', 'matters', 'litigation'],
             'Paralegal' => ['dashboard', 'intakes', 'matters', 'litigation'],
             'Recoveries Manager' => ['dashboard', 'recoveries'],
@@ -108,7 +109,7 @@ class DatabaseSeeder extends Seeder
             $allPermissions
         ));
 
-        foreach (['Senior Partner', 'Advocate', 'Paralegal', 'Recoveries Manager', 'Recovery Officer', 'Accountant', 'Front Desk'] as $roleName) {
+        foreach (['Senior Partner', 'Litigation Officer', 'Advocate', 'Paralegal', 'Recoveries Manager', 'Recovery Officer', 'Accountant', 'Front Desk'] as $roleName) {
             Role::findByName($roleName)->givePermissionTo($leaveSelfService);
         }
 
@@ -119,7 +120,7 @@ class DatabaseSeeder extends Seeder
             $allPermissions
         ));
 
-        foreach (['Senior Partner', 'Advocate', 'Paralegal', 'Recoveries Manager', 'Recovery Officer', 'HR Manager', 'Front Desk'] as $roleName) {
+        foreach (['Senior Partner', 'Litigation Officer', 'Advocate', 'Paralegal', 'Recoveries Manager', 'Recovery Officer', 'HR Manager', 'Front Desk'] as $roleName) {
             Role::findByName($roleName)->givePermissionTo($requisitionSelfService);
         }
 
@@ -131,7 +132,7 @@ class DatabaseSeeder extends Seeder
         ));
 
         foreach ([
-            'Managing Partner', 'Senior Partner', 'Advocate', 'Paralegal',
+            'Managing Partner', 'Senior Partner', 'Litigation Officer', 'Advocate', 'Paralegal',
             'Recoveries Manager', 'Recovery Officer', 'Accountant',
             'HR Manager', 'Front Desk', 'IT Manager',
         ] as $roleName) {
@@ -256,10 +257,12 @@ class DatabaseSeeder extends Seeder
                 'preferred_lawyer_id' => $admin->id,
                 'created_by' => $admin->id,
                 'urgency' => 'urgent',
-                'referral_source' => 'Walk-in',
-                'summary' => 'Demo intake waiting for conflict review.',
-                'status' => 'conflict_check',
-                'conflict_status' => 'pending',
+                'referral_source' => 'walk_in',
+                'referral_name' => 'Front Desk',
+                'referral_contact' => '+256 700 100001',
+                'summary' => 'Demo intake waiting for review decision.',
+                'status' => 'pending_review',
+                'review_decision' => 'pending',
                 'consultation_on' => now()->addDay()->toDateString(),
                 'consultation_at' => '10:00',
             ]
@@ -267,7 +270,7 @@ class DatabaseSeeder extends Seeder
 
         $pendingIntake->conflictParties()->firstOrCreate(
             ['name' => 'Demo Employer Ltd'],
-            ['relationship' => 'Opponent', 'notes' => 'Former employer named in the employment dispute.']
+            ['relationship' => 'Opponent', 'contact' => '+256 700 200001', 'notes' => 'Former employer named in the employment dispute.']
         );
 
         $approvedClient = Client::firstOrCreate(
@@ -285,7 +288,7 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        $clearedIntake = ClientIntake::firstOrCreate(
+        $approvedIntake = ClientIntake::firstOrCreate(
             ['client_name' => 'Demo Approved Client', 'legal_issue' => 'Commercial contract review'],
             [
                 'client_id' => $approvedClient->id,
@@ -299,11 +302,13 @@ class DatabaseSeeder extends Seeder
                 'created_by' => $admin->id,
                 'reviewed_by' => $superAdmin->id,
                 'urgency' => 'normal',
-                'referral_source' => 'Existing relationship',
-                'summary' => 'Demo cleared intake already converted into an engagement-pending matter.',
-                'status' => 'engagement_pending',
-                'conflict_status' => 'cleared',
-                'conflict_notes' => 'Demo conflict review cleared.',
+                'referral_source' => 'existing_client',
+                'referral_name' => 'Demo Existing Client',
+                'referral_contact' => 'referrer@example.test',
+                'summary' => 'Demo approved intake. A file is opened from the approved client register.',
+                'status' => 'approved',
+                'review_decision' => 'approved',
+                'review_notes' => 'Demo intake approved for client registration.',
                 'reviewed_at' => now(),
                 'consultation_on' => now()->toDateString(),
                 'consultation_at' => '14:00',
@@ -320,19 +325,19 @@ class DatabaseSeeder extends Seeder
                 'reference_no' => MonthlyReferenceNumber::make(Matter::class, 'reference_no', 'MT'),
                 'opened_on' => now()->toDateString(),
                 'privacy_status' => 'public',
-                'status' => 'engagement_pending',
-                'description' => 'Demo matter waiting for engagement review and client acceptance.',
+                'status' => 'open',
+                'description' => 'Demo matter opened from a client file.',
             ]
         );
 
-        Engagement::firstOrCreate(
+        File::firstOrCreate(
             ['matter_id' => $demoMatter->id],
             [
                 'client_id' => $approvedClient->id,
                 'created_by' => $admin->id,
-                'engagement_no' => MonthlyReferenceNumber::make(Engagement::class, 'engagement_no', 'EG'),
-                'title' => $demoMatter->title,
-                'status' => 'pending',
+                'file_number' => MonthlyReferenceNumber::make(File::class, 'file_number', 'FL'),
+                'file_name' => $demoMatter->title,
+                'agreed_fee_amount' => 2500000,
             ]
         );
 
@@ -341,9 +346,8 @@ class DatabaseSeeder extends Seeder
             ['assigned_on' => now()->toDateString(), 'is_lead' => true]
         );
 
-        $clearedIntake->update([
+        $approvedIntake->update([
             'client_id' => $approvedClient->id,
-            'converted_matter_id' => $demoMatter->id,
         ]);
     }
 }

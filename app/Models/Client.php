@@ -35,6 +35,11 @@ class Client extends Model
         return $this->hasMany(ClientContact::class);
     }
 
+    public function intakes()
+    {
+        return $this->hasMany(ClientIntake::class);
+    }
+
     public function nextOfKin()
     {
         return $this->hasOne(ClientContact::class)->where('contact_type', 'next_of_kin');
@@ -45,9 +50,19 @@ class Client extends Model
         return $this->hasMany(Matter::class);
     }
 
-    public function engagements()
+    public function matter()
     {
-        return $this->hasMany(Engagement::class);
+        return $this->hasOne(Matter::class)->latestOfMany();
+    }
+
+    public function files()
+    {
+        return $this->hasMany(File::class);
+    }
+
+    public function adrResolutions()
+    {
+        return $this->hasMany(AdrResolution::class);
     }
 
     public function salutation()

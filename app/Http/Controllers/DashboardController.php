@@ -16,6 +16,10 @@ class DashboardController extends Controller
     {
         $user = auth()->user();
 
+        if ($user->hasRole('Litigation Officer') && $user->can('litigation.dashboard')) {
+            return redirect()->route('litigation.dashboard');
+        }
+
         $myRecoveries = RecoveryAccount::with('client')
             ->where('assigned_to', $user->id)
             ->where('status', 'active')

@@ -15,7 +15,6 @@ return new class extends Migration
             $table->foreignId('preferred_lawyer_id')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('reviewed_by')->nullable()->constrained('users')->nullOnDelete();
-            $table->foreignId('converted_matter_id')->nullable()->constrained('matters')->nullOnDelete();
             $table->string('intake_no')->unique();
             $table->string('client_type')->default('individual');
             $table->string('client_name');
@@ -26,10 +25,12 @@ return new class extends Migration
             $table->string('legal_issue');
             $table->string('urgency')->default('normal');
             $table->string('referral_source')->nullable();
+            $table->string('referral_name')->nullable();
+            $table->string('referral_contact')->nullable();
             $table->text('summary')->nullable();
-            $table->string('status')->default('inquiry');
-            $table->string('conflict_status')->default('pending');
-            $table->text('conflict_notes')->nullable();
+            $table->string('status')->default('pending_review');
+            $table->string('review_decision')->default('pending');
+            $table->text('review_notes')->nullable();
             $table->timestamp('reviewed_at')->nullable();
             $table->date('consultation_on')->nullable();
             $table->time('consultation_at')->nullable();
@@ -42,6 +43,7 @@ return new class extends Migration
             $table->foreignId('client_intake_id')->constrained()->cascadeOnDelete();
             $table->string('name');
             $table->string('relationship')->nullable();
+            $table->string('contact')->nullable();
             $table->text('notes')->nullable();
             $table->timestamps();
         });
