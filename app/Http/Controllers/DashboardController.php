@@ -26,6 +26,10 @@ class DashboardController extends Controller
             return redirect()->route('finance.dashboard');
         }
 
+        if ($user->hasRole('HR Manager') && $user->can('hr.dashboard')) {
+            return redirect()->route('hr.dashboard');
+        }
+
         $can = fn (string $permission) => $user->can($permission);
         $link = fn (string $permission, string $route, array $params = []) => $can($permission) ? route($route, $params) : null;
 

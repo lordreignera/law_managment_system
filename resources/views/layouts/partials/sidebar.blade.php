@@ -1,6 +1,7 @@
 @php
     $items = [
         ['label' => 'Dashboard', 'icon' => 'mdi-view-dashboard', 'route' => 'dashboard', 'permission' => 'dashboard'],
+        ['label' => 'Messages', 'icon' => 'mdi-chat-outline', 'route' => 'messages.index', 'active' => 'messages.*', 'permission' => 'messages.index'],
         [
             'label' => 'Client Management',
             'icon' => 'mdi-account-multiple',
@@ -72,13 +73,14 @@
         [
             'label' => 'Human Resources',
             'icon' => 'mdi-account-tie',
-            'route' => 'staff.index',
-            'active' => ['staff.*', 'leave.*'],
+            'route' => 'hr.dashboard',
+            'active' => ['hr.*', 'staff.*', 'leave.*'],
             'children' => [
+                ['label' => 'HR Dashboard', 'route' => 'hr.dashboard', 'active' => 'hr.dashboard', 'permission' => 'hr.dashboard'],
                 ['label' => 'Staff Register', 'route' => 'staff.index', 'active' => 'staff.*', 'permission' => 'staff.index'],
                 ['label' => 'Leave Management', 'route' => 'leave.index', 'active' => 'leave.*', 'permission' => 'leave.index'],
             ],
-            'permission_any' => ['staff.index', 'leave.index'],
+            'permission_any' => ['hr.dashboard', 'staff.index', 'leave.index'],
         ],
         ['label' => 'Requisitions', 'icon' => 'mdi-clipboard-text', 'route' => 'requisitions.index', 'active' => 'requisitions.*', 'permission' => 'requisitions.index'],
         [

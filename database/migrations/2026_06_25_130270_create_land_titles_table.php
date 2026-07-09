@@ -11,6 +11,7 @@ return new class extends Migration
         Schema::create('land_titles', function (Blueprint $table) {
             $table->id();
             $table->foreignId('bank_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('bank_branch_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('zonal_office_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('matter_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('handled_by')->nullable()->constrained('users')->nullOnDelete();
@@ -18,9 +19,11 @@ return new class extends Migration
             $table->string('borrower_name');
             $table->string('instruction_type')->nullable();
             $table->date('instruction_date')->nullable();
-            $table->date('received_on')->nullable();
-            $table->date('dispatched_on')->nullable();
-            $table->date('returned_on')->nullable();
+            $table->string('received_from')->nullable();
+            $table->string('returned_to')->nullable();
+            $table->dateTime('received_at')->nullable();
+            $table->dateTime('dispatched_at')->nullable();
+            $table->dateTime('returned_at')->nullable();
             $table->string('status')->default('pending');
             $table->text('notes')->nullable();
             $table->timestamps();

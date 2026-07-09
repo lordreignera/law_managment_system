@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Bank;
+use App\Models\BankBranch;
 use App\Models\BillableRate;
 use App\Models\BillingType;
 use App\Models\BudgetCategory;
@@ -21,6 +22,7 @@ use App\Models\RelationshipType;
 use App\Models\RequisitionCategory;
 use App\Models\Salutation;
 use App\Models\Shelf;
+use App\Models\ZonalOffice;
 
 return [
     'salutations' => [
@@ -101,6 +103,20 @@ return [
         'singular' => 'Bank',
         'model' => Bank::class,
         'description' => 'Banks used for recoveries, land titles, payments, and clients.',
+    ],
+    'bank-branches' => [
+        'title' => 'Bank Branches / Financial Institutions',
+        'singular' => 'Bank Branch',
+        'model' => BankBranch::class,
+        'description' => 'Bank branches or financial institution offices that send and receive securities.',
+        'extra_fields' => ['bank_id', 'office_location'],
+    ],
+    'zonal-offices' => [
+        'title' => 'MZO / Zonal Offices',
+        'singular' => 'Zonal Office',
+        'model' => ZonalOffice::class,
+        'description' => 'Ministry zonal offices, office locations, and districts covered for securities work.',
+        'extra_fields' => ['office_location', 'districts_covered'],
     ],
     'leave-types' => [
         'title' => 'Leave Types',

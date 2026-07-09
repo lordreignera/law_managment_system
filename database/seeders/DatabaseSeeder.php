@@ -6,6 +6,7 @@ use App\Models\Branch;
 use App\Models\Client;
 use App\Models\ClientIntake;
 use App\Models\CompanySetting;
+use App\Models\Conversation;
 use App\Models\Department;
 use App\Models\File;
 use App\Models\Matter;
@@ -14,7 +15,6 @@ use App\Models\PublicHoliday;
 use App\Models\RecoveryClient;
 use App\Models\StaffProfile;
 use App\Models\User;
-use App\Models\ZonalOffice;
 use App\Support\MonthlyReferenceNumber;
 use App\Support\RoutePermissionRegistry;
 use Illuminate\Database\Seeder;
@@ -45,6 +45,8 @@ class DatabaseSeeder extends Seeder
             BudgetCategorySeeder::class,
             CourtSeeder::class,
             BankSeeder::class,
+            BankBranchSeeder::class,
+            ZonalOfficeSeeder::class,
             LeaveTypeSeeder::class,
             PaymentModeSeeder::class,
             BillingTypeSeeder::class,
@@ -82,17 +84,17 @@ class DatabaseSeeder extends Seeder
             'Super Admin' => array_keys(RoutePermissionRegistry::MODULES),
             'Administrator' => array_keys(RoutePermissionRegistry::MODULES),
 
-            'Managing Partner' => ['dashboard', 'clients', 'intakes', 'matters', 'litigation', 'recoveries', 'land-titles', 'finance', 'expenses', 'petty-cash', 'ledger', 'staff', 'leave', 'requisitions', 'branches', 'holidays'],
-            'Senior Partner' => ['dashboard', 'clients', 'intakes', 'matters', 'litigation'],
-            'Litigation Officer' => ['dashboard', 'clients', 'intakes', 'matters', 'litigation', 'calendar'],
-            'Advocate' => ['dashboard', 'clients', 'intakes', 'matters', 'litigation'],
-            'Paralegal' => ['dashboard', 'intakes', 'matters', 'litigation'],
-            'Recoveries Manager' => ['dashboard', 'recoveries'],
-            'Recovery Officer' => ['dashboard'],
-            'Accountant' => ['dashboard', 'finance', 'expenses', 'petty-cash', 'ledger', 'requisitions'],
-            'HR Manager' => ['dashboard', 'staff', 'leave'],
-            'Front Desk' => ['dashboard', 'clients', 'intakes'],
-            'IT Manager' => ['dashboard', 'access', 'settings', 'branches', 'holidays'],
+            'Managing Partner' => ['dashboard', 'messages', 'clients', 'intakes', 'matters', 'litigation', 'recoveries', 'land-titles', 'finance', 'expenses', 'petty-cash', 'ledger', 'hr', 'staff', 'leave', 'requisitions', 'branches', 'holidays'],
+            'Senior Partner' => ['dashboard', 'messages', 'clients', 'intakes', 'matters', 'litigation'],
+            'Litigation Officer' => ['dashboard', 'messages', 'clients', 'intakes', 'matters', 'litigation', 'calendar'],
+            'Advocate' => ['dashboard', 'messages', 'clients', 'intakes', 'matters', 'litigation'],
+            'Paralegal' => ['dashboard', 'messages', 'intakes', 'matters', 'litigation'],
+            'Recoveries Manager' => ['dashboard', 'messages', 'recoveries'],
+            'Recovery Officer' => ['dashboard', 'messages'],
+            'Accountant' => ['dashboard', 'messages', 'finance', 'expenses', 'petty-cash', 'ledger', 'requisitions'],
+            'HR Manager' => ['dashboard', 'messages', 'hr', 'staff', 'leave'],
+            'Front Desk' => ['dashboard', 'messages', 'clients', 'intakes'],
+            'IT Manager' => ['dashboard', 'messages', 'access', 'settings', 'branches', 'holidays'],
         ];
 
         foreach ($roleModuleMap as $roleName => $modules) {
@@ -100,6 +102,15 @@ class DatabaseSeeder extends Seeder
                 ? $allPermissions
                 : $registry->permissionsForModules($modules);
             Role::create(['name' => $roleName, 'guard_name' => 'web'])->syncPermissions($perms);
+        }
+
+        $broadcastPermission = Permission::firstOrCreate([
+            'name' => 'messages.broadcast',
+            'guard_name' => 'web',
+        ]);
+
+        foreach (['Super Admin', 'Administrator', 'Managing Partner'] as $roleName) {
+            Role::findByName($roleName)->givePermissionTo($broadcastPermission);
         }
 
         // Self-service leave (request + view own + cancel) for every staff role
@@ -193,10 +204,6 @@ class DatabaseSeeder extends Seeder
             RecoveryClient::firstOrCreate(['name' => $client]);
         }
 
-        foreach (['KCCA', 'Jinja', 'Mukono', 'Wakiso Kyadondo', 'Wakiso Busiro', 'Masaka', 'Mbarara', 'Lira', 'Kabarole', 'Mbale', 'Arua', 'Gulu', 'Tororo'] as $office) {
-            ZonalOffice::firstOrCreate(['name' => $office]);
-        }
-
         $financeDepartmentId = Department::where('name', 'Finance and Administration')->value('id');
 
         $superAdmin = User::updateOrCreate(
@@ -241,6 +248,27 @@ class DatabaseSeeder extends Seeder
                 'job_title' => 'Administrator',
                 'employment_status' => 'active',
             ]
+        );
+
+        $welcomeConversation = Conversation::firstOrCreate(
+            ['title' => 'Welcome to JurisFlow Messages', 'created_by' => $superAdmin->id],
+            [
+                'audience_type' => 'users',
+                'allow_replies' => true,
+                'last_message_at' => now(),
+            ]
+        );
+
+        foreach ([$superAdmin->id, $admin->id] as $userId) {
+            $welcomeConversation->participants()->firstOrCreate(
+                ['user_id' => $userId],
+                ['last_read_at' => $userId === $superAdmin->id ? now() : null]
+            );
+        }
+
+        $welcomeConversation->messages()->firstOrCreate(
+            ['sender_id' => $superAdmin->id, 'body' => 'Internal messages are active. Use this space for personal notes, user messages, departmental notices, branch updates, and firm-wide communication.'],
+            ['sent_at' => now()]
         );
 
         $practiceArea = PracticeArea::where('name', 'Litigation')->first() ?? PracticeArea::first();

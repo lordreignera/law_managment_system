@@ -17,10 +17,18 @@
         </div>
 
         <div class="kfms-profile-summary">
-            <div class="kfms-profile-avatar">{{ substr(auth()->user()->name, 0, 1) }}</div>
+            <img class="kfms-profile-avatar" src="{{ auth()->user()->profile_photo_url }}" alt="{{ auth()->user()->name }}">
             <div>
                 <strong>{{ auth()->user()->name }}</strong>
                 <span>{{ auth()->user()->email }}</span>
+                @if (auth()->user()->signature_url)
+                    <em>
+                        <img src="{{ auth()->user()->signature_url }}" alt="Signature">
+                        Signature on file
+                    </em>
+                @else
+                    <em>No signature uploaded</em>
+                @endif
             </div>
         </div>
 

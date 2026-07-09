@@ -10,7 +10,10 @@
             + (in_array('court_level', $extraFields, true) ? 2 : 0)
             + (in_array('symbol', $extraFields, true) ? 1 : 0)
             + (in_array('hourly_rate', $extraFields, true) ? 2 : 0)
-            + (in_array('is_default', $extraFields, true) ? 1 : 0);
+            + (in_array('is_default', $extraFields, true) ? 1 : 0)
+            + (in_array('bank_id', $extraFields, true) ? 1 : 0)
+            + (in_array('office_location', $extraFields, true) ? 1 : 0)
+            + (in_array('districts_covered', $extraFields, true) ? 1 : 0);
     @endphp
 
     <section class="kfms-panel">
@@ -71,6 +74,15 @@
                             <th>Rate</th>
                             <th>Currency</th>
                         @endif
+                        @if (in_array('bank_id', $extraFields, true))
+                            <th>Bank</th>
+                        @endif
+                        @if (in_array('office_location', $extraFields, true))
+                            <th>Office Location</th>
+                        @endif
+                        @if (in_array('districts_covered', $extraFields, true))
+                            <th>Districts Covered</th>
+                        @endif
                         @if (in_array('is_default', $extraFields, true))
                             <th>Default</th>
                         @endif
@@ -93,6 +105,15 @@
                             @if (in_array('hourly_rate', $extraFields, true))
                                 <td>{{ number_format($record->hourly_rate, 2) }}</td>
                                 <td>{{ $record->currencyType?->name ?: '-' }}</td>
+                            @endif
+                            @if (in_array('bank_id', $extraFields, true))
+                                <td>{{ $record->bank?->name ?: '-' }}</td>
+                            @endif
+                            @if (in_array('office_location', $extraFields, true))
+                                <td>{{ $record->office_location ?: '-' }}</td>
+                            @endif
+                            @if (in_array('districts_covered', $extraFields, true))
+                                <td>{{ \Illuminate\Support\Str::limit($record->districts_covered ?: '-', 80) }}</td>
                             @endif
                             @if (in_array('is_default', $extraFields, true))
                                 <td>{{ $record->is_default ? 'Yes' : 'No' }}</td>

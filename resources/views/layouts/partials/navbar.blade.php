@@ -49,11 +49,27 @@
 
             <li class="nav-item dropdown">
                 <button class="kfms-nav-icon" type="button" id="chatDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Messages">
-                    <i class="mdi mdi-message-text-outline"></i>
+                    <i class="mdi mdi-chat-outline"></i>
+                    @if (($unreadMessageCount ?? 0) > 0)
+                        <span class="kfms-nav-badge">{{ $unreadMessageCount > 9 ? '9+' : $unreadMessageCount }}</span>
+                    @endif
                 </button>
                 <div class="dropdown-menu dropdown-menu-end navbar-dropdown kfms-notice-dropdown" aria-labelledby="chatDropdown">
                     <h6>Messages</h6>
-                    <p>Your internal chat space will appear here when the chat module is connected.</p>
+                    @forelse (($recentMessageConversations ?? collect()) as $conversation)
+                        <a class="dropdown-item" href="{{ route('messages.show', $conversation) }}">
+                            <strong>{{ $conversation->title }}</strong>
+                            <span>{{ $conversation->latestMessage?->sender?->name ?: 'System' }} &middot; {{ $conversation->last_message_at?->diffForHumans() }}</span>
+                        </a>
+                    @empty
+                        <p>No messages yet.</p>
+                    @endforelse
+                    @can('messages.index')
+                        <a class="dropdown-item kfms-dropdown-cta" href="{{ route('messages.index') }}">
+                            <i class="mdi mdi-open-in-new"></i>
+                            Open Messages
+                        </a>
+                    @endcan
                 </div>
             </li>
 
@@ -82,7 +98,7 @@
             <li class="nav-item dropdown">
                 <a class="nav-link" id="profileDropdown" href="#" data-bs-toggle="dropdown">
                     <div class="navbar-profile">
-                        <div class="kfms-profile-initial small">{{ substr(auth()->user()->name, 0, 1) }}</div>
+                        <img class="kfms-profile-initial small" src="{{ auth()->user()->profile_photo_url }}" alt="{{ auth()->user()->name }}">
                         <p class="mb-0 d-none d-sm-block navbar-profile-name">{{ auth()->user()->name }}</p>
                         <i class="mdi mdi-menu-down d-none d-sm-block"></i>
                     </div>

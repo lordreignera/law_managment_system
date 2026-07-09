@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Branch;
+use App\Models\Bank;
 use App\Models\CurrencyType;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
@@ -27,15 +28,28 @@ class SystemSettingController extends Controller
     public function index(Request $request, string $setting)
     {
         $definition = $this->definition($setting);
+        $extraFields = $definition['extra_fields'] ?? [];
         $records = $definition['model']::query()
-            ->when($request->filled('search'), function ($query) use ($request) {
+            ->when($request->filled('search'), function ($query) use ($request, $extraFields) {
                 $search = $request->string('search')->toString();
 
-                $query->where(function ($query) use ($search) {
+                $query->where(function ($query) use ($search, $extraFields) {
                     $query
                         ->where('name', 'like', "%{$search}%")
                         ->orWhere('code', 'like', "%{$search}%")
                         ->orWhere('description', 'like', "%{$search}%");
+
+                    if (in_array('office_location', $extraFields, true)) {
+                        $query->orWhere('office_location', 'like', "%{$search}%");
+                    }
+
+                    if (in_array('districts_covered', $extraFields, true)) {
+                        $query->orWhere('districts_covered', 'like', "%{$search}%");
+                    }
+
+                    if (in_array('bank_id', $extraFields, true)) {
+                        $query->orWhereHas('bank', fn ($query) => $query->where('name', 'like', "%{$search}%"));
+                    }
                 });
             })
             ->when($request->filled('status'), function ($query) use ($request) {
@@ -51,6 +65,7 @@ class SystemSettingController extends Controller
             'definition' => $definition,
             'records' => $records,
             'newRecord' => $this->newRecord($definition),
+            'banks' => Bank::orderBy('name')->get(),
             'currencyTypes' => CurrencyType::orderBy('name')->get(),
             'branches' => Branch::orderBy('name')->get(),
             'filters' => $request->only(['search', 'status']),
@@ -65,6 +80,7 @@ class SystemSettingController extends Controller
             'setting' => $setting,
             'definition' => $definition,
             'record' => $this->newRecord($definition),
+            'banks' => Bank::orderBy('name')->get(),
             'currencyTypes' => CurrencyType::orderBy('name')->get(),
             'branches' => Branch::orderBy('name')->get(),
         ]);
@@ -92,6 +108,7 @@ class SystemSettingController extends Controller
             'setting' => $setting,
             'definition' => $definition,
             'record' => $record,
+            'banks' => Bank::orderBy('name')->get(),
             'currencyTypes' => CurrencyType::orderBy('name')->get(),
             'branches' => Branch::orderBy('name')->get(),
         ]);
@@ -173,6 +190,18 @@ class SystemSettingController extends Controller
 
         if (in_array('branch_id', $extraFields, true)) {
             $rules['branch_id'] = ['nullable', 'exists:branches,id'];
+        }
+
+        if (in_array('bank_id', $extraFields, true)) {
+            $rules['bank_id'] = ['required', 'exists:banks,id'];
+        }
+
+        if (in_array('office_location', $extraFields, true)) {
+            $rules['office_location'] = ['nullable', 'string', 'max:500'];
+        }
+
+        if (in_array('districts_covered', $extraFields, true)) {
+            $rules['districts_covered'] = ['nullable', 'string', 'max:3000'];
         }
 
         $data = $request->validate($rules);

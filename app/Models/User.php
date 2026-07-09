@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use App\Notifications\BrandedResetPassword;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Storage;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Jetstream\HasProfilePhoto;
 use Laravel\Sanctum\HasApiTokens;
@@ -35,6 +37,7 @@ class User extends Authenticatable
         'password',
         'branch_id',
         'department_id',
+        'signature_path',
     ];
 
     /**
@@ -56,6 +59,7 @@ class User extends Authenticatable
      */
     protected $appends = [
         'profile_photo_url',
+        'signature_url',
     ];
 
     /**
@@ -93,6 +97,35 @@ class User extends Authenticatable
     public function staffProfile()
     {
         return $this->hasOne(StaffProfile::class);
+    }
+
+    public function getSignatureUrlAttribute(): ?string
+    {
+        return $this->signature_path
+            ? Storage::disk('public')->url($this->signature_path)
+            : null;
+    }
+
+    public function createdConversations()
+    {
+        return $this->hasMany(Conversation::class, 'created_by');
+    }
+
+    public function conversations()
+    {
+        return $this->belongsToMany(Conversation::class, 'conversation_participants')
+            ->withPivot(['last_read_at', 'muted_at'])
+            ->withTimestamps();
+    }
+
+    public function sentMessages()
+    {
+        return $this->hasMany(Message::class, 'sender_id');
+    }
+
+    public function sendPasswordResetNotification($token): void
+    {
+        $this->notify(new BrandedResetPassword($token));
     }
 
     /**

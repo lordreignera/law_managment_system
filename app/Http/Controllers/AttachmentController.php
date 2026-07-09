@@ -22,10 +22,9 @@ class AttachmentController extends Controller
 
         abort_unless($disk->exists($attachment->path), 404);
 
-        return $disk->response(
-            $attachment->path,
-            $attachment->original_name,
-            ['Content-Type' => $attachment->mime_type ?: 'application/octet-stream']
-        );
+        return response($disk->get($attachment->path), 200, [
+            'Content-Type' => $attachment->mime_type ?: 'application/octet-stream',
+            'Content-Disposition' => 'inline; filename="'.$attachment->original_name.'"',
+        ]);
     }
 }

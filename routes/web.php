@@ -12,6 +12,7 @@ use App\Http\Controllers\CompanySettingController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\FinanceController;
+use App\Http\Controllers\HrController;
 use App\Http\Controllers\LandTitleController;
 use App\Http\Controllers\LeaveController;
 use App\Http\Controllers\LedgerController;
@@ -19,6 +20,7 @@ use App\Http\Controllers\LitigationController;
 use App\Http\Controllers\MatterController;
 use App\Http\Controllers\MatterBillingController;
 use App\Http\Controllers\MatterInstructionController;
+use App\Http\Controllers\MessageController;
 use App\Http\Controllers\PettyCashController;
 use App\Http\Controllers\PublicHolidayController;
 use App\Http\Controllers\RecoveryActivityController;
@@ -53,6 +55,13 @@ Route::middleware([
     // permission record.
     Route::middleware(['active.staff', 'route.permission'])->group(function () {
         Route::get('/dashboard', DashboardController::class)->name('dashboard');
+
+        // Internal messages
+        Route::get('/messages', [MessageController::class, 'index'])->name('messages.index');
+        Route::post('/messages', [MessageController::class, 'store'])->name('messages.store');
+        Route::get('/messages/{conversation}', [MessageController::class, 'show'])->name('messages.show');
+        Route::post('/messages/{conversation}/reply', [MessageController::class, 'reply'])->name('messages.reply');
+        Route::patch('/messages/{conversation}/read', [MessageController::class, 'markRead'])->name('messages.read');
 
         // Clients
         Route::get('/clients', [ClientController::class, 'index'])->name('clients.index');
@@ -130,9 +139,23 @@ Route::middleware([
         Route::delete('/recoveries/{recovery}', [RecoveryController::class, 'destroy'])->name('recoveries.destroy');
         Route::post('/recoveries/{recovery}/activities', [RecoveryActivityController::class, 'store'])->name('recoveries.activities.store');
         Route::get('/land-titles', [LandTitleController::class, 'index'])->name('land-titles.index');
+        Route::get('/land-titles/create', [LandTitleController::class, 'create'])->name('land-titles.create');
+        Route::post('/land-titles', [LandTitleController::class, 'store'])->name('land-titles.store');
+        Route::get('/land-titles/export', [LandTitleController::class, 'export'])->name('land-titles.export');
+        Route::get('/land-titles/{landTitle}', [LandTitleController::class, 'show'])->name('land-titles.show');
+        Route::get('/land-titles/{landTitle}/edit', [LandTitleController::class, 'edit'])->name('land-titles.edit');
+        Route::put('/land-titles/{landTitle}', [LandTitleController::class, 'update'])->name('land-titles.update');
+        Route::patch('/land-titles/{landTitle}/return', [LandTitleController::class, 'returnSecurity'])->name('land-titles.return');
+        Route::delete('/land-titles/{landTitle}', [LandTitleController::class, 'destroy'])->name('land-titles.destroy');
         Route::get('/finance/dashboard', [FinanceController::class, 'dashboard'])->name('finance.dashboard');
         Route::get('/finance', [FinanceController::class, 'index'])->name('finance.index');
+        Route::get('/hr/dashboard', [HrController::class, 'dashboard'])->name('hr.dashboard');
         Route::get('/staff', [StaffController::class, 'index'])->name('staff.index');
+        Route::get('/staff/create', [StaffController::class, 'create'])->name('staff.create');
+        Route::post('/staff', [StaffController::class, 'store'])->name('staff.store');
+        Route::get('/staff/{staff}', [StaffController::class, 'show'])->name('staff.show');
+        Route::get('/staff/{staff}/edit', [StaffController::class, 'edit'])->name('staff.edit');
+        Route::put('/staff/{staff}', [StaffController::class, 'update'])->name('staff.update');
 
         // Leave management
         Route::get('/leave', [LeaveController::class, 'index'])->name('leave.index');
@@ -173,6 +196,7 @@ Route::middleware([
             Route::patch('/users/{user}/approve', [AccessControlController::class, 'approveUser'])->name('users.approve');
             Route::delete('/users/{user}', [AccessControlController::class, 'destroyUser'])->name('users.destroy');
             Route::get('/approvals', [AccessControlController::class, 'approvals'])->name('approvals.index');
+            Route::get('/approvals/{profile}', [AccessControlController::class, 'showApproval'])->name('approvals.show');
             Route::get('/roles', [AccessControlController::class, 'roles'])->name('roles.index');
             Route::post('/roles', [AccessControlController::class, 'storeRole'])->name('roles.store');
             Route::put('/roles/{role}', [AccessControlController::class, 'updateRole'])->name('roles.update');

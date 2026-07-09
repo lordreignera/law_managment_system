@@ -6,6 +6,7 @@ use App\Models\Branch;
 use App\Models\Department;
 use App\Models\StaffProfile;
 use App\Models\User;
+use App\Notifications\StaffAccountApproved;
 use App\Support\RoutePermissionRegistry;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -76,6 +77,20 @@ class AccessControlController extends Controller
         ]);
     }
 
+    public function showApproval(StaffProfile $profile)
+    {
+        $this->ensureCanManageAccessControl();
+
+        abort_unless($profile->employment_status === 'pending', 404);
+
+        return view('modules.access-control.approval-show', [
+            'profile' => $profile->load(['user.roles', 'branch', 'department']),
+            'branches' => Branch::where('is_active', true)->orderBy('name')->get(),
+            'departments' => Department::where('is_active', true)->orderBy('name')->get(),
+            'roles' => Role::whereNotIn('name', ['Super Admin', 'Administrator'])->orderBy('name')->get(),
+        ]);
+    }
+
     public function approveUser(Request $request, User $user)
     {
         $this->ensureCanManageAccessControl();
@@ -113,7 +128,11 @@ class AccessControlController extends Controller
             ]
         );
 
-        return back()->with('status', $user->name.' approved.');
+        $user->notify(new StaffAccountApproved($requestedRole));
+
+        return redirect()
+            ->route('access.approvals.index')
+            ->with('status', $user->name.' approved.');
     }
 
     public function updateUser(Request $request, User $user)
@@ -156,14 +175,18 @@ class AccessControlController extends Controller
         return back()->with('status', $user->name.' updated.');
     }
 
-    public function destroyUser(User $user)
+    public function destroyUser(Request $request, User $user)
     {
         $this->ensureCanManageAccessControl();
         abort_if($user->is(auth()->user()), 422, 'You cannot delete your own account.');
 
         $user->delete();
 
-        return back()->with('status', 'User deleted.');
+        $route = $request->input('redirect_to') === 'approvals'
+            ? 'access.approvals.index'
+            : 'access.users.index';
+
+        return redirect()->route($route)->with('status', 'User deleted.');
     }
 
     public function roles(Request $request)

@@ -4,15 +4,18 @@ namespace App\Providers;
 
 use App\Models\Branch;
 use App\Models\CompanySetting;
+use App\Models\Conversation;
 use App\Models\Department;
 use App\Models\User;
 use App\Support\Sms\AfricasTalkingGateway;
 use App\Support\Sms\LogSmsGateway;
 use App\Support\Sms\SmsGateway;
+use App\Livewire\Profile\UpdateProfileInformationForm;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\View;
+use Livewire\Livewire;
 use Illuminate\Support\ServiceProvider;
 use Spatie\Permission\Models\Role;
 
@@ -42,6 +45,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Schema::defaultStringLength(191);
+        Livewire::component('profile.update-profile-information-form', UpdateProfileInformationForm::class);
 
         // Super Admin role bypasses every authorization check (including the
         // per-route permission middleware). Done globally via Gate::before so
@@ -72,6 +76,29 @@ class AppServiceProvider extends ServiceProvider
         // booted() callback runs after all providers (including the routing
         // provider) so Route::getRoutes() is fully populated by the time the
         // sync command inspects it.
+        View::composer('layouts.partials.navbar', function ($view) {
+            $user = auth()->user();
+
+            if (! $user || ! Schema::hasTable('conversations') || ! Schema::hasTable('conversation_participants')) {
+                $view->with([
+                    'unreadMessageCount' => 0,
+                    'recentMessageConversations' => collect(),
+                ]);
+
+                return;
+            }
+
+            $view->with([
+                'unreadMessageCount' => Conversation::query()->forUser($user)->unreadForUser($user)->count(),
+                'recentMessageConversations' => Conversation::query()
+                    ->forUser($user)
+                    ->with(['latestMessage.sender'])
+                    ->latest('last_message_at')
+                    ->limit(5)
+                    ->get(),
+            ]);
+        });
+
         $this->app->booted(function () {
             $this->autoSyncRoutePermissions();
         });

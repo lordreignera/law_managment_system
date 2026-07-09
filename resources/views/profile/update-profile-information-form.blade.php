@@ -4,7 +4,7 @@
     </x-slot>
 
     <x-slot name="description">
-        {{ __('Update your account\'s profile information and email address.') }}
+        {{ __('Update your account details, email address, profile photo, and document signature.') }}
     </x-slot>
 
     <x-slot name="form">
@@ -52,6 +52,54 @@
             </div>
         @endif
 
+        <!-- Signature -->
+        <div x-data="{ signatureName: null, signaturePreview: null }" class="col-span-6 sm:col-span-4">
+            <input type="file" id="signature" class="hidden"
+                   accept="image/png,image/jpeg,image/webp"
+                   wire:model.live="signature"
+                   x-ref="signature"
+                   x-on:change="
+                        signatureName = $refs.signature.files[0]?.name;
+                        if ($refs.signature.files[0]) {
+                            const reader = new FileReader();
+                            reader.onload = (event) => {
+                                signaturePreview = event.target.result;
+                            };
+                            reader.readAsDataURL($refs.signature.files[0]);
+                        }
+                   " />
+
+            <x-label for="signature" value="{{ __('Signature') }}" />
+
+            <p class="text-sm text-gray-600 mt-1">
+                {{ __('Upload a clear PNG, JPG, or WEBP signature image. This will be available for signing documents later.') }}
+            </p>
+
+            <div class="kfms-signature-preview mt-3" x-show="! signaturePreview">
+                @if ($this->user->signature_url)
+                    <img src="{{ $this->user->signature_url }}" alt="{{ __('Saved signature') }}">
+                @else
+                    <span>{{ __('No signature uploaded') }}</span>
+                @endif
+            </div>
+
+            <div class="kfms-signature-preview mt-3" x-show="signaturePreview" style="display: none;">
+                <img x-bind:src="signaturePreview" alt="{{ __('New signature preview') }}">
+            </div>
+
+            <x-secondary-button class="mt-2 me-2" type="button" x-on:click.prevent="$refs.signature.click()">
+                {{ __('Upload Signature') }}
+            </x-secondary-button>
+
+            @if ($this->user->signature_path)
+                <x-secondary-button type="button" class="mt-2" wire:click="deleteSignature">
+                    {{ __('Remove Signature') }}
+                </x-secondary-button>
+            @endif
+
+            <x-input-error for="signature" class="mt-2" />
+        </div>
+
         <!-- Name -->
         <div class="col-span-6 sm:col-span-4">
             <x-label for="name" value="{{ __('Name') }}" />
@@ -88,7 +136,7 @@
             {{ __('Saved.') }}
         </x-action-message>
 
-        <x-button wire:loading.attr="disabled" wire:target="photo">
+        <x-button wire:loading.attr="disabled" wire:target="photo,signature">
             {{ __('Save') }}
         </x-button>
     </x-slot>

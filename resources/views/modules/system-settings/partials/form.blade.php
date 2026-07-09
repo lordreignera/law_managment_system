@@ -56,6 +56,37 @@
         </label>
     @endif
 
+    @if (in_array('bank_id', $extraFields, true))
+        <label>
+            <span>Bank / Financial Institution</span>
+            <select name="bank_id" required>
+                <option value="">Select bank</option>
+                @foreach (($banks ?? []) as $bank)
+                    <option value="{{ $bank->id }}" @selected((string) old('bank_id', $record->bank_id) === (string) $bank->id)>
+                        {{ $bank->name }}
+                    </option>
+                @endforeach
+            </select>
+            @error('bank_id') <small>{{ $message }}</small> @enderror
+        </label>
+    @endif
+
+    @if (in_array('office_location', $extraFields, true))
+        <label class="kfms-span-2">
+            <span>Office Location</span>
+            <input type="text" name="office_location" value="{{ old('office_location', $record->office_location) }}">
+            @error('office_location') <small>{{ $message }}</small> @enderror
+        </label>
+    @endif
+
+    @if (in_array('districts_covered', $extraFields, true))
+        <label class="kfms-span-2">
+            <span>Districts Covered</span>
+            <textarea name="districts_covered" rows="3">{{ old('districts_covered', $record->districts_covered) }}</textarea>
+            @error('districts_covered') <small>{{ $message }}</small> @enderror
+        </label>
+    @endif
+
     @if (in_array('hourly_rate', $extraFields, true))
         <label>
             <span>Hourly Rate</span>

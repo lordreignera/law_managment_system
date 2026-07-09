@@ -23,6 +23,7 @@ class RoutePermissionRegistry
      */
     public const MODULES = [
         'dashboard' => 'Dashboard',
+        'messages' => 'Internal Messages',
         'clients' => 'Clients',
         'intakes' => 'Client Intakes',
         'matters' => 'Matters',
@@ -34,6 +35,7 @@ class RoutePermissionRegistry
         'expenses' => 'Expenses',
         'petty-cash' => 'Petty Cash',
         'ledger' => 'Ledger',
+        'hr' => 'Human Resources',
         'staff' => 'Staff',
         'leave' => 'Leave Management',
         'requisitions' => 'Requisitions',

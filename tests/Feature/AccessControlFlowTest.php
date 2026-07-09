@@ -6,7 +6,9 @@ use App\Models\Branch;
 use App\Models\Department;
 use App\Models\StaffProfile;
 use App\Models\User;
+use App\Notifications\StaffAccountApproved;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
@@ -59,6 +61,8 @@ class AccessControlFlowTest extends TestCase
 
     public function test_approval_activates_user_and_grants_requested_role(): void
     {
+        Notification::fake();
+
         $accessRole = Role::findOrCreate('Access Manager');
         $accessRole->givePermissionTo(Permission::findOrCreate('access.users.index'));
         $accessRole->givePermissionTo(Permission::findOrCreate('access.users.approve'));
@@ -108,5 +112,7 @@ class AccessControlFlowTest extends TestCase
         $this->assertSame($correctedRole->name, $profile->requested_role);
         $this->assertSame($branch->id, $user->fresh()->branch_id);
         $this->assertSame($department->id, $user->fresh()->department_id);
+
+        Notification::assertSentTo($user, StaffAccountApproved::class);
     }
 }

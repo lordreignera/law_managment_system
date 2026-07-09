@@ -81,7 +81,7 @@
                             <td>
                                 <div class="kfms-table-actions">
                                     @if ($status === 'pending')
-                                        <a href="{{ route('access.approvals.index', ['search' => $user->email]) }}">Review</a>
+                                        <a href="{{ route('access.approvals.show', $user->staffProfile) }}">Review</a>
                                     @endif
                                     <button type="button" data-bs-toggle="modal" data-bs-target="#edit-user-{{ $user->id }}">Edit</button>
                                     @unless ($user->is(auth()->user()))
