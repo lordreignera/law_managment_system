@@ -90,7 +90,7 @@ class HrDashboardTest extends TestCase
             ->put(route('staff.update', $staff), [
                 'name' => 'Norah Nakamatte',
                 'email' => 'norah@example.test',
-                'staff_no' => 'JF-001',
+                'staff_no' => 'KCA-001',
                 'phone' => '+256700000001',
                 'job_title' => 'HR Officer',
                 'branch_id' => $branch->id,
@@ -110,7 +110,7 @@ class HrDashboardTest extends TestCase
 
         $this->assertDatabaseHas('staff_profiles', [
             'user_id' => $staff->id,
-            'staff_no' => 'JF-001',
+            'staff_no' => 'KCA-001',
             'job_title' => 'HR Officer',
             'employment_status' => 'active',
         ]);
@@ -135,7 +135,7 @@ class HrDashboardTest extends TestCase
                 'email' => 'advocate@example.test',
                 'password' => 'password123',
                 'password_confirmation' => 'password123',
-                'staff_no' => 'JF-002',
+                'staff_no' => 'KCA-002',
                 'phone' => '+256700000002',
                 'job_title' => 'Advocate',
                 'role' => 'Advocate',
@@ -151,7 +151,7 @@ class HrDashboardTest extends TestCase
         $this->assertTrue($staff->hasRole('Advocate'));
         $this->assertDatabaseHas('staff_profiles', [
             'user_id' => $staff->id,
-            'staff_no' => 'JF-002',
+            'staff_no' => 'KCA-002',
             'phone' => '+256700000002',
             'job_title' => 'Advocate',
             'employment_status' => 'active',

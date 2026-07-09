@@ -4,21 +4,21 @@
         $registerCopy = $companySetting->login_subheading ?: 'Your request will be reviewed before access is granted.';
     @endphp
 
-    <main class="jf-auth-stage jf-login-stage jf-register-stage">
-        <section class="jf-auth-card jf-register-card jf-register-refined">
-            <div class="jf-login-card-accent" aria-hidden="true"></div>
-            <aside class="jf-brand-panel jf-register-brand">
-                <div class="jf-product-lockup">
-                    <x-company-logo mark-class="jf-product-mark" image-class="jf-product-logo" />
+    <main class="kca-auth-stage kca-login-stage kca-register-stage">
+        <section class="kca-auth-card kca-register-card kca-register-refined">
+            <div class="kca-login-card-accent" aria-hidden="true"></div>
+            <aside class="kca-brand-panel kca-register-brand">
+                <div class="kca-product-lockup">
+                    <x-company-logo mark-class="kca-product-mark" image-class="kca-product-logo" />
                 </div>
 
-                <div class="jf-brand-copy">
+                <div class="kca-brand-copy">
                     <h1>{{ $companySetting->company_name }}</h1>
                     <h2>{{ $companySetting->tagline ?: $companySetting->short_name }}</h2>
                     <p>{{ $registerCopy }}</p>
                 </div>
 
-                <div class="jf-feature-list">
+                <div class="kca-feature-list">
                     <div>
                         <i class="mdi mdi-shield-check-outline"></i>
                         <span>
@@ -42,7 +42,7 @@
                     </div>
                 </div>
 
-                <div class="jf-help-box">
+                <div class="kca-help-box">
                     <i class="mdi mdi-headset"></i>
                     <span>
                         <strong>Need Help?</strong>
@@ -59,15 +59,15 @@
                 </div>
             </aside>
 
-            <section class="jf-register-panel">
-                <div class="jf-register-top-link">
+            <section class="kca-register-panel">
+                <div class="kca-register-top-link">
                     Already have an account?
                     <a href="{{ route('login') }}">Sign in</a>
                 </div>
 
-                <div class="jf-register-heading">
-                    <span class="jf-register-heading-logo">
-                        <x-company-logo mark-class="jf-register-logo-mark" image-class="jf-register-logo-image" />
+                <div class="kca-register-heading">
+                    <span class="kca-register-heading-logo">
+                        <x-company-logo mark-class="kca-register-logo-mark" image-class="kca-register-logo-image" />
                     </span>
                     <div>
                         <h2>Request Staff Access</h2>
@@ -76,15 +76,15 @@
                 </div>
 
                 @if ($errors->any())
-                    <div class="jf-alert">{{ $errors->first() }}</div>
+                    <div class="kca-alert">{{ $errors->first() }}</div>
                 @endif
 
                 <form method="POST" action="{{ route('register') }}">
                     @csrf
 
-                    <div class="jf-register-section">Personal Information</div>
-                    <div class="jf-register-grid">
-                        <label class="jf-field" for="name">
+                    <div class="kca-register-section">Personal Information</div>
+                    <div class="kca-register-grid">
+                        <label class="kca-field" for="name">
                             <span>Full Name <b>*</b></span>
                             <div>
                                 <i class="mdi mdi-account-outline"></i>
@@ -92,7 +92,7 @@
                             </div>
                         </label>
 
-                        <label class="jf-field" for="email">
+                        <label class="kca-field" for="email">
                             <span>Email Address <b>*</b></span>
                             <div>
                                 <i class="mdi mdi-email-outline"></i>
@@ -100,7 +100,7 @@
                             </div>
                         </label>
 
-                        <label class="jf-field" for="phone">
+                        <label class="kca-field" for="phone">
                             <span>Phone Number <b>*</b></span>
                             <div>
                                 <i class="mdi mdi-phone-outline"></i>
@@ -108,7 +108,7 @@
                             </div>
                         </label>
 
-                        <label class="jf-field" for="job_title">
+                        <label class="kca-field" for="job_title">
                             <span>Position / Job Title <b>*</b></span>
                             <div>
                                 <i class="mdi mdi-briefcase-outline"></i>
@@ -116,7 +116,7 @@
                             </div>
                         </label>
 
-                        <label class="jf-field" for="department_id">
+                        <label class="kca-field" for="department_id">
                             <span>Department <b>*</b></span>
                             <div>
                                 <i class="mdi mdi-domain"></i>
@@ -129,7 +129,7 @@
                             </div>
                         </label>
 
-                        <label class="jf-field" for="branch_id">
+                        <label class="kca-field" for="branch_id">
                             <span>Branch / Office <b>*</b></span>
                             <div>
                                 <i class="mdi mdi-map-marker-outline"></i>
@@ -142,7 +142,7 @@
                             </div>
                         </label>
 
-                        <label class="jf-field" for="requested_role">
+                        <label class="kca-field" for="requested_role">
                             <span>Requested Role <b>*</b></span>
                             <div>
                                 <i class="mdi mdi-shield-account-outline"></i>
@@ -155,23 +155,23 @@
                             </div>
                         </label>
 
-                        <label class="jf-field" for="password">
+                        <label class="kca-field" for="password">
                             <span>Password <b>*</b></span>
                             <div>
                                 <i class="mdi mdi-lock-outline"></i>
                                 <input id="password" type="password" name="password" placeholder="Create your password" required autocomplete="new-password">
-                                <button class="jf-password-toggle" type="button" data-password-toggle="password" aria-label="Show password">
+                                <button class="kca-password-toggle" type="button" data-password-toggle="password" aria-label="Show password">
                                     <i class="mdi mdi-eye-outline"></i>
                                 </button>
                             </div>
                         </label>
 
-                        <label class="jf-field" for="password_confirmation">
+                        <label class="kca-field" for="password_confirmation">
                             <span>Confirm Password <b>*</b></span>
                             <div>
                                 <i class="mdi mdi-lock-check-outline"></i>
                                 <input id="password_confirmation" type="password" name="password_confirmation" placeholder="Confirm your password" required autocomplete="new-password">
-                                <button class="jf-password-toggle" type="button" data-password-toggle="password_confirmation" aria-label="Show password confirmation">
+                                <button class="kca-password-toggle" type="button" data-password-toggle="password_confirmation" aria-label="Show password confirmation">
                                     <i class="mdi mdi-eye-outline"></i>
                                 </button>
                             </div>
@@ -179,7 +179,7 @@
                     </div>
 
                     @if (Laravel\Jetstream\Jetstream::hasTermsAndPrivacyPolicyFeature())
-                        <label class="jf-terms" for="terms">
+                        <label class="kca-terms" for="terms">
                             <input type="checkbox" name="terms" id="terms" required>
                             <span>
                                 {!! __('I agree to the :terms_of_service and :privacy_policy', [
@@ -190,12 +190,12 @@
                         </label>
                     @endif
 
-                    <div class="jf-register-note">
+                    <div class="kca-register-note">
                         <i class="mdi mdi-information-outline"></i>
                         <span>Your request will be reviewed by the firm administrator. You will be notified by email once access is approved.</span>
                     </div>
 
-                    <button class="jf-primary-button" type="submit">
+                    <button class="kca-primary-button" type="submit">
                         <i class="mdi mdi-send-outline"></i>
                         Submit Request
                     </button>

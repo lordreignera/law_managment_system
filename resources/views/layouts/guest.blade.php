@@ -7,6 +7,8 @@
 
         <title>{{ $companySetting->company_name ?: config('app.name', 'KFMS') }}</title>
 
+        @include('layouts.partials.favicon')
+
         @php
             $guestAssetVersion = static function (string $path): int {
                 $fullPath = public_path($path);

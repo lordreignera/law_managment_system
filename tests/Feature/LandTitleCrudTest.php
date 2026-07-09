@@ -67,6 +67,20 @@ class LandTitleCrudTest extends TestCase
             'is_active' => true,
         ]);
 
+        $otherBank = Bank::create([
+            'name' => 'Other Test Bank',
+            'code' => 'OTB',
+            'is_active' => true,
+        ]);
+
+        $otherBankBranch = BankBranch::create([
+            'bank_id' => $otherBank->id,
+            'name' => 'Other Bank Branch',
+            'code' => 'OBB',
+            'office_location' => 'Other Road',
+            'is_active' => true,
+        ]);
+
         $zonalOffice = ZonalOffice::create([
             'name' => 'Kampala Zonal Office',
             'code' => 'KZO',
@@ -79,6 +93,19 @@ class LandTitleCrudTest extends TestCase
             ->get(route('land-titles.create'))
             ->assertOk()
             ->assertSee('Add Security');
+
+        $this->actingAs($user)
+            ->from(route('land-titles.create'))
+            ->post(route('land-titles.store'), [
+                'bank_id' => $bank->id,
+                'bank_branch_id' => $otherBankBranch->id,
+                'zonal_office_id' => $zonalOffice->id,
+                'handled_by' => $user->id,
+                'borrower_name' => 'Jane Borrower',
+                'status' => 'pending',
+            ])
+            ->assertRedirect(route('land-titles.create', absolute: false))
+            ->assertSessionHasErrors('bank_branch_id');
 
         $this->actingAs($user)
             ->post(route('land-titles.store'), [

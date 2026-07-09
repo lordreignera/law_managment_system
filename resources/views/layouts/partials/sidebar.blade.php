@@ -49,11 +49,13 @@
             'route' => 'recoveries.index',
             'active' => ['recoveries.*'],
             'children' => [
+                ['label' => 'Recovery Dashboard', 'route' => 'recoveries.dashboard', 'active' => 'recoveries.dashboard', 'permission' => 'recoveries.dashboard'],
                 ['label' => 'Accounts Register', 'route' => 'recoveries.index', 'active' => 'recoveries.index', 'permission' => 'recoveries.index'],
+                ['label' => 'Import Portfolios', 'route' => 'recoveries.import', 'active' => ['recoveries.import', 'recoveries.batches.*'], 'permission' => 'recoveries.import'],
                 ['label' => 'My Recoveries', 'route' => 'recoveries.mine', 'active' => 'recoveries.mine', 'permission' => 'recoveries.mine'],
                 ['label' => 'Reports', 'route' => 'recoveries.reports', 'active' => 'recoveries.reports', 'permission' => 'recoveries.reports'],
             ],
-            'permission_any' => ['recoveries.index', 'recoveries.mine', 'recoveries.reports'],
+            'permission_any' => ['recoveries.dashboard', 'recoveries.index', 'recoveries.import', 'recoveries.mine', 'recoveries.reports'],
         ],
         ['label' => 'Securities', 'icon' => 'mdi-file-document', 'route' => 'land-titles.index', 'permission' => 'land-titles.index'],
         [
@@ -107,7 +109,6 @@
     <div class="sidebar-brand-wrapper d-none d-lg-flex align-items-center justify-content-center fixed-top">
         <a class="sidebar-brand brand-logo kfms-brand" href="{{ route('dashboard') }}">
             <x-company-logo mark-class="kfms-brand-mark" image-class="kfms-brand-image" />
-            <strong>{{ $companySetting->short_name }}</strong>
         </a>
         <a class="sidebar-brand brand-logo-mini kfms-brand-mini" href="{{ route('dashboard') }}">
             <x-company-logo mark-class="kfms-brand-mini-mark" image-class="kfms-brand-mini-image" />

@@ -50,6 +50,10 @@ class SystemSettingController extends Controller
                     if (in_array('bank_id', $extraFields, true)) {
                         $query->orWhereHas('bank', fn ($query) => $query->where('name', 'like', "%{$search}%"));
                     }
+
+                    if (in_array('contact_person', $extraFields, true)) {
+                        $query->orWhere('contact_person', 'like', "%{$search}%");
+                    }
                 });
             })
             ->when($request->filled('status'), function ($query) use ($request) {
@@ -168,6 +172,22 @@ class SystemSettingController extends Controller
             $rules['symbol'] = ['nullable', 'string', 'max:10'];
         }
 
+        if (in_array('contact_person', $extraFields, true)) {
+            $rules['contact_person'] = ['nullable', 'string', 'max:191'];
+        }
+
+        if (in_array('email', $extraFields, true)) {
+            $rules['email'] = ['nullable', 'email', 'max:191'];
+        }
+
+        if (in_array('phone', $extraFields, true)) {
+            $rules['phone'] = ['nullable', 'string', 'max:50'];
+        }
+
+        if (in_array('portfolio_types', $extraFields, true)) {
+            $rules['portfolio_types'] = ['nullable', 'string', 'max:3000'];
+        }
+
         if (in_array('header_text', $extraFields, true)) {
             $rules['header_text'] = ['nullable', 'string', 'max:2000'];
         }
@@ -211,6 +231,14 @@ class SystemSettingController extends Controller
 
         if (in_array('is_default', $extraFields, true)) {
             $data['is_default'] = $request->boolean('is_default');
+        }
+
+        if (in_array('portfolio_types', $extraFields, true)) {
+            $data['portfolio_types'] = collect(preg_split('/\r\n|\r|\n/', (string) ($data['portfolio_types'] ?? '')))
+                ->map(fn ($type) => trim($type))
+                ->filter()
+                ->values()
+                ->all();
         }
 
         return $data;

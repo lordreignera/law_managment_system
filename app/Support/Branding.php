@@ -10,9 +10,9 @@ class Branding
     public static function companyName(): string
     {
         if (Schema::hasTable('company_settings')) {
-            return CompanySetting::current()->company_name ?: 'JurisFlow';
+            return CompanySetting::current()->company_name ?: 'Kalikumutima & Co Advocates';
         }
 
-        return config('app.name', 'JurisFlow');
+        return config('app.name', 'Kalikumutima & Co Advocates');
     }
 }

@@ -24,8 +24,10 @@ class RecoveryAccount extends Model
     protected $casts = [
         'raw_payload' => 'array',
         'assigned_at' => 'datetime',
+        'days_past_due' => 'integer',
         'principal_amount' => 'decimal:2',
         'interest_amount' => 'decimal:2',
+        'arrears_amount' => 'decimal:2',
         'outstanding_amount' => 'decimal:2',
         'amount_recovered' => 'decimal:2',
     ];
@@ -38,6 +40,11 @@ class RecoveryAccount extends Model
     public function branch()
     {
         return $this->belongsTo(Branch::class);
+    }
+
+    public function importBatch()
+    {
+        return $this->belongsTo(RecoveryImportBatch::class, 'recovery_import_batch_id');
     }
 
     public function assignee()

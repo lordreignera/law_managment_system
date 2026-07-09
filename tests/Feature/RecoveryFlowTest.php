@@ -5,9 +5,13 @@ namespace Tests\Feature;
 use App\Models\Branch;
 use App\Models\RecoveryAccount;
 use App\Models\RecoveryClient;
+use App\Models\RecoveryImportBatch;
 use App\Models\StaffProfile;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
@@ -67,6 +71,79 @@ class RecoveryFlowTest extends TestCase
         // Branch defaults from the assigned officer's branch.
         $this->assertSame($branch->id, $account->branch_id);
         $response->assertRedirect(route('recoveries.show', $account));
+    }
+
+    public function test_recovery_manager_lands_on_recovery_dashboard(): void
+    {
+        $manager = $this->activeUser(['dashboard', 'recoveries.dashboard'], 'Recoveries Manager');
+
+        $this->actingAs($manager)->get(route('dashboard'))
+            ->assertRedirect(route('recoveries.dashboard'));
+    }
+
+    public function test_manager_can_add_recovery_client_with_portfolio_types(): void
+    {
+        $manager = $this->activeUser(['recoveries.clients.store'], 'Recoveries Manager');
+
+        $this->actingAs($manager)->post(route('recoveries.clients.store'), [
+            'name' => 'New Recovery Bank',
+            'contact_person' => 'Credit Manager',
+            'portfolio_types' => "NPL\nWrite Off",
+        ])->assertSessionHasNoErrors();
+
+        $client = RecoveryClient::where('name', 'New Recovery Bank')->first();
+
+        $this->assertNotNull($client);
+        $this->assertSame(['NPL', 'Write Off'], $client->portfolio_types);
+    }
+
+    public function test_manager_can_import_review_assign_and_export_recovery_portfolio(): void
+    {
+        $branch = Branch::create(['name' => 'Branch A', 'code' => 'BRA']);
+        $manager = $this->activeUser([
+            'recoveries.import',
+            'recoveries.import.store',
+            'recoveries.batches.show',
+            'recoveries.batches.assign',
+            'recoveries.accounts.export',
+        ], 'Recoveries Manager', $branch->id);
+        $officer = $this->activeUser([], 'Recovery Officer', $branch->id);
+        $client = RecoveryClient::create([
+            'name' => 'Stanbic Bank',
+            'portfolio_types' => ['Stanbic Write Off'],
+        ]);
+
+        $file = $this->sampleRecoveryWorkbook();
+
+        $response = $this->actingAs($manager)->post(route('recoveries.import.store'), [
+            'recovery_client_id' => $client->id,
+            'portfolio_type' => 'Stanbic Write Off',
+            'file' => $file,
+        ]);
+
+        $batch = RecoveryImportBatch::first();
+        $account = RecoveryAccount::first();
+
+        $this->assertNotNull($batch);
+        $this->assertNotNull($account);
+        $response->assertRedirect(route('recoveries.batches.show', $batch));
+        $this->assertSame('John Debtor', $account->debtor_name);
+        $this->assertSame('ACC-001', $account->account_number);
+        $this->assertEquals(300000, (float) $account->outstanding_amount);
+
+        $this->actingAs($manager)->patch(route('recoveries.batches.assign', $batch), [
+            'assigned_to' => $officer->id,
+            'scope' => 'unassigned',
+        ])->assertSessionHasNoErrors();
+
+        $this->assertSame($officer->id, $account->fresh()->assigned_to);
+
+        $export = $this->actingAs($manager)->get(route('recoveries.accounts.export', [
+            'client' => $client->id,
+            'portfolio_type' => 'Stanbic Write Off',
+        ]));
+
+        $export->assertOk();
     }
 
     public function test_officer_payment_updates_recovered_total(): void
@@ -158,5 +235,26 @@ class RecoveryFlowTest extends TestCase
 
         $xlsx = $this->actingAs($manager)->get(route('recoveries.export', ['type' => 'clients', 'format' => 'xlsx']));
         $xlsx->assertOk();
+    }
+
+    private function sampleRecoveryWorkbook(): UploadedFile
+    {
+        $spreadsheet = new Spreadsheet;
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->fromArray([
+            ['Cif_id', 'foracid', 'Contacts', 'Email', 'Employer', 'acct_name', 'BRANCH', 'Region', 'INTEREST', 'PRINCIPAL', 'NET EXPOSURE', 'ACCT_CRNCY_CODE', 'Year Category', 'FEBRUARY COLLECTOR'],
+            ['CIF-001', 'ACC-001', '0700000000', 'john@example.test', 'ABC Ltd', 'John Debtor', 'Kampala', 'Central', 50000, 250000, 300000, 'UGX', '2024 Write Off', 'Officer One'],
+        ]);
+
+        $path = tempnam(sys_get_temp_dir(), 'recovery-import-').'.xlsx';
+        (new Xlsx($spreadsheet))->save($path);
+
+        return new UploadedFile(
+            $path,
+            'stanbic-write-off.xlsx',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            null,
+            true
+        );
     }
 }

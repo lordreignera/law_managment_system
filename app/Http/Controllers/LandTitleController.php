@@ -158,9 +158,15 @@ class LandTitleController extends Controller
 
     private function validateSecurity(Request $request): array
     {
+        $bankBranchRule = Rule::exists('bank_branches', 'id');
+
+        if ($request->filled('bank_id')) {
+            $bankBranchRule->where('bank_id', $request->integer('bank_id'));
+        }
+
         return $request->validate([
             'bank_id' => ['nullable', 'exists:banks,id'],
-            'bank_branch_id' => ['nullable', 'exists:bank_branches,id'],
+            'bank_branch_id' => ['nullable', $bankBranchRule],
             'zonal_office_id' => ['nullable', 'exists:zonal_offices,id'],
             'matter_id' => ['nullable', 'exists:matters,id'],
             'handled_by' => ['nullable', 'exists:users,id'],

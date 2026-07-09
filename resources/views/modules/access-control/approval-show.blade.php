@@ -8,7 +8,7 @@
         <div class="kfms-panel-header">
             <div>
                 <h2>Review Access Request</h2>
-                <span>{{ $profile->user?->name }} requested access to JurisFlow.</span>
+                <span>{{ $profile->user?->name }} requested access to the firm workspace.</span>
             </div>
             <a class="kfms-link-btn" href="{{ route('access.approvals.index') }}">
                 <i class="mdi mdi-arrow-left"></i>

@@ -200,14 +200,23 @@ class DatabaseSeeder extends Seeder
             );
         }
 
-        foreach (['Stanbic Bank', 'DFCU Bank', 'Bank of Africa', 'Uganda Development Bank', 'Centenary Bank'] as $client) {
-            RecoveryClient::firstOrCreate(['name' => $client]);
+        foreach ([
+            'Stanbic Bank' => ['Stanbic NPL', 'Stanbic Write Off'],
+            'DFCU Bank' => ['DFCU NPL', 'DFCU Write Off'],
+            'Bank of Africa' => ['BOA'],
+            'Uganda Development Bank' => ['UDB'],
+            'Centenary Bank' => ['NPL', 'Write Off'],
+        ] as $client => $portfolioTypes) {
+            RecoveryClient::updateOrCreate(
+                ['name' => $client],
+                ['portfolio_types' => $portfolioTypes, 'is_active' => true]
+            );
         }
 
         $financeDepartmentId = Department::where('name', 'Finance and Administration')->value('id');
 
         $superAdmin = User::updateOrCreate(
-            ['email' => 'superadmin@kalikumutima.test'],
+            ['email' => 'info@kalikumutima.com'],
             [
                 'name' => 'KFMS Super Admin',
                 'password' => Hash::make('password'),
@@ -251,7 +260,7 @@ class DatabaseSeeder extends Seeder
         );
 
         $welcomeConversation = Conversation::firstOrCreate(
-            ['title' => 'Welcome to JurisFlow Messages', 'created_by' => $superAdmin->id],
+            ['title' => 'Welcome to Kalikumutima Messages', 'created_by' => $superAdmin->id],
             [
                 'audience_type' => 'users',
                 'allow_replies' => true,

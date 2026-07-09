@@ -41,6 +41,30 @@
         </label>
     @endif
 
+    @if (in_array('contact_person', $extraFields, true))
+        <label>
+            <span>Contact Person</span>
+            <input type="text" name="contact_person" value="{{ old('contact_person', $record->contact_person) }}">
+            @error('contact_person') <small>{{ $message }}</small> @enderror
+        </label>
+    @endif
+
+    @if (in_array('email', $extraFields, true))
+        <label>
+            <span>Email</span>
+            <input type="email" name="email" value="{{ old('email', $record->email) }}">
+            @error('email') <small>{{ $message }}</small> @enderror
+        </label>
+    @endif
+
+    @if (in_array('phone', $extraFields, true))
+        <label>
+            <span>Phone</span>
+            <input type="text" name="phone" value="{{ old('phone', $record->phone) }}">
+            @error('phone') <small>{{ $message }}</small> @enderror
+        </label>
+    @endif
+
     @if (in_array('branch_id', $extraFields, true))
         <label>
             <span>Branch</span>
@@ -84,6 +108,14 @@
             <span>Districts Covered</span>
             <textarea name="districts_covered" rows="3">{{ old('districts_covered', $record->districts_covered) }}</textarea>
             @error('districts_covered') <small>{{ $message }}</small> @enderror
+        </label>
+    @endif
+
+    @if (in_array('portfolio_types', $extraFields, true))
+        <label class="kfms-span-2">
+            <span>Portfolio Types</span>
+            <textarea name="portfolio_types" rows="4" placeholder="One portfolio type per line">{{ old('portfolio_types', implode("\n", $record->portfolio_types ?: [])) }}</textarea>
+            @error('portfolio_types') <small>{{ $message }}</small> @enderror
         </label>
     @endif
 

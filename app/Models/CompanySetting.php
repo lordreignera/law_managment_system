@@ -17,7 +17,7 @@ class CompanySetting extends Model
             'company_name' => 'Kalikumutima & Co Advocates',
             'short_name' => 'KFMS',
             'initials' => 'K',
-            'logo_path' => 'uploads/company-logos/kali-logo.png',
+            'logo_path' => 'admin/assets/images/Kali Logo 2.png',
             'tagline' => 'Firm Management System',
             'login_heading' => '',
             'login_subheading' => 'Manage matters, recoveries, securities, finance, staff, and approvals from one workspace.',
@@ -33,8 +33,30 @@ class CompanySetting extends Model
         return static::query()->firstOrCreate(['id' => 1], static::defaults());
     }
 
+    public static function defaultLogoPaths(): array
+    {
+        return [
+            'admin/assets/images/Kali Logo 2.png',
+            'uploads/company-logos/Kali Logo 2.png',
+            'uploads/company-logos/kali-logo-2.png',
+            'uploads/company-logos/Kali Logo.png',
+        ];
+    }
+
     public function getLogoUrlAttribute(): ?string
     {
-        return $this->logo_path ? asset($this->logo_path) : null;
+        $logoPath = $this->logo_path ?: static::defaults()['logo_path'];
+
+        if ($logoPath && file_exists(public_path($logoPath))) {
+            return asset($logoPath);
+        }
+
+        foreach (static::defaultLogoPaths() as $fallbackLogoPath) {
+            if (file_exists(public_path($fallbackLogoPath))) {
+                return asset($fallbackLogoPath);
+            }
+        }
+
+        return null;
     }
 }

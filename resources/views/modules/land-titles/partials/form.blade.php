@@ -1,4 +1,15 @@
 @csrf
+@php
+    $selectedBankId = (string) old('bank_id', $title->bank_id);
+    $selectedBankBranchId = (string) old('bank_branch_id', $title->bank_branch_id);
+    $bankBranchOptions = $bankBranches
+        ->map(fn ($branch) => [
+            'id' => (string) $branch->id,
+            'bank_id' => (string) $branch->bank_id,
+            'label' => trim(($branch->bank?->name ? $branch->bank->name.' - ' : '').$branch->name.($branch->office_location ? ' ('.$branch->office_location.')' : '')),
+        ])
+        ->values();
+@endphp
 
 <div class="kfms-form-grid">
     <label>
@@ -30,10 +41,10 @@
 
     <label>
         <span>Bank / Financial Institution</span>
-        <select name="bank_id">
+        <select name="bank_id" data-bank-select>
             <option value="">Select bank or institution</option>
             @foreach ($banks as $bank)
-                <option value="{{ $bank->id }}" @selected((string) old('bank_id', $title->bank_id) === (string) $bank->id)>{{ $bank->name }}</option>
+                <option value="{{ $bank->id }}" @selected($selectedBankId === (string) $bank->id)>{{ $bank->name }}</option>
             @endforeach
         </select>
         @error('bank_id') <small>{{ $message }}</small> @enderror
@@ -41,13 +52,8 @@
 
     <label>
         <span>Bank Branch / Source Office</span>
-        <select name="bank_branch_id">
-            <option value="">Select branch or office</option>
-            @foreach ($bankBranches as $branch)
-                <option value="{{ $branch->id }}" @selected((string) old('bank_branch_id', $title->bank_branch_id) === (string) $branch->id)>
-                    {{ $branch->bank?->name }} - {{ $branch->name }}{{ $branch->office_location ? ' ('.$branch->office_location.')' : '' }}
-                </option>
-            @endforeach
+        <select name="bank_branch_id" data-bank-branch-select data-selected-branch="{{ $selectedBankBranchId }}">
+            <option value="">{{ $selectedBankId ? 'Select branch or office' : 'Select bank first' }}</option>
         </select>
         @error('bank_branch_id') <small>{{ $message }}</small> @enderror
     </label>
@@ -143,3 +149,45 @@
     <a class="kfms-link-btn" href="{{ route('land-titles.index') }}">Cancel</a>
     <button type="submit">{{ $buttonText }}</button>
 </div>
+
+@push('scripts')
+    <script>
+        window.kfmsBankBranches = @json($bankBranchOptions);
+
+        document.querySelectorAll('[data-bank-select]').forEach((bankSelect) => {
+            const form = bankSelect.closest('form');
+            const branchSelect = form?.querySelector('[data-bank-branch-select]');
+
+            if (! branchSelect) {
+                return;
+            }
+
+            const populateBranches = () => {
+                const bankId = bankSelect.value;
+                const selectedBranch = branchSelect.dataset.selectedBranch || '';
+                const branches = (window.kfmsBankBranches || []).filter((branch) => branch.bank_id === bankId);
+
+                branchSelect.innerHTML = '';
+                branchSelect.append(new Option(bankId ? 'Select branch or office' : 'Select bank first', ''));
+                branchSelect.disabled = ! bankId;
+
+                branches.forEach((branch) => {
+                    const option = new Option(branch.label, branch.id);
+                    option.selected = branch.id === selectedBranch;
+                    branchSelect.append(option);
+                });
+
+                if (! branches.some((branch) => branch.id === selectedBranch)) {
+                    branchSelect.value = '';
+                }
+            };
+
+            bankSelect.addEventListener('change', () => {
+                branchSelect.dataset.selectedBranch = '';
+                populateBranches();
+            });
+
+            populateBranches();
+        });
+    </script>
+@endpush

@@ -22,6 +22,12 @@
         @error('status') <small>{{ $message }}</small> @enderror
     </label>
 
+    <label>
+        <span>Portfolio Type</span>
+        <input type="text" name="portfolio_type" value="{{ old('portfolio_type', $account?->portfolio_type) }}" maxlength="100" placeholder="NPL, Write Off, BOA, UDB">
+        @error('portfolio_type') <small>{{ $message }}</small> @enderror
+    </label>
+
     <label class="kfms-span-2">
         <span>Debtor Name</span>
         <input type="text" name="debtor_name" value="{{ old('debtor_name', $account?->debtor_name) }}" maxlength="191" required>
@@ -65,6 +71,24 @@
     </label>
 
     <label>
+        <span>Collector Name</span>
+        <input type="text" name="collector_name" value="{{ old('collector_name', $account?->collector_name) }}" maxlength="191">
+        @error('collector_name') <small>{{ $message }}</small> @enderror
+    </label>
+
+    <label>
+        <span>Operative Account</span>
+        <input type="text" name="operative_account" value="{{ old('operative_account', $account?->operative_account) }}" maxlength="100">
+        @error('operative_account') <small>{{ $message }}</small> @enderror
+    </label>
+
+    <label>
+        <span>Days Past Due</span>
+        <input type="number" min="0" name="days_past_due" value="{{ old('days_past_due', $account?->days_past_due) }}">
+        @error('days_past_due') <small>{{ $message }}</small> @enderror
+    </label>
+
+    <label>
         <span>Principal Amount</span>
         <input type="number" step="0.01" min="0" name="principal_amount" value="{{ old('principal_amount', $account?->principal_amount ?? 0) }}">
         @error('principal_amount') <small>{{ $message }}</small> @enderror
@@ -83,6 +107,12 @@
     </label>
 
     <label>
+        <span>Arrears Amount</span>
+        <input type="number" step="0.01" min="0" name="arrears_amount" value="{{ old('arrears_amount', $account?->arrears_amount ?? 0) }}">
+        @error('arrears_amount') <small>{{ $message }}</small> @enderror
+    </label>
+
+    <label>
         <span>Currency</span>
         <input type="text" name="currency" value="{{ old('currency', $account?->currency ?? 'UGX') }}" maxlength="10">
         @error('currency') <small>{{ $message }}</small> @enderror
@@ -92,6 +122,18 @@
         <span>Bucket / Portfolio (optional)</span>
         <input type="text" name="bucket" value="{{ old('bucket', $account?->bucket) }}" maxlength="100">
         @error('bucket') <small>{{ $message }}</small> @enderror
+    </label>
+
+    <label class="kfms-span-2">
+        <span>Collateral Held</span>
+        <textarea name="collateral_held" rows="3">{{ old('collateral_held', $account?->collateral_held) }}</textarea>
+        @error('collateral_held') <small>{{ $message }}</small> @enderror
+    </label>
+
+    <label class="kfms-span-2">
+        <span>Cause of Default / Comments</span>
+        <textarea name="cause_of_default" rows="3">{{ old('cause_of_default', $account?->cause_of_default) }}</textarea>
+        @error('cause_of_default') <small>{{ $message }}</small> @enderror
     </label>
 
     <label>

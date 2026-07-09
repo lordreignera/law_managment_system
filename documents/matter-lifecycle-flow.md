@@ -1,6 +1,6 @@
 # Matter Lifecycle Flow
 
-This document records the proposed JurisFlow matter lifecycle and how it should be implemented in the application.
+This document records the proposed Kalikumutima matter lifecycle and how it should be implemented in the application.
 
 ## Proposed Status Flow
 

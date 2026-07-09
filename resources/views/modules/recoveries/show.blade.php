@@ -103,7 +103,10 @@
                     <div><dt>Phone</dt><dd>{{ $account->phone ?: '-' }}</dd></div>
                     <div><dt>Email</dt><dd>{{ $account->email ?: '-' }}</dd></div>
                     <div><dt>Employer</dt><dd>{{ $account->employer ?: '-' }}</dd></div>
+                    <div><dt>Branch Name</dt><dd>{{ $account->branch_name ?: '-' }}</dd></div>
                     <div><dt>Region</dt><dd>{{ $account->region ?: '-' }}</dd></div>
+                    <div><dt>Operative Account</dt><dd>{{ $account->operative_account ?: '-' }}</dd></div>
+                    <div><dt>Days Past Due</dt><dd>{{ $account->days_past_due ?: '-' }}</dd></div>
                 </dl>
             </div>
 
@@ -121,7 +124,19 @@
                             @endif
                         </dd>
                     </div>
-                    <div><dt>Portfolio / Bucket</dt><dd>{{ $account->bucket ?: '-' }}</dd></div>
+                    <div><dt>Portfolio Type</dt><dd>{{ $account->portfolio_type ?: '-' }}</dd></div>
+                    <div><dt>Bucket</dt><dd>{{ $account->bucket ?: '-' }}</dd></div>
+                    <div><dt>Imported From</dt><dd>{{ $account->importBatch?->source_file ?: 'Manual entry' }}</dd></div>
+                    <div><dt>Original Collector</dt><dd>{{ $account->collector_name ?: '-' }}</dd></div>
+                </dl>
+            </div>
+
+            <div class="kfms-detail-section">
+                <h3>Portfolio Notes</h3>
+                <dl class="kfms-detail-list kfms-detail-list-bordered">
+                    <div><dt>Arrears</dt><dd>{{ $currency }} {{ number_format((float) $account->arrears_amount, 2) }}</dd></div>
+                    <div><dt>Collateral Held</dt><dd>{{ $account->collateral_held ?: '-' }}</dd></div>
+                    <div><dt>Cause of Default</dt><dd>{{ $account->cause_of_default ?: '-' }}</dd></div>
                 </dl>
             </div>
         </section>

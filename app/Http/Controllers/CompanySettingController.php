@@ -73,6 +73,10 @@ class CompanySettingController extends Controller
             return;
         }
 
+        if (in_array($path, CompanySetting::defaultLogoPaths(), true)) {
+            return;
+        }
+
         $file = public_path($path);
         $logoDirectory = realpath(public_path('uploads/company-logos'));
         $fileDirectory = realpath(dirname($file));

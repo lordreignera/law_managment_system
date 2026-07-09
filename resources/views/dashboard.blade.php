@@ -4,8 +4,24 @@
 @section('page-title', 'Dashboard')
 
 @section('content')
-    <div class="kfms-stat-grid kfms-kpi-grid">
-        @foreach ($stats as $stat)
+    <section class="kfms-dashboard-hero">
+        <div>
+            <span>{{ now()->format('l, d M Y') }}</span>
+            <h2>Firm operations at a glance</h2>
+            <p>Track active work, approvals, court activity, securities, recoveries, and internal communication from one place.</p>
+        </div>
+        <div class="kfms-dashboard-hero-actions">
+            @can('messages.index')
+                <a class="kfms-link-btn" href="{{ route('messages.index') }}"><i class="mdi mdi-chat-outline"></i> Messages</a>
+            @endcan
+            @can('intakes.create')
+                <a class="kfms-btn" href="{{ route('intakes.create') }}"><i class="mdi mdi-account-plus-outline"></i> New Intake</a>
+            @endcan
+        </div>
+    </section>
+
+    <div class="kfms-stat-grid kfms-kpi-grid kfms-dashboard-kpis">
+        @foreach (collect($stats)->take(8) as $stat)
             @if ($stat['route'])
                 <a class="kfms-card kfms-stat-card" href="{{ $stat['route'] }}">
                     <span class="kfms-stat-icon"><i class="mdi {{ $stat['icon'] }}"></i></span>
@@ -27,51 +43,62 @@
     </div>
 
     <div class="kfms-grid-two">
-        @if (isset($upcomingEvents) && $upcomingEvents->isNotEmpty())
-            <section class="kfms-panel">
-                <div class="kfms-panel-header">
-                    <div>
-                        <h2>Upcoming Court Events</h2>
-                        <span>Next scheduled hearings and mentions</span>
+        <section class="kfms-panel kfms-dashboard-chart-panel">
+            <div class="kfms-panel-header">
+                <div>
+                    <h2>Operations Snapshot</h2>
+                    <span>Live count by active work area</span>
+                </div>
+                <span>{{ $companySetting->short_name }}</span>
+            </div>
+            <div class="kfms-bar-chart">
+                @foreach ($chartItems as $item)
+                    <div class="kfms-bar-row">
+                        <div class="kfms-bar-label">
+                            <i class="mdi {{ $item['icon'] }}"></i>
+                            <span>{{ $item['label'] }}</span>
+                        </div>
+                        <div class="kfms-bar-track">
+                            <span style="width: {{ $item['percent'] }}%"></span>
+                        </div>
+                        <strong>{{ number_format($item['value']) }}</strong>
                     </div>
-                    @can('litigation.index')
-                        <a class="kfms-link-btn" href="{{ route('litigation.index') }}">View all <i class="mdi mdi-arrow-right"></i></a>
-                    @endcan
-                </div>
-                <div class="kfms-table-wrap">
-                    <table class="kfms-table">
-                        <thead>
-                            <tr><th>Date</th><th>Matter</th><th>Court</th><th>Advocate</th></tr>
-                        </thead>
-                        <tbody>
-                            @foreach ($upcomingEvents as $event)
-                                <tr>
-                                    <td>{{ $event->starts_at?->format('d M, H:i') }}</td>
-                                    <td>{{ $event->matter?->reference_no ?: '-' }}</td>
-                                    <td>{{ $event->court_name ?: '-' }}</td>
-                                    <td>{{ $event->assignee?->name ?: '-' }}</td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            </section>
-        @else
-            <section class="kfms-panel">
-                <div class="kfms-panel-header">
-                    <h2>Workflow Map</h2>
-                    <span>KFMS</span>
-                </div>
-                <ol class="kfms-steps">
-                    <li>Instruction intake</li>
-                    <li>Client, matter, recovery, or title registration</li>
-                    <li>Assignment to responsible officer</li>
-                    <li>Updates, documents, diary, and approvals</li>
-                    <li>Billing, reporting, and audit trail</li>
-                </ol>
-            </section>
-        @endif
+                @endforeach
+            </div>
+        </section>
 
+        <section class="kfms-panel kfms-dashboard-messages">
+            <div class="kfms-panel-header">
+                <div>
+                    <h2>Messages</h2>
+                    <span>Recent internal communication</span>
+                </div>
+                @can('messages.index')
+                    <a class="kfms-link-btn" href="{{ route('messages.index') }}">Open <i class="mdi mdi-arrow-right"></i></a>
+                @endcan
+            </div>
+            <div class="kfms-dashboard-message-list">
+                @forelse ($recentConversations as $conversation)
+                    <a href="{{ route('messages.show', $conversation) }}" class="{{ $conversation->unread_for_user ? 'is-unread' : '' }}">
+                        <span class="kfms-dashboard-message-avatar">{{ str($conversation->title)->substr(0, 2)->upper() }}</span>
+                        <span>
+                            <strong>{{ $conversation->title }}</strong>
+                            <em>{{ $conversation->latestMessage?->sender?->name ?: 'System' }}: {{ str($conversation->latestMessage?->body ?: 'No messages yet')->limit(68) }}</em>
+                        </span>
+                        <time>{{ $conversation->last_message_at?->diffForHumans() ?: 'New' }}</time>
+                    </a>
+                @empty
+                    <div class="kfms-empty-state">
+                        <i class="mdi mdi-chat-outline"></i>
+                        <strong>No recent messages</strong>
+                        <span>Your latest firm conversations will appear here.</span>
+                    </div>
+                @endforelse
+            </div>
+        </section>
+    </div>
+
+    <div class="kfms-grid-two">
         <section class="kfms-panel">
             <div class="kfms-panel-header">
                 <h2>Quick Actions</h2>
@@ -96,6 +123,40 @@
                     <a href="{{ route('finance.index') }}">Approve requisitions and invoices</a>
                 @endcan
             </div>
+        </section>
+
+        <section class="kfms-panel">
+            <div class="kfms-panel-header">
+                <div>
+                    <h2>Upcoming Court Events</h2>
+                    <span>Next scheduled hearings and mentions</span>
+                </div>
+                @can('litigation.index')
+                    <a class="kfms-link-btn" href="{{ route('litigation.index') }}">View all <i class="mdi mdi-arrow-right"></i></a>
+                @endcan
+            </div>
+            @if (isset($upcomingEvents) && $upcomingEvents->isNotEmpty())
+                <div class="kfms-dashboard-event-list">
+                    @foreach ($upcomingEvents as $event)
+                        <a href="{{ route('litigation.index') }}">
+                            <span>
+                                <strong>{{ $event->starts_at?->format('d M') }}</strong>
+                                <em>{{ $event->starts_at?->format('H:i') }}</em>
+                            </span>
+                            <span>
+                                <strong>{{ $event->matter?->reference_no ?: 'Court event' }}</strong>
+                                <em>{{ $event->court_name ?: 'Court not specified' }} · {{ $event->assignee?->name ?: 'Unassigned' }}</em>
+                            </span>
+                        </a>
+                    @endforeach
+                </div>
+            @else
+                <div class="kfms-empty-state">
+                    <i class="mdi mdi-calendar-check-outline"></i>
+                    <strong>No upcoming court events</strong>
+                    <span>Scheduled hearings and mentions will appear here.</span>
+                </div>
+            @endif
         </section>
     </div>
 

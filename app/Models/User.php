@@ -99,6 +99,11 @@ class User extends Authenticatable
         return $this->hasOne(StaffProfile::class);
     }
 
+    public function assignedRecoveries()
+    {
+        return $this->hasMany(RecoveryAccount::class, 'assigned_to');
+    }
+
     public function getSignatureUrlAttribute(): ?string
     {
         return $this->signature_path

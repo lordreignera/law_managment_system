@@ -127,8 +127,15 @@ Route::middleware([
         // Standalone module landing pages
         // Recoveries (debt collection) — manager registers debts & assigns
         // officers; officers report demands and money recovered.
+        Route::get('/recoveries/dashboard', [RecoveryController::class, 'dashboard'])->name('recoveries.dashboard');
         Route::get('/recoveries', [RecoveryController::class, 'index'])->name('recoveries.index');
         Route::get('/recoveries/mine', [RecoveryController::class, 'mine'])->name('recoveries.mine');
+        Route::get('/recoveries/import', [RecoveryController::class, 'importForm'])->name('recoveries.import');
+        Route::post('/recoveries/import', [RecoveryController::class, 'importStore'])->name('recoveries.import.store');
+        Route::post('/recoveries/clients', [RecoveryController::class, 'storeClient'])->name('recoveries.clients.store');
+        Route::get('/recoveries/accounts/export', [RecoveryController::class, 'exportAccounts'])->name('recoveries.accounts.export');
+        Route::get('/recoveries/imports/{batch}', [RecoveryController::class, 'batchShow'])->name('recoveries.batches.show');
+        Route::patch('/recoveries/imports/{batch}/assign', [RecoveryController::class, 'assignBatch'])->name('recoveries.batches.assign');
         Route::get('/recoveries/reports', [RecoveryReportController::class, 'index'])->name('recoveries.reports');
         Route::get('/recoveries/reports/export', [RecoveryReportController::class, 'export'])->name('recoveries.export');
         Route::get('/recoveries/create', [RecoveryController::class, 'create'])->name('recoveries.create');

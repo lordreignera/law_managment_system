@@ -13,7 +13,8 @@
             + (in_array('is_default', $extraFields, true) ? 1 : 0)
             + (in_array('bank_id', $extraFields, true) ? 1 : 0)
             + (in_array('office_location', $extraFields, true) ? 1 : 0)
-            + (in_array('districts_covered', $extraFields, true) ? 1 : 0);
+            + (in_array('districts_covered', $extraFields, true) ? 1 : 0)
+            + (in_array('portfolio_types', $extraFields, true) ? 1 : 0);
     @endphp
 
     <section class="kfms-panel">
@@ -83,6 +84,9 @@
                         @if (in_array('districts_covered', $extraFields, true))
                             <th>Districts Covered</th>
                         @endif
+                        @if (in_array('portfolio_types', $extraFields, true))
+                            <th>Portfolio Types</th>
+                        @endif
                         @if (in_array('is_default', $extraFields, true))
                             <th>Default</th>
                         @endif
@@ -114,6 +118,9 @@
                             @endif
                             @if (in_array('districts_covered', $extraFields, true))
                                 <td>{{ \Illuminate\Support\Str::limit($record->districts_covered ?: '-', 80) }}</td>
+                            @endif
+                            @if (in_array('portfolio_types', $extraFields, true))
+                                <td>{{ $record->portfolio_types ? implode(', ', $record->portfolio_types) : '-' }}</td>
                             @endif
                             @if (in_array('is_default', $extraFields, true))
                                 <td>{{ $record->is_default ? 'Yes' : 'No' }}</td>

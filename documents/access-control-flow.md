@@ -4,7 +4,7 @@ Last updated: June 27, 2026
 
 ## Purpose
 
-This document describes how authorization works in Kalikumutima FMS / JurisFlow.
+This document describes how authorization works in Kalikumutima FMS.
 For who-is-signed-in concerns (registration, approval, login, pending status), see [authentication-flow.md](authentication-flow.md).
 
 The model is **route-per-permission**: every named workspace route is its own

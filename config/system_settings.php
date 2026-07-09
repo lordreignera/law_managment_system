@@ -18,6 +18,7 @@ use App\Models\Letterhead;
 use App\Models\MatterCategory;
 use App\Models\PaymentMode;
 use App\Models\PracticeArea;
+use App\Models\RecoveryClient;
 use App\Models\RelationshipType;
 use App\Models\RequisitionCategory;
 use App\Models\Salutation;
@@ -103,6 +104,13 @@ return [
         'singular' => 'Bank',
         'model' => Bank::class,
         'description' => 'Banks used for recoveries, land titles, payments, and clients.',
+    ],
+    'recovery-clients' => [
+        'title' => 'Recovery Clients',
+        'singular' => 'Recovery Client',
+        'model' => RecoveryClient::class,
+        'description' => 'Banks and institutional clients that send recovery portfolios to the firm.',
+        'extra_fields' => ['contact_person', 'email', 'phone', 'portfolio_types'],
     ],
     'bank-branches' => [
         'title' => 'Bank Branches / Financial Institutions',

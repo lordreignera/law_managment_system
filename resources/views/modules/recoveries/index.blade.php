@@ -15,6 +15,15 @@
                 <span>{{ $accounts->total() }} records</span>
             </div>
             <div class="kfms-toolbar-actions">
+                @can('recoveries.dashboard')
+                    <a class="kfms-link-btn" href="{{ route('recoveries.dashboard') }}"><i class="mdi mdi-view-dashboard-outline"></i> Dashboard</a>
+                @endcan
+                @can('recoveries.import')
+                    <a class="kfms-link-btn" href="{{ route('recoveries.import') }}"><i class="mdi mdi-file-upload-outline"></i> Import</a>
+                @endcan
+                @can('recoveries.accounts.export')
+                    <a class="kfms-link-btn" href="{{ route('recoveries.accounts.export', $filters) }}"><i class="mdi mdi-file-excel-outline"></i> Export</a>
+                @endcan
                 @can('recoveries.reports')
                     <a class="kfms-link-btn" href="{{ route('recoveries.reports') }}"><i class="mdi mdi-chart-bar"></i> Reports</a>
                 @endcan
@@ -48,6 +57,15 @@
                 </select>
             </label>
             <label>
+                <span>Portfolio</span>
+                <select name="portfolio_type">
+                    <option value="">All Portfolios</option>
+                    @foreach ($portfolioTypes as $type)
+                        <option value="{{ $type }}" @selected(($filters['portfolio_type'] ?? '') === $type)>{{ $type }}</option>
+                    @endforeach
+                </select>
+            </label>
+            <label>
                 <span>Status</span>
                 <select name="status">
                     <option value="">All Statuses</option>
@@ -70,6 +88,7 @@
                         <th>Bank/Client</th>
                         <th>Account</th>
                         <th>Officer</th>
+                        <th>Portfolio</th>
                         <th>Outstanding</th>
                         <th>Recovered</th>
                         <th>Status</th>
@@ -83,6 +102,7 @@
                             <td>{{ $account->client?->name ?: '-' }}</td>
                             <td>{{ $account->account_number ?: '-' }}</td>
                             <td>{{ $account->assignee?->name ?: 'Unassigned' }}</td>
+                            <td>{{ $account->portfolio_type ?: $account->bucket ?: '-' }}</td>
                             <td>{{ number_format($account->outstanding_amount) }}</td>
                             <td>{{ number_format($account->amount_recovered) }}</td>
                             <td><span class="kfms-status kfms-status-{{ $account->status }}">{{ $account->statusLabel() }}</span></td>
@@ -117,7 +137,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="kfms-empty">No recovery accounts yet.</td>
+                            <td colspan="9" class="kfms-empty">No recovery accounts yet.</td>
                         </tr>
                     @endforelse
                 </tbody>

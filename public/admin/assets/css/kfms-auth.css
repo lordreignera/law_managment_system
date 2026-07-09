@@ -1,21 +1,21 @@
 :root {
-    --jf-navy: #031b3c;
-    --jf-navy-deep: #06162f;
-    --jf-gold: #d5a33a;
-    --jf-text: #091832;
-    --jf-muted: #65718a;
-    --jf-border: #d9e1ec;
-    --jf-surface: #ffffff;
+    --kca-navy: #031b3c;
+    --kca-navy-deep: #06162f;
+    --kca-gold: #d5a33a;
+    --kca-text: #091832;
+    --kca-muted: #65718a;
+    --kca-border: #d9e1ec;
+    --kca-surface: #ffffff;
 }
 
 body.kfms-auth-body {
     background: #f4f6f9;
-    color: var(--jf-text);
+    color: var(--kca-text);
     font-family: "Segoe UI", "Inter", Arial, sans-serif;
     margin: 0;
 }
 
-.jf-auth-stage {
+.kca-auth-stage {
     align-items: center;
     display: flex;
     justify-content: center;
@@ -23,7 +23,7 @@ body.kfms-auth-body {
     padding: 18px;
 }
 
-.jf-login-stage {
+.kca-login-stage {
     background:
         radial-gradient(1100px 520px at 50% -8%, rgba(213, 163, 58, 0.12), transparent 60%),
         radial-gradient(900px 520px at 50% 118%, rgba(3, 27, 60, 0.10), transparent 58%),
@@ -32,7 +32,7 @@ body.kfms-auth-body {
     position: relative;
 }
 
-.jf-login-stage::before {
+.kca-login-stage::before {
     background:
         radial-gradient(circle at 18% 22%, rgba(3, 27, 60, 0.05), transparent 42%),
         radial-gradient(circle at 82% 78%, rgba(213, 163, 58, 0.07), transparent 45%);
@@ -43,7 +43,7 @@ body.kfms-auth-body {
     z-index: 0;
 }
 
-.jf-login-shell {
+.kca-login-shell {
     align-items: center;
     display: flex;
     flex-direction: column;
@@ -53,14 +53,14 @@ body.kfms-auth-body {
     z-index: 1;
 }
 
-.jf-login-brandmark {
+.kca-login-brandmark {
     display: flex;
     justify-content: center;
     margin: 2px 0 14px;
     width: 100%;
 }
 
-.jf-login-logo-image {
+.kca-login-logo-image {
     display: block;
     filter: drop-shadow(0 14px 26px rgba(3, 27, 60, 0.16));
     height: auto;
@@ -69,9 +69,9 @@ body.kfms-auth-body {
     width: 82%;
 }
 
-.jf-login-logo-mark {
+.kca-login-logo-mark {
     align-items: center;
-    background: var(--jf-navy);
+    background: var(--kca-navy);
     border-radius: 18px;
     box-shadow: 0 22px 50px rgba(3, 27, 60, 0.26);
     color: #ffffff;
@@ -83,8 +83,8 @@ body.kfms-auth-body {
     min-width: 128px;
 }
 
-.jf-auth-card {
-    background: var(--jf-surface);
+.kca-auth-card {
+    background: var(--kca-surface);
     border: 1px solid #e6ebf2;
     border-radius: 8px;
     box-shadow: 0 22px 70px rgba(9, 24, 50, 0.16);
@@ -93,63 +93,63 @@ body.kfms-auth-body {
     width: min(100%, 1060px);
 }
 
-.jf-login-card {
+.kca-login-card {
     grid-template-columns: minmax(390px, 1fr) minmax(420px, 0.98fr);
     min-height: 680px;
 }
 
-.jf-login-card-centered {
+.kca-login-card-centered {
     grid-template-columns: minmax(0, 430px);
     min-height: auto;
     width: min(100%, 470px);
 }
 
-.jf-login-refined {
+.kca-login-refined {
     border-color: rgba(213, 163, 58, 0.38);
     box-shadow: 0 24px 62px rgba(9, 24, 50, 0.14);
     position: relative;
 }
 
-.jf-login-card-accent {
+.kca-login-card-accent {
     display: none;
 }
 
-.jf-login-card-centered .jf-form-panel {
+.kca-login-card-centered .kca-form-panel {
     padding: 26px 38px 22px;
 }
 
-.jf-login-card-centered .jf-form-wrap {
+.kca-login-card-centered .kca-form-wrap {
     margin: 0;
 }
 
-.jf-login-refined .jf-form-panel {
+.kca-login-refined .kca-form-panel {
     background:
         linear-gradient(180deg, rgba(213, 163, 58, 0.08), rgba(255, 255, 255, 0) 90px),
         #ffffff;
 }
 
-.jf-register-card {
+.kca-register-card {
     grid-template-columns: 360px minmax(0, 1fr);
     max-width: 1120px;
     min-height: 690px;
 }
 
-.jf-register-refined {
+.kca-register-refined {
     border-color: rgba(213, 163, 58, 0.38);
     box-shadow: 0 24px 62px rgba(9, 24, 50, 0.14);
     position: relative;
 }
 
-.jf-register-refined .jf-register-panel {
+.kca-register-refined .kca-register-panel {
     background:
         linear-gradient(180deg, rgba(213, 163, 58, 0.08), rgba(255, 255, 255, 0) 110px),
         #ffffff;
 }
 
-.jf-brand-panel {
+.kca-brand-panel {
     background: #ffffff;
     border-right: 1px solid #e7edf4;
-    color: var(--jf-text);
+    color: var(--kca-text);
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -158,25 +158,25 @@ body.kfms-auth-body {
     position: relative;
 }
 
-.jf-brand-panel::before {
+.kca-brand-panel::before {
     display: none;
 }
 
-.jf-brand-panel::after {
+.kca-brand-panel::after {
     display: none;
 }
 
-.jf-product-lockup,
-.jf-brand-copy,
-.jf-feature-row,
-.jf-feature-list,
-.jf-help-box {
+.kca-product-lockup,
+.kca-brand-copy,
+.kca-feature-row,
+.kca-feature-list,
+.kca-help-box {
     position: relative;
     z-index: 1;
 }
 
-.jf-product-lockup img,
-.jf-product-logo {
+.kca-product-lockup img,
+.kca-product-logo {
     display: block;
     height: 112px;
     object-fit: contain;
@@ -184,7 +184,7 @@ body.kfms-auth-body {
     width: 290px;
 }
 
-.jf-product-mark {
+.kca-product-mark {
     align-items: center;
     background: var(--kfms-secondary, #ffffff);
     border: 2px solid rgba(255, 255, 255, 0.72);
@@ -200,13 +200,13 @@ body.kfms-auth-body {
     padding: 0 22px;
 }
 
-.jf-brand-copy {
+.kca-brand-copy {
     margin-top: 42px;
 }
 
-.jf-brand-copy h1,
-.jf-brand-copy h2 {
-    color: var(--jf-navy);
+.kca-brand-copy h1,
+.kca-brand-copy h2 {
+    color: var(--kca-navy);
     font-size: 28px;
     font-weight: 800;
     letter-spacing: 0;
@@ -214,12 +214,12 @@ body.kfms-auth-body {
     margin: 0;
 }
 
-.jf-brand-copy h2 {
-    color: var(--jf-gold);
+.kca-brand-copy h2 {
+    color: var(--kca-gold);
     margin-top: 8px;
 }
 
-.jf-brand-copy p {
+.kca-brand-copy p {
     color: #4d5d76;
     font-size: 15px;
     line-height: 1.55;
@@ -227,7 +227,7 @@ body.kfms-auth-body {
     max-width: 360px;
 }
 
-.jf-feature-row {
+.kca-feature-row {
     display: grid;
     gap: 26px;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -235,20 +235,20 @@ body.kfms-auth-body {
     padding-top: 60px;
 }
 
-.jf-feature-row div,
-.jf-feature-list div,
-.jf-help-box {
+.kca-feature-row div,
+.kca-feature-list div,
+.kca-help-box {
     display: grid;
     gap: 8px;
 }
 
-.jf-feature-row i,
-.jf-feature-list i,
-.jf-help-box i {
+.kca-feature-row i,
+.kca-feature-list i,
+.kca-help-box i {
     align-items: center;
-    border: 2px solid var(--jf-gold);
+    border: 2px solid var(--kca-gold);
     border-radius: 999px;
-    color: var(--jf-gold);
+    color: var(--kca-gold);
     display: inline-flex;
     font-size: 24px;
     height: 42px;
@@ -256,32 +256,32 @@ body.kfms-auth-body {
     width: 42px;
 }
 
-.jf-feature-row strong,
-.jf-feature-list strong,
-.jf-help-box strong {
-    color: var(--jf-navy);
+.kca-feature-row strong,
+.kca-feature-list strong,
+.kca-help-box strong {
+    color: var(--kca-navy);
     font-size: 13px;
     font-weight: 800;
 }
 
-.jf-feature-row span,
-.jf-feature-list small,
-.jf-help-box small {
+.kca-feature-row span,
+.kca-feature-list small,
+.kca-help-box small {
     color: #607086;
     font-size: 13px;
     line-height: 1.45;
 }
 
-.jf-form-panel {
+.kca-form-panel {
     display: flex;
     flex-direction: column;
     padding: 36px 68px 26px;
     position: relative;
 }
 
-.jf-language {
+.kca-language {
     align-items: center;
-    color: var(--jf-text);
+    color: var(--kca-text);
     display: inline-flex;
     font-size: 13px;
     font-weight: 700;
@@ -290,23 +290,23 @@ body.kfms-auth-body {
     margin-left: auto;
 }
 
-.jf-form-wrap {
+.kca-form-wrap {
     margin: auto 0;
 }
 
-.jf-form-title {
+.kca-form-title {
     margin-bottom: 22px;
     text-align: center;
 }
 
-.jf-form-logo {
+.kca-form-logo {
     align-items: center;
     display: flex;
     justify-content: center;
     margin-bottom: 12px;
 }
 
-.jf-form-logo-image {
+.kca-form-logo-image {
     background: #fff;
     border: 1px solid #d9e1ec;
     border-radius: 14px;
@@ -317,7 +317,7 @@ body.kfms-auth-body {
     padding: 8px 12px;
 }
 
-.jf-form-logo-mark {
+.kca-form-logo-mark {
     align-items: center;
     background: #fff;
     border: 1px solid #d9e1ec;
@@ -334,32 +334,32 @@ body.kfms-auth-body {
     padding: 0 16px;
 }
 
-.jf-form-title h2,
-.jf-register-heading h2 {
-    color: var(--jf-text);
+.kca-form-title h2,
+.kca-register-heading h2 {
+    color: var(--kca-text);
     font-size: 27px;
     font-weight: 800;
     line-height: 1.15;
     margin: 0 0 10px;
 }
 
-.jf-form-title p,
-.jf-register-heading p {
-    color: var(--jf-muted);
+.kca-form-title p,
+.kca-register-heading p {
+    color: var(--kca-muted);
     font-size: 15px;
     margin: 0;
 }
 
-.jf-form-title .jf-company-message {
-    color: var(--jf-navy);
+.kca-form-title .kca-company-message {
+    color: var(--kca-navy);
     font-size: 13px;
     font-weight: 700;
     margin-top: 8px;
 }
 
-.jf-login-kicker {
+.kca-login-kicker {
     align-items: center;
-    color: var(--jf-navy);
+    color: var(--kca-navy);
     display: inline-flex;
     font-size: 12px;
     font-weight: 800;
@@ -368,66 +368,66 @@ body.kfms-auth-body {
     margin-bottom: 8px;
 }
 
-.jf-login-kicker i {
-    color: var(--jf-gold);
+.kca-login-kicker i {
+    color: var(--kca-gold);
     font-size: 18px;
 }
 
-.jf-login-refined .jf-form-title {
+.kca-login-refined .kca-form-title {
     margin-bottom: 14px;
 }
 
-.jf-login-refined .jf-form-title h2 {
-    color: var(--jf-navy);
+.kca-login-refined .kca-form-title h2 {
+    color: var(--kca-navy);
     font-size: 25px;
     margin-bottom: 6px;
 }
 
-.jf-login-refined .jf-form-title p {
+.kca-login-refined .kca-form-title p {
     color: #5d6b80;
     font-size: 13px;
     line-height: 1.45;
 }
 
-.jf-login-refined .jf-form-logo {
+.kca-login-refined .kca-form-logo {
     margin-bottom: 10px;
 }
 
-.jf-login-refined .jf-form-logo-image,
-.jf-login-refined .jf-form-logo-mark {
+.kca-login-refined .kca-form-logo-image,
+.kca-login-refined .kca-form-logo-mark {
     border-color: rgba(213, 163, 58, 0.34);
     border-radius: 8px;
     box-shadow: 0 10px 24px rgba(3, 27, 60, 0.09);
 }
 
-.jf-login-refined .jf-form-logo-image {
+.kca-login-refined .kca-form-logo-image {
     height: 48px;
 }
 
-.jf-login-refined .jf-form-logo-mark {
+.kca-login-refined .kca-form-logo-mark {
     height: 48px;
 }
 
-.jf-field {
+.kca-field {
     display: grid;
     gap: 8px;
     margin-bottom: 14px;
 }
 
-.jf-field > span {
-    color: var(--jf-text);
+.kca-field > span {
+    color: var(--kca-text);
     font-size: 13px;
     font-weight: 800;
 }
 
-.jf-field b {
+.kca-field b {
     color: #dc2626;
 }
 
-.jf-field > div {
+.kca-field > div {
     align-items: center;
     background: #fff;
-    border: 1px solid var(--jf-border);
+    border: 1px solid var(--kca-border);
     border-radius: 7px;
     display: grid;
     gap: 10px;
@@ -436,56 +436,56 @@ body.kfms-auth-body {
     padding: 0 13px;
 }
 
-.jf-field > div:focus-within {
+.kca-field > div:focus-within {
     border-color: #6e8bb5;
     box-shadow: 0 0 0 3px rgba(3, 27, 60, 0.08);
 }
 
-.jf-login-refined .jf-field {
+.kca-login-refined .kca-field {
     margin-bottom: 10px;
 }
 
-.jf-login-refined .jf-field > span {
+.kca-login-refined .kca-field > span {
     color: #17233a;
 }
 
-.jf-login-refined .jf-field > div {
+.kca-login-refined .kca-field > div {
     background: #fbfcfe;
     border-color: #cfd8e5;
     min-height: 42px;
 }
 
-.jf-login-refined .jf-field > div:focus-within {
+.kca-login-refined .kca-field > div:focus-within {
     background: #fff;
-    border-color: var(--jf-gold);
+    border-color: var(--kca-gold);
     box-shadow: 0 0 0 3px rgba(213, 163, 58, 0.16);
 }
 
-.jf-login-refined .jf-field i {
-    color: var(--jf-navy);
+.kca-login-refined .kca-field i {
+    color: var(--kca-navy);
 }
 
-.jf-field i {
+.kca-field i {
     color: #64748b;
     font-size: 19px;
 }
 
-.jf-field input,
-.jf-field select {
+.kca-field input,
+.kca-field select {
     background: transparent;
     border: 0;
-    color: var(--jf-text);
+    color: var(--kca-text);
     font-size: 14px;
     min-width: 0;
     outline: 0;
     width: 100%;
 }
 
-.jf-field select {
+.kca-field select {
     cursor: pointer;
 }
 
-.jf-password-toggle {
+.kca-password-toggle {
     align-items: center;
     background: transparent;
     border: 0;
@@ -494,45 +494,45 @@ body.kfms-auth-body {
     padding: 0;
 }
 
-.jf-password-toggle i {
+.kca-password-toggle i {
     color: #64748b;
     font-size: 20px;
 }
 
-.jf-auth-row {
+.kca-auth-row {
     align-items: center;
     display: flex;
     justify-content: space-between;
     margin: -2px 0 20px;
 }
 
-.jf-auth-row label,
-.jf-terms {
+.kca-auth-row label,
+.kca-terms {
     align-items: center;
-    color: var(--jf-text);
+    color: var(--kca-text);
     display: inline-flex;
     font-size: 13px;
     gap: 8px;
 }
 
-.jf-auth-row input,
-.jf-terms input {
+.kca-auth-row input,
+.kca-terms input {
     height: 16px;
     width: 16px;
 }
 
-.jf-auth-row a,
-.jf-register-top-link a,
-.jf-auth-footer a,
-.jf-terms a {
+.kca-auth-row a,
+.kca-register-top-link a,
+.kca-auth-footer a,
+.kca-terms a {
     color: #0759b8;
     font-size: 13px;
     font-weight: 800;
     text-decoration: none;
 }
 
-.jf-primary-button,
-.jf-outline-button {
+.kca-primary-button,
+.kca-outline-button {
     align-items: center;
     border-radius: 7px;
     display: flex;
@@ -542,7 +542,7 @@ body.kfms-auth-body {
     width: 100%;
 }
 
-.jf-primary-button {
+.kca-primary-button {
     background: linear-gradient(135deg, #061a38, #052a5f);
     border: 1px solid #061a38;
     box-shadow: 0 10px 18px rgba(3, 27, 60, 0.2);
@@ -552,26 +552,26 @@ body.kfms-auth-body {
     gap: 10px;
 }
 
-.jf-primary-button:hover,
-.jf-primary-button:focus {
+.kca-primary-button:hover,
+.kca-primary-button:focus {
     color: #fff;
     filter: brightness(1.08);
 }
 
-.jf-login-refined .jf-primary-button {
-    background: var(--jf-navy);
+.kca-login-refined .kca-primary-button {
+    background: var(--kca-navy);
     border: 1px solid #06162f;
-    border-bottom: 3px solid var(--jf-gold);
+    border-bottom: 3px solid var(--kca-gold);
     box-shadow: 0 12px 22px rgba(3, 27, 60, 0.24);
     min-height: 44px;
 }
 
-.jf-login-refined .jf-primary-button i {
-    color: var(--jf-gold);
+.kca-login-refined .kca-primary-button i {
+    color: var(--kca-gold);
     font-size: 19px;
 }
 
-.jf-divider {
+.kca-divider {
     align-items: center;
     color: #516079;
     display: flex;
@@ -580,74 +580,74 @@ body.kfms-auth-body {
     margin: 18px 0;
 }
 
-.jf-divider::before,
-.jf-divider::after {
+.kca-divider::before,
+.kca-divider::after {
     background: #d8e0eb;
     content: "";
     flex: 1;
     height: 1px;
 }
 
-.jf-outline-button {
+.kca-outline-button {
     background: #fff;
     border: 1px solid #77869d;
-    color: var(--jf-text);
+    color: var(--kca-text);
     gap: 12px;
 }
 
-.jf-outline-button:hover {
+.kca-outline-button:hover {
     background: #f8fbff;
-    color: var(--jf-text);
+    color: var(--kca-text);
 }
 
-.jf-login-refined .jf-divider {
+.kca-login-refined .kca-divider {
     margin: 12px 0;
 }
 
-.jf-login-refined .jf-divider span {
+.kca-login-refined .kca-divider span {
     color: #68768d;
     font-size: 12px;
     font-weight: 700;
 }
 
-.jf-login-refined .jf-outline-button {
+.kca-login-refined .kca-outline-button {
     border-color: #c8d2df;
-    color: var(--jf-navy);
+    color: var(--kca-navy);
     min-height: 42px;
 }
 
-.jf-login-refined .jf-outline-button:hover {
-    border-color: var(--jf-gold);
+.kca-login-refined .kca-outline-button:hover {
+    border-color: var(--kca-gold);
 }
 
-.jf-login-refined .jf-outline-button i {
-    color: var(--jf-gold);
+.kca-login-refined .kca-outline-button i {
+    color: var(--kca-gold);
 }
 
-.jf-outline-button i {
+.kca-outline-button i {
     color: #0759b8;
     font-size: 22px;
 }
 
-.jf-outline-button span {
+.kca-outline-button span {
     display: grid;
     gap: 4px;
 }
 
-.jf-outline-button strong {
+.kca-outline-button strong {
     font-size: 16px;
     font-weight: 800;
 }
 
-.jf-outline-button small {
-    color: var(--jf-muted);
+.kca-outline-button small {
+    color: var(--kca-muted);
     font-size: 13px;
 }
 
-.jf-auth-footer {
+.kca-auth-footer {
     align-items: center;
     border-top: 1px solid #e7edf4;
-    color: var(--jf-muted);
+    color: var(--kca-muted);
     display: flex;
     font-size: 12px;
     gap: 24px;
@@ -655,18 +655,18 @@ body.kfms-auth-body {
     padding-top: 20px;
 }
 
-.jf-auth-footer span {
+.kca-auth-footer span {
     align-items: center;
     display: inline-flex;
     gap: 8px;
 }
 
-.jf-auth-footer i {
+.kca-auth-footer i {
     color: #52729b;
     font-size: 20px;
 }
 
-.jf-alert {
+.kca-alert {
     background: #fff7e6;
     border: 1px solid #f2d49a;
     border-radius: 7px;
@@ -676,7 +676,7 @@ body.kfms-auth-body {
     padding: 11px 13px;
 }
 
-.jf-login-support {
+.kca-login-support {
     align-items: center;
     border-top: 1px solid #e8edf4;
     color: #627087;
@@ -690,18 +690,18 @@ body.kfms-auth-body {
     text-align: center;
 }
 
-.jf-login-support i {
-    color: var(--jf-gold);
+.kca-login-support i {
+    color: var(--kca-gold);
     font-size: 17px;
 }
 
-.jf-register-brand {
+.kca-register-brand {
     justify-content: flex-start;
     padding: 40px 44px;
 }
 
-.jf-register-brand .jf-product-lockup img,
-.jf-register-brand .jf-product-logo {
+.kca-register-brand .kca-product-lockup img,
+.kca-register-brand .kca-product-logo {
     background: rgba(255, 255, 255, 0.98);
     border: 1px solid rgba(213, 163, 58, 0.45);
     border-radius: 8px;
@@ -713,7 +713,7 @@ body.kfms-auth-body {
     width: 250px;
 }
 
-.jf-register-brand .jf-product-mark {
+.kca-register-brand .kca-product-mark {
     background: rgba(255, 255, 255, 0.98);
     border-color: rgba(213, 163, 58, 0.72);
     border-radius: 8px;
@@ -723,39 +723,39 @@ body.kfms-auth-body {
     min-width: 110px;
 }
 
-.jf-register-brand .jf-brand-copy {
+.kca-register-brand .kca-brand-copy {
     margin-top: 24px;
 }
 
-.jf-register-brand .jf-brand-copy h1,
-.jf-register-brand .jf-brand-copy h2 {
+.kca-register-brand .kca-brand-copy h1,
+.kca-register-brand .kca-brand-copy h2 {
     font-size: 16px;
 }
 
-.jf-register-brand .jf-brand-copy p {
+.kca-register-brand .kca-brand-copy p {
     font-size: 13px;
     margin-top: 22px;
 }
 
-.jf-feature-list {
+.kca-feature-list {
     display: grid;
     gap: 22px;
     margin-top: 34px;
 }
 
-.jf-feature-list div,
-.jf-help-box {
+.kca-feature-list div,
+.kca-help-box {
     align-items: center;
     grid-template-columns: 44px minmax(0, 1fr);
 }
 
-.jf-feature-list span,
-.jf-help-box span {
+.kca-feature-list span,
+.kca-help-box span {
     display: grid;
     gap: 4px;
 }
 
-.jf-help-box {
+.kca-help-box {
     background: rgba(255, 255, 255, 0.74);
     border: 1px solid #e4ebf4;
     border-radius: 8px;
@@ -763,19 +763,19 @@ body.kfms-auth-body {
     padding: 14px;
 }
 
-.jf-register-panel {
+.kca-register-panel {
     padding: 34px 52px 30px;
     position: relative;
 }
 
-.jf-register-top-link {
-    color: var(--jf-muted);
+.kca-register-top-link {
+    color: var(--kca-muted);
     font-size: 12px;
     margin-bottom: 18px;
     text-align: right;
 }
 
-.jf-register-heading {
+.kca-register-heading {
     align-items: center;
     border-bottom: 1px solid #e7edf4;
     display: flex;
@@ -784,11 +784,11 @@ body.kfms-auth-body {
     padding-bottom: 22px;
 }
 
-.jf-register-heading > span {
+.kca-register-heading > span {
     align-items: center;
     background: #eef6ff;
     border-radius: 8px;
-    color: var(--jf-navy);
+    color: var(--kca-navy);
     display: inline-flex;
     font-size: 34px;
     height: 64px;
@@ -796,14 +796,14 @@ body.kfms-auth-body {
     width: 64px;
 }
 
-.jf-register-heading > .jf-register-heading-logo {
+.kca-register-heading > .kca-register-heading-logo {
     background: #fff;
     border: 1px solid rgba(213, 163, 58, 0.34);
     box-shadow: 0 10px 24px rgba(3, 27, 60, 0.09);
     overflow: hidden;
 }
 
-.jf-register-logo-image {
+.kca-register-logo-image {
     display: block;
     height: 46px;
     max-width: 108px;
@@ -812,9 +812,9 @@ body.kfms-auth-body {
     width: 100%;
 }
 
-.jf-register-logo-mark {
+.kca-register-logo-mark {
     align-items: center;
-    color: var(--kfms-primary, var(--jf-navy));
+    color: var(--kfms-primary, var(--kca-navy));
     display: inline-flex;
     font-size: 23px;
     font-weight: 900;
@@ -824,57 +824,57 @@ body.kfms-auth-body {
     width: 100%;
 }
 
-.jf-register-heading h2 {
+.kca-register-heading h2 {
     font-size: 22px;
 }
 
-.jf-register-heading p {
+.kca-register-heading p {
     font-size: 13px;
 }
 
-.jf-register-section {
-    border-left: 3px solid var(--jf-gold);
-    color: var(--jf-text);
+.kca-register-section {
+    border-left: 3px solid var(--kca-gold);
+    color: var(--kca-text);
     font-size: 13px;
     font-weight: 800;
     margin-bottom: 16px;
     padding-left: 9px;
 }
 
-.jf-register-grid {
+.kca-register-grid {
     display: grid;
     gap: 16px 18px;
     grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.jf-register-grid .jf-field {
+.kca-register-grid .kca-field {
     margin: 0;
 }
 
-.jf-register-panel .jf-field {
+.kca-register-panel .kca-field {
     gap: 9px;
 }
 
-.jf-register-panel .jf-field > div {
+.kca-register-panel .kca-field > div {
     min-height: 52px;
     padding: 0 16px;
 }
 
-.jf-register-panel .jf-field input,
-.jf-register-panel .jf-field select {
+.kca-register-panel .kca-field input,
+.kca-register-panel .kca-field select {
     font-size: 15px;
 }
 
-.jf-register-panel .jf-password-toggle {
+.kca-register-panel .kca-password-toggle {
     height: 38px;
     width: 38px;
 }
 
-.jf-terms {
+.kca-terms {
     margin: 18px 0 0;
 }
 
-.jf-register-note {
+.kca-register-note {
     align-items: flex-start;
     background: #fff8e8;
     border: 1px solid #f2d49a;
@@ -888,119 +888,119 @@ body.kfms-auth-body {
     padding: 12px;
 }
 
-.jf-register-note i {
+.kca-register-note i {
     color: #b57912;
     font-size: 18px;
 }
 
 @media (max-width: 980px) {
-    .jf-login-card,
-    .jf-register-card {
+    .kca-login-card,
+    .kca-register-card {
         grid-template-columns: 1fr;
         max-width: 620px;
     }
 
-    .jf-brand-panel {
+    .kca-brand-panel {
         min-height: auto;
         padding: 34px;
     }
 
-    .jf-feature-row {
+    .kca-feature-row {
         padding-top: 34px;
     }
 
-    .jf-form-panel,
-    .jf-register-panel {
+    .kca-form-panel,
+    .kca-register-panel {
         padding: 30px;
     }
 }
 
 @media (max-width: 620px) {
-    .jf-auth-stage {
+    .kca-auth-stage {
         align-items: flex-start;
         min-height: 100dvh;
         padding: 12px;
     }
 
-    .jf-auth-card {
+    .kca-auth-card {
         border-radius: 8px;
     }
 
-    .jf-login-refined {
+    .kca-login-refined {
         border-radius: 8px;
     }
 
-    .jf-login-card-centered .jf-form-panel {
+    .kca-login-card-centered .kca-form-panel {
         padding: 22px 20px 20px;
     }
 
-    .jf-login-refined .jf-form-title h2 {
+    .kca-login-refined .kca-form-title h2 {
         font-size: 23px;
     }
 
-    .jf-login-support {
+    .kca-login-support {
         align-items: flex-start;
         text-align: left;
     }
 
-    .jf-product-lockup img {
+    .kca-product-lockup img {
         height: 86px;
         width: 230px;
     }
 
-    .jf-brand-copy h1,
-    .jf-brand-copy h2 {
+    .kca-brand-copy h1,
+    .kca-brand-copy h2 {
         font-size: 23px;
     }
 
-    .jf-feature-row,
-    .jf-register-grid {
+    .kca-feature-row,
+    .kca-register-grid {
         grid-template-columns: 1fr;
     }
 
-    .jf-auth-row,
-    .jf-auth-footer {
+    .kca-auth-row,
+    .kca-auth-footer {
         align-items: flex-start;
         flex-direction: column;
     }
 
-    .jf-register-heading {
+    .kca-register-heading {
         align-items: flex-start;
     }
 
-    .jf-register-brand {
+    .kca-register-brand {
         padding: 22px;
     }
 
-    .jf-register-brand .jf-product-lockup img,
-    .jf-register-brand .jf-product-logo {
+    .kca-register-brand .kca-product-lockup img,
+    .kca-register-brand .kca-product-logo {
         height: 88px;
         max-width: 100%;
         width: 220px;
     }
 
-    .jf-register-brand .jf-brand-copy {
+    .kca-register-brand .kca-brand-copy {
         margin-top: 18px;
     }
 
-    .jf-feature-list {
+    .kca-feature-list {
         gap: 14px;
         margin-top: 22px;
     }
 
-    .jf-help-box {
+    .kca-help-box {
         margin-top: 18px;
     }
 
-    .jf-register-panel {
+    .kca-register-panel {
         padding: 22px 18px;
     }
 
-    .jf-register-top-link {
+    .kca-register-top-link {
         text-align: left;
     }
 
-    .jf-register-panel .jf-field > div {
+    .kca-register-panel .kca-field > div {
         min-height: 50px;
     }
 }

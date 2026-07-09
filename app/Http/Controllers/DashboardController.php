@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Client;
 use App\Models\ClientIntake;
+use App\Models\Conversation;
 use App\Models\CourtEvent;
 use App\Models\File;
 use App\Models\Invoice;
@@ -30,6 +31,10 @@ class DashboardController extends Controller
             return redirect()->route('hr.dashboard');
         }
 
+        if ($user->hasRole('Recoveries Manager') && $user->can('recoveries.dashboard')) {
+            return redirect()->route('recoveries.dashboard');
+        }
+
         $can = fn (string $permission) => $user->can($permission);
         $link = fn (string $permission, string $route, array $params = []) => $can($permission) ? route($route, $params) : null;
 
@@ -48,6 +53,20 @@ class DashboardController extends Controller
             ['label' => 'Pending Requisitions', 'value' => number_format(Requisition::whereIn('status', ['draft', 'submitted'])->count()), 'icon' => 'mdi-clipboard-text-outline', 'route' => $link('requisitions.index', 'requisitions.index')],
         ];
 
+        $chartItems = collect([
+            ['label' => 'Clients', 'value' => Client::count(), 'icon' => 'mdi-account-group-outline'],
+            ['label' => 'Matters', 'value' => Matter::whereNotIn('status', ['closed', 'archived'])->count(), 'icon' => 'mdi-briefcase-outline'],
+            ['label' => 'Recoveries', 'value' => RecoveryAccount::where('status', 'active')->count(), 'icon' => 'mdi-bank-outline'],
+            ['label' => 'Securities', 'value' => LandTitle::where('status', 'pending')->count(), 'icon' => 'mdi-file-document-outline'],
+            ['label' => 'Court Events', 'value' => CourtEvent::whereDate('starts_at', '>=', today())->whereIn('status', ['scheduled', 'adjourned'])->count(), 'icon' => 'mdi-gavel'],
+            ['label' => 'Requisitions', 'value' => Requisition::whereIn('status', ['draft', 'submitted'])->count(), 'icon' => 'mdi-clipboard-text-outline'],
+        ]);
+
+        $chartMax = max($chartItems->max('value') ?: 0, 1);
+        $chartItems = $chartItems->map(fn (array $item) => $item + [
+            'percent' => max(8, round(($item['value'] / $chartMax) * 100)),
+        ]);
+
         $myRecoveries = RecoveryAccount::with('client')
             ->where('assigned_to', $user->id)
             ->where('status', 'active')
@@ -64,10 +83,30 @@ class DashboardController extends Controller
                 ->get()
             : collect();
 
+        $recentConversations = $can('messages.index')
+            ? Conversation::query()
+                ->forUser($user)
+                ->with(['latestMessage.sender'])
+                ->withCount(['participants as unread_for_user' => function ($query) use ($user) {
+                    $query
+                        ->where('user_id', $user->id)
+                        ->where(function ($query) {
+                            $query
+                                ->whereNull('last_read_at')
+                                ->orWhereColumn('last_read_at', '<', 'conversations.last_message_at');
+                        });
+                }])
+                ->latest('last_message_at')
+                ->limit(5)
+                ->get()
+            : collect();
+
         return view('dashboard', [
             'stats' => $stats,
+            'chartItems' => $chartItems,
             'myRecoveries' => $myRecoveries,
             'upcomingEvents' => $upcomingEvents,
+            'recentConversations' => $recentConversations,
         ]);
     }
 }

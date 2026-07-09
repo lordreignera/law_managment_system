@@ -29,12 +29,12 @@ class StaffAccountApproved extends Notification
         $company = Branding::companyName();
 
         return (new MailMessage)
-            ->subject('Your JurisFlow account has been approved')
+            ->subject('Your account has been approved')
             ->greeting('Hello '.$notifiable->name.',')
             ->line('Your account has been approved and activated.')
             ->line('Assigned role: '.$this->roleName)
             ->line('You can now sign in and start using your firm workspace.')
-            ->action('Sign in to JurisFlow', route('login'))
+            ->action('Sign in', route('login'))
             ->salutation('Regards, '.$company);
     }
 }
