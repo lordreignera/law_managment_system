@@ -130,6 +130,7 @@
         ['label' => 'Branches', 'icon' => 'mdi-office-building-marker', 'route' => 'branches.index', 'active' => 'branches.*', 'permission' => 'branches.index'],
         ['label' => 'Public Holidays', 'icon' => 'mdi-calendar-star', 'route' => 'holidays.index', 'active' => 'holidays.*', 'permission' => 'holidays.index'],
         ['label' => 'Company Settings', 'icon' => 'mdi-settings', 'route' => 'settings.company.edit', 'active' => 'settings.company.*', 'permission' => 'settings.company.edit'],
+        ['label' => 'User Guide', 'icon' => 'mdi-book-open-page-variant', 'route' => 'help.user-guide', 'active' => 'help.*'],
     ];
 @endphp
 

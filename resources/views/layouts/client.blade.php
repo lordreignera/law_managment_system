@@ -43,6 +43,10 @@
                         <i class="mdi mdi-message-text-outline"></i>
                         <span>Messages</span>
                     </a>
+                    <a href="{{ route('client.help') }}" @class(['is-active' => request()->routeIs('client.help')])>
+                        <i class="mdi mdi-book-open-page-variant"></i>
+                        <span>Help Guide</span>
+                    </a>
                 </nav>
 
                 <form class="kfms-client-logout" method="POST" action="{{ route('logout') }}">

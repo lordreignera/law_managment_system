@@ -55,6 +55,7 @@ Route::middleware([
 ])->group(function () {
     Route::middleware('client.portal')->prefix('client')->name('client.')->group(function () {
         Route::get('/dashboard', [ClientPortalController::class, 'dashboard'])->name('dashboard');
+        Route::view('/help', 'client-portal.help')->name('help');
         Route::get('/messages', [ClientPortalController::class, 'messages'])->name('messages.index');
         Route::get('/messages/{conversation}', [ClientPortalController::class, 'messages'])->name('messages.show');
         Route::get('/matters', [ClientPortalController::class, 'matters'])->name('matters.index');
@@ -75,6 +76,11 @@ Route::middleware([
         Route::get('/attachments/{attachment}/view', [AttachmentController::class, 'view'])
             ->middleware('active.staff')
             ->name('attachments.view');
+
+        Route::view('/user-guide', 'help.user-guide')
+            ->middleware('active.staff')
+            ->name('help.user-guide');
+
     // `php artisan kfms:sync-route-permissions` to create a matching
     // permission record.
     Route::middleware(['active.staff', 'route.permission'])->group(function () {
