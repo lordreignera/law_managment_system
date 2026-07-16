@@ -3,6 +3,7 @@
 namespace App\Exports;
 
 use App\Models\CourtEvent;
+use App\Support\Litigation\LitigationQueryFilters;
 use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
@@ -10,11 +11,17 @@ use Maatwebsite\Excel\Concerns\WithTitle;
 
 class LitigationExport implements FromQuery, WithHeadings, WithMapping, WithTitle
 {
+    public function __construct(private array $filters = [], private ?int $currentUserId = null)
+    {
+    }
+
     public function query()
     {
-        return CourtEvent::query()
-            ->with(['matter.client', 'court', 'assignee'])
-            ->latest('starts_at');
+        return LitigationQueryFilters::apply(
+            CourtEvent::query()->with(['matter.client', 'court', 'assignee']),
+            $this->filters,
+            $this->currentUserId
+        )->latest('starts_at');
     }
 
     public function headings(): array

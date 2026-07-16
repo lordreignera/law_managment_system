@@ -695,6 +695,284 @@ body.kfms-auth-body {
     font-size: 17px;
 }
 
+.kca-client-portal-button {
+    margin-top: 10px;
+}
+
+.kca-lookup-message {
+    color: #536176;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.45;
+    margin: -4px 0 12px;
+    min-height: 18px;
+}
+
+.kca-lookup-message[data-state="checking"] {
+    color: #536176;
+}
+
+.kca-lookup-message[data-state="success"] {
+    color: #047857;
+}
+
+.kca-lookup-message[data-state="warning"] {
+    color: #9a6700;
+}
+
+.kca-lookup-message[data-state="error"] {
+    color: #b42318;
+}
+
+.kca-client-welcome-stage {
+    background:
+        linear-gradient(135deg, rgba(3, 27, 60, 0.96), rgba(6, 22, 47, 0.92)),
+        #06162f;
+    color: #fff;
+    padding: 24px;
+}
+
+.kca-client-welcome {
+    background: #ffffff;
+    border: 1px solid rgba(213, 163, 58, 0.42);
+    border-radius: 10px;
+    box-shadow: 0 28px 82px rgba(0, 0, 0, 0.24);
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) 360px;
+    overflow: hidden;
+    width: min(100%, 1120px);
+}
+
+.kca-client-welcome-brand {
+    align-items: center;
+    background: #f9fbfe;
+    border-bottom: 1px solid #e4ebf4;
+    display: flex;
+    gap: 16px;
+    grid-column: 1 / -1;
+    min-height: 86px;
+    padding: 18px 28px;
+}
+
+.kca-client-welcome-logo {
+    background: #ffffff;
+    border: 1px solid rgba(213, 163, 58, 0.45);
+    border-radius: 8px;
+    height: 50px;
+    object-fit: contain;
+    padding: 6px 10px;
+    width: 150px;
+}
+
+.kca-client-welcome-mark {
+    align-items: center;
+    background: var(--kca-navy);
+    border-radius: 8px;
+    color: #ffffff;
+    display: inline-flex;
+    font-size: 24px;
+    font-weight: 900;
+    height: 50px;
+    justify-content: center;
+    width: 50px;
+}
+
+.kca-client-welcome-brand span {
+    color: var(--kca-gold);
+    display: block;
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: 0;
+    text-transform: uppercase;
+}
+
+.kca-client-welcome-brand strong {
+    color: var(--kca-text);
+    display: block;
+    font-size: 18px;
+    line-height: 1.25;
+}
+
+.kca-client-slider {
+    background:
+        linear-gradient(180deg, rgba(3, 27, 60, 0.84), rgba(3, 27, 60, 0.96)),
+        var(--kca-navy);
+    min-height: 500px;
+    overflow: hidden;
+    padding: 44px;
+    position: relative;
+}
+
+.kca-client-slider input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.kca-client-slides {
+    display: flex;
+    height: 100%;
+    transition: transform 320ms ease;
+    width: 100%;
+}
+
+.kca-client-slide {
+    box-sizing: border-box;
+    display: flex;
+    flex: 0 0 100%;
+    flex-direction: column;
+    justify-content: center;
+    max-width: 100%;
+    min-width: 100%;
+    padding-right: 44px;
+}
+
+#client-slide-1:checked ~ .kca-client-slides {
+    transform: translateX(0);
+}
+
+#client-slide-2:checked ~ .kca-client-slides {
+    transform: translateX(-100%);
+}
+
+#client-slide-3:checked ~ .kca-client-slides {
+    transform: translateX(-200%);
+}
+
+.kca-client-slide-icon {
+    align-items: center;
+    border: 1px solid rgba(213, 163, 58, 0.58);
+    border-radius: 8px;
+    color: var(--kca-gold);
+    display: inline-flex;
+    font-size: 38px;
+    height: 76px;
+    justify-content: center;
+    margin-bottom: 28px;
+    width: 76px;
+}
+
+.kca-client-slide-icon::before {
+    content: attr(data-fallback);
+    display: none;
+    font-size: 28px;
+    font-weight: 900;
+}
+
+.kca-client-slide-icon:empty::before {
+    display: block;
+}
+
+.kca-client-slide-icon i::before {
+    display: inline-block;
+}
+
+.kca-client-slide p {
+    color: var(--kca-gold);
+    font-size: 13px;
+    font-weight: 900;
+    letter-spacing: 0;
+    margin: 0 0 12px;
+    text-transform: uppercase;
+}
+
+.kca-client-slide h1 {
+    color: #ffffff;
+    font-size: 42px;
+    font-weight: 900;
+    line-height: 1.08;
+    margin: 0 0 18px;
+}
+
+.kca-client-slide span {
+    color: #dce6f4;
+    display: block;
+    font-size: 17px;
+    line-height: 1.65;
+    max-width: 560px;
+}
+
+.kca-client-slide-nav {
+    align-items: center;
+    bottom: 34px;
+    display: flex;
+    gap: 10px;
+    left: 44px;
+    position: absolute;
+}
+
+.kca-client-slide-nav label {
+    align-items: center;
+    border: 1px solid rgba(255, 255, 255, 0.38);
+    border-radius: 999px;
+    color: #ffffff;
+    cursor: pointer;
+    display: inline-flex;
+    font-size: 12px;
+    font-weight: 900;
+    height: 34px;
+    justify-content: center;
+    width: 34px;
+}
+
+#client-slide-1:checked ~ .kca-client-slide-nav label[for="client-slide-1"],
+#client-slide-2:checked ~ .kca-client-slide-nav label[for="client-slide-2"],
+#client-slide-3:checked ~ .kca-client-slide-nav label[for="client-slide-3"] {
+    background: var(--kca-gold);
+    border-color: var(--kca-gold);
+    color: var(--kca-navy);
+}
+
+.kca-client-welcome-actions {
+    align-content: center;
+    background:
+        linear-gradient(180deg, rgba(213, 163, 58, 0.08), rgba(255, 255, 255, 0) 120px),
+        #ffffff;
+    display: grid;
+    gap: 14px;
+    padding: 44px 36px;
+}
+
+.kca-client-welcome-actions > div:first-child span {
+    color: var(--kca-gold);
+    font-size: 12px;
+    font-weight: 900;
+    text-transform: uppercase;
+}
+
+.kca-client-welcome-actions h2 {
+    color: var(--kca-text);
+    font-size: 28px;
+    font-weight: 900;
+    line-height: 1.14;
+    margin: 8px 0 10px;
+}
+
+.kca-client-welcome-actions p {
+    color: #627087;
+    font-size: 14px;
+    line-height: 1.65;
+    margin: 0 0 8px;
+}
+
+.kca-client-welcome-note {
+    align-items: flex-start;
+    border-top: 1px solid #e7edf4;
+    color: #627087;
+    display: flex;
+    font-size: 12px;
+    gap: 8px;
+    line-height: 1.45;
+    margin-top: 8px;
+    padding-top: 16px;
+}
+
+.kca-client-welcome-note i {
+    color: var(--kca-gold);
+    font-size: 18px;
+    margin-top: 1px;
+}
+
 .kca-register-brand {
     justify-content: flex-start;
     padding: 40px 44px;
@@ -895,9 +1173,23 @@ body.kfms-auth-body {
 
 @media (max-width: 980px) {
     .kca-login-card,
-    .kca-register-card {
+    .kca-register-card,
+    .kca-client-welcome {
         grid-template-columns: 1fr;
         max-width: 620px;
+    }
+
+    .kca-client-slider {
+        min-height: 420px;
+        padding: 34px;
+    }
+
+    .kca-client-welcome-actions {
+        padding: 32px;
+    }
+
+    .kca-client-slide h1 {
+        font-size: 34px;
     }
 
     .kca-brand-panel {
@@ -1002,5 +1294,62 @@ body.kfms-auth-body {
 
     .kca-register-panel .kca-field > div {
         min-height: 50px;
+    }
+
+    .kca-client-welcome-stage {
+        padding: 10px;
+    }
+
+    .kca-client-welcome-brand {
+        align-items: flex-start;
+        gap: 12px;
+        min-height: auto;
+        padding: 16px;
+    }
+
+    .kca-client-welcome-logo {
+        height: 42px;
+        width: 126px;
+    }
+
+    .kca-client-welcome-brand strong {
+        font-size: 15px;
+    }
+
+    .kca-client-slider {
+        min-height: 390px;
+        padding: 26px 22px 70px;
+    }
+
+    .kca-client-slide {
+        padding-right: 22px;
+    }
+
+    .kca-client-slide-icon {
+        font-size: 30px;
+        height: 58px;
+        margin-bottom: 20px;
+        width: 58px;
+    }
+
+    .kca-client-slide h1 {
+        font-size: 28px;
+    }
+
+    .kca-client-slide span {
+        font-size: 15px;
+    }
+
+    .kca-client-slide-nav {
+        bottom: 22px;
+        left: 22px;
+    }
+
+    .kca-client-welcome-actions {
+        padding: 24px 18px;
+    }
+
+    .kca-client-welcome-actions h2 {
+        font-size: 23px;
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Expense;
+use App\Models\ChartAccount;
 use App\Models\Invoice;
 use App\Models\PettyCashTransaction;
 use App\Models\Requisition;
@@ -33,6 +34,7 @@ class FinanceController extends Controller
                 'Petty Cash Balance' => number_format(PettyCashTransaction::balance()),
                 'Expenses (This Month)' => number_format($expensesThisMonth),
                 'Pending Requisitions' => number_format(Requisition::where('status', 'submitted')->count()),
+                'Chart Accounts' => number_format(ChartAccount::count()),
             ],
             'flow' => [
                 [

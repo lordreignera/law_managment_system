@@ -4,18 +4,23 @@ use App\Http\Controllers\AccessControlController;
 use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\BranchController;
 use App\Http\Controllers\CalendarController;
+use App\Http\Controllers\ChartAccountController;
 use App\Http\Controllers\ClientAdrController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\ClientFileController;
 use App\Http\Controllers\ClientIntakeController;
+use App\Http\Controllers\ClientPortalAuthController;
+use App\Http\Controllers\ClientPortalController;
 use App\Http\Controllers\CompanySettingController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\FinanceController;
 use App\Http\Controllers\HrController;
 use App\Http\Controllers\LandTitleController;
+use App\Http\Controllers\LegalLetterController;
 use App\Http\Controllers\LeaveController;
 use App\Http\Controllers\LedgerController;
+use App\Http\Controllers\LetterTemplateController;
 use App\Http\Controllers\LitigationController;
 use App\Http\Controllers\MatterController;
 use App\Http\Controllers\MatterBillingController;
@@ -35,11 +40,30 @@ Route::get('/', function () {
     return auth()->check() ? redirect()->route('dashboard') : redirect()->route('login');
 });
 
+Route::get('/client-portal', [ClientPortalAuthController::class, 'welcome'])->name('client.portal');
+
+Route::middleware('guest')->group(function () {
+    Route::get('/client-portal/register', [ClientPortalAuthController::class, 'create'])->name('client.register');
+    Route::get('/client-portal/lookup', [ClientPortalAuthController::class, 'lookup'])->name('client.lookup');
+    Route::post('/client-portal/register', [ClientPortalAuthController::class, 'store'])->name('client.register.store');
+});
+
 Route::middleware([
     'auth:sanctum',
     config('jetstream.auth_session'),
     'verified',
 ])->group(function () {
+    Route::middleware('client.portal')->prefix('client')->name('client.')->group(function () {
+        Route::get('/dashboard', [ClientPortalController::class, 'dashboard'])->name('dashboard');
+        Route::get('/messages', [ClientPortalController::class, 'messages'])->name('messages.index');
+        Route::get('/messages/{conversation}', [ClientPortalController::class, 'messages'])->name('messages.show');
+        Route::get('/matters', [ClientPortalController::class, 'matters'])->name('matters.index');
+        Route::get('/matters/{matter}', [ClientPortalController::class, 'showMatter'])->name('matters.show');
+        Route::post('/matters/{matter}/messages', [ClientPortalController::class, 'sendMatterMessage'])->name('matters.messages.store');
+        Route::get('/documents/{attachment}/download', [ClientPortalController::class, 'downloadDocument'])->name('documents.download');
+        Route::get('/letters/{letter}/download', [ClientPortalController::class, 'downloadLetter'])->name('letters.download');
+    });
+
     // Pending users must always reach the pending screen, even without an
     // active staff profile and without any module permission.
     Route::view('/access-pending', 'auth.access-pending')->name('access.pending');
@@ -115,6 +139,27 @@ Route::middleware([
         Route::put('/litigation/{litigation}', [LitigationController::class, 'update'])->name('litigation.update');
         Route::patch('/litigation/{litigation}/outcome', [LitigationController::class, 'recordOutcome'])->name('litigation.outcome');
 
+        // Letters, opinions, notices, and branded correspondence
+        Route::get('/letters/dashboard', [LegalLetterController::class, 'dashboard'])->name('letters.dashboard');
+        Route::get('/letters', [LegalLetterController::class, 'index'])->name('letters.index');
+        Route::get('/letters/create', [LegalLetterController::class, 'create'])->name('letters.create');
+        Route::post('/letters', [LegalLetterController::class, 'store'])->name('letters.store');
+        Route::get('/letters/templates', [LetterTemplateController::class, 'index'])->name('letters.templates.index');
+        Route::post('/letters/templates', [LetterTemplateController::class, 'store'])->name('letters.templates.store');
+        Route::put('/letters/templates/{template}', [LetterTemplateController::class, 'update'])->name('letters.templates.update');
+        Route::delete('/letters/templates/{template}', [LetterTemplateController::class, 'destroy'])->name('letters.templates.destroy');
+        Route::get('/letters/{letter}', [LegalLetterController::class, 'show'])->name('letters.show');
+        Route::get('/letters/{letter}/edit', [LegalLetterController::class, 'edit'])->name('letters.edit');
+        Route::put('/letters/{letter}', [LegalLetterController::class, 'update'])->name('letters.update');
+        Route::delete('/letters/{letter}', [LegalLetterController::class, 'destroy'])->name('letters.destroy');
+        Route::patch('/letters/{letter}/submit', [LegalLetterController::class, 'submit'])->name('letters.submit');
+        Route::patch('/letters/{letter}/approve', [LegalLetterController::class, 'approve'])->name('letters.approve');
+        Route::patch('/letters/{letter}/mark-sent', [LegalLetterController::class, 'markSent'])->name('letters.mark-sent');
+        Route::patch('/letters/{letter}/received-copy', [LegalLetterController::class, 'uploadReceivedCopy'])->name('letters.received-copy');
+        Route::post('/letters/{letter}/share', [LegalLetterController::class, 'share'])->name('letters.share');
+        Route::patch('/letters/{letter}/client-visibility', [LegalLetterController::class, 'toggleClientVisibility'])->name('letters.client-visibility');
+        Route::get('/letters/{letter}/pdf', [LegalLetterController::class, 'pdf'])->name('letters.pdf');
+
         // Firm calendar (meetings, court dates, holidays) — visible firm-wide, branch-scoped
         Route::get('/calendar', [CalendarController::class, 'index'])->name('calendar.index');
         Route::get('/calendar/create', [CalendarController::class, 'create'])->name('calendar.create');
@@ -145,16 +190,29 @@ Route::middleware([
         Route::put('/recoveries/{recovery}', [RecoveryController::class, 'update'])->name('recoveries.update');
         Route::delete('/recoveries/{recovery}', [RecoveryController::class, 'destroy'])->name('recoveries.destroy');
         Route::post('/recoveries/{recovery}/activities', [RecoveryActivityController::class, 'store'])->name('recoveries.activities.store');
+        Route::get('/land-titles/dashboard', [LandTitleController::class, 'dashboard'])->name('land-titles.dashboard');
+        Route::get('/land-titles/dashboard/export/{section}', [LandTitleController::class, 'dashboardExport'])->name('land-titles.dashboard.export');
         Route::get('/land-titles', [LandTitleController::class, 'index'])->name('land-titles.index');
+        Route::get('/land-titles/import', [LandTitleController::class, 'importForm'])->name('land-titles.import');
+        Route::post('/land-titles/import', [LandTitleController::class, 'importStore'])->name('land-titles.import.store');
         Route::get('/land-titles/create', [LandTitleController::class, 'create'])->name('land-titles.create');
         Route::post('/land-titles', [LandTitleController::class, 'store'])->name('land-titles.store');
         Route::get('/land-titles/export', [LandTitleController::class, 'export'])->name('land-titles.export');
         Route::get('/land-titles/{landTitle}', [LandTitleController::class, 'show'])->name('land-titles.show');
         Route::get('/land-titles/{landTitle}/edit', [LandTitleController::class, 'edit'])->name('land-titles.edit');
         Route::put('/land-titles/{landTitle}', [LandTitleController::class, 'update'])->name('land-titles.update');
+        Route::get('/land-titles/{landTitle}/return', [LandTitleController::class, 'returnForm'])->name('land-titles.return.form');
         Route::patch('/land-titles/{landTitle}/return', [LandTitleController::class, 'returnSecurity'])->name('land-titles.return');
         Route::delete('/land-titles/{landTitle}', [LandTitleController::class, 'destroy'])->name('land-titles.destroy');
         Route::get('/finance/dashboard', [FinanceController::class, 'dashboard'])->name('finance.dashboard');
+        Route::get('/finance/chart-accounts/export', [ChartAccountController::class, 'export'])->name('finance.chart-accounts.export');
+        Route::get('/finance/chart-accounts', [ChartAccountController::class, 'index'])->name('finance.chart-accounts.index');
+        Route::get('/finance/chart-accounts/create', [ChartAccountController::class, 'create'])->name('finance.chart-accounts.create');
+        Route::post('/finance/chart-accounts', [ChartAccountController::class, 'store'])->name('finance.chart-accounts.store');
+        Route::get('/finance/chart-accounts/{chartAccount}', [ChartAccountController::class, 'show'])->name('finance.chart-accounts.show');
+        Route::get('/finance/chart-accounts/{chartAccount}/edit', [ChartAccountController::class, 'edit'])->name('finance.chart-accounts.edit');
+        Route::put('/finance/chart-accounts/{chartAccount}', [ChartAccountController::class, 'update'])->name('finance.chart-accounts.update');
+        Route::delete('/finance/chart-accounts/{chartAccount}', [ChartAccountController::class, 'destroy'])->name('finance.chart-accounts.destroy');
         Route::get('/finance', [FinanceController::class, 'index'])->name('finance.index');
         Route::get('/hr/dashboard', [HrController::class, 'dashboard'])->name('hr.dashboard');
         Route::get('/staff', [StaffController::class, 'index'])->name('staff.index');

@@ -15,6 +15,7 @@ class Conversation extends Model
     public const AUDIENCE_TYPES = [
         'self' => 'Myself',
         'users' => 'Individual User(s)',
+        'client_matter' => 'Client Matter',
         'department' => 'Department',
         'branch' => 'Branch',
         'firm' => 'All Branches',
@@ -54,6 +55,16 @@ class Conversation extends Model
     public function branch()
     {
         return $this->belongsTo(Branch::class);
+    }
+
+    public function client()
+    {
+        return $this->belongsTo(Client::class);
+    }
+
+    public function matter()
+    {
+        return $this->belongsTo(Matter::class);
     }
 
     public function department()

@@ -98,6 +98,11 @@ class Matter extends Model
         return $this->hasMany(Invoice::class)->latest('invoice_date');
     }
 
+    public function letters()
+    {
+        return $this->hasMany(LegalLetter::class)->latest('letter_date');
+    }
+
     public function expenses()
     {
         return $this->hasMany(Expense::class)->latest('spent_on');

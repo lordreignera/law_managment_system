@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Branch;
 use App\Models\RecoveryAccount;
+use App\Models\RecoveryActivity;
 use App\Models\RecoveryClient;
 use App\Models\RecoveryImportBatch;
 use App\Models\StaffProfile;
@@ -215,7 +216,7 @@ class RecoveryFlowTest extends TestCase
         $officer = $this->activeUser([], 'Recovery Officer', $branch->id);
         $client = RecoveryClient::create(['name' => 'Bank of Africa', 'code' => 'RC-4']);
 
-        RecoveryAccount::create([
+        $account = RecoveryAccount::create([
             'recovery_client_id' => $client->id,
             'debtor_name' => 'Report Debtor',
             'outstanding_amount' => 750000,
@@ -224,10 +225,31 @@ class RecoveryFlowTest extends TestCase
             'assigned_to' => $officer->id,
             'branch_id' => $branch->id,
         ]);
+        RecoveryActivity::create([
+            'recovery_account_id' => $account->id,
+            'user_id' => $officer->id,
+            'activity_type' => 'payment',
+            'activity_at' => now(),
+            'amount_paid' => 100000,
+            'notes' => 'Payment captured for daily report.',
+        ]);
 
         $this->actingAs($manager)->get(route('recoveries.reports'))
             ->assertOk()
-            ->assertSee('Recovery Reports');
+            ->assertSee('Recovery Reports')
+            ->assertSee('Daily / Weekly Collections');
+
+        $this->actingAs($manager)->get(route('recoveries.reports', [
+            'grain' => 'daily',
+            'date_from' => now()->toDateString(),
+            'date_to' => now()->toDateString(),
+            'client' => $client->id,
+            'officer' => $officer->id,
+        ]))
+            ->assertOk()
+            ->assertSee('Bank of Africa')
+            ->assertSee($officer->name)
+            ->assertSee('100,000.00');
 
         $pdf = $this->actingAs($manager)->get(route('recoveries.export', ['type' => 'officers', 'format' => 'pdf']));
         $pdf->assertOk();
@@ -235,6 +257,17 @@ class RecoveryFlowTest extends TestCase
 
         $xlsx = $this->actingAs($manager)->get(route('recoveries.export', ['type' => 'clients', 'format' => 'xlsx']));
         $xlsx->assertOk();
+
+        $dailyExport = $this->actingAs($manager)->get(route('recoveries.export', [
+            'type' => 'collections',
+            'format' => 'xlsx',
+            'grain' => 'daily',
+            'date_from' => now()->toDateString(),
+            'date_to' => now()->toDateString(),
+            'client' => $client->id,
+            'officer' => $officer->id,
+        ]));
+        $dailyExport->assertOk();
     }
 
     private function sampleRecoveryWorkbook(): UploadedFile

@@ -29,6 +29,11 @@ class CourtEvent extends Model
         'judgment' => 'Judgment',
         'conference' => 'Conference',
         'filing_deadline' => 'Filing Deadline',
+        'taxation' => 'Taxation',
+        'execution' => 'Execution',
+        'garnishee' => 'Garnishee',
+        'attachment' => 'Attachment',
+        'committal' => 'Committal',
         'other' => 'Other',
     ];
 

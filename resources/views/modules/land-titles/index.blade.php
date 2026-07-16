@@ -11,10 +11,22 @@
                 <span>{{ $titles->total() }} records</span>
             </div>
             <div class="kfms-row-actions">
+                @can('land-titles.dashboard')
+                    <a class="kfms-link-btn" href="{{ route('land-titles.dashboard') }}">
+                        <i class="mdi mdi-view-dashboard-outline"></i>
+                        Dashboard
+                    </a>
+                @endcan
                 <a class="kfms-link-btn" href="{{ route('land-titles.export', $filters) }}">
                     <i class="mdi mdi-download"></i>
                     Export
                 </a>
+                @can('land-titles.import')
+                    <a class="kfms-link-btn" href="{{ route('land-titles.import') }}">
+                        <i class="mdi mdi-upload"></i>
+                        Import
+                    </a>
+                @endcan
                 <a class="kfms-btn" href="{{ route('land-titles.create') }}">
                     <i class="mdi mdi-plus"></i>
                     Add Security
@@ -79,6 +91,9 @@
                                 <div class="kfms-table-actions">
                                     <a href="{{ route('land-titles.show', $title) }}">View</a>
                                     <a href="{{ route('land-titles.edit', $title) }}">Edit</a>
+                                    @if (! in_array($title->status, ['returned', 'closed'], true))
+                                        <a href="{{ route('land-titles.return.form', $title) }}">Return</a>
+                                    @endif
                                     <form method="POST" action="{{ route('land-titles.destroy', $title) }}">
                                         @csrf
                                         @method('DELETE')

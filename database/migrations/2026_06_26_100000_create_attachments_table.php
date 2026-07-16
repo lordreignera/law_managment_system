@@ -19,6 +19,7 @@ return new class extends Migration
             $table->unsignedBigInteger('size')->nullable();
             $table->string('title')->nullable();
             $table->string('category')->nullable();
+            $table->boolean('is_client_visible')->default(false)->index();
             $table->timestamps();
             $table->softDeletes();
         });

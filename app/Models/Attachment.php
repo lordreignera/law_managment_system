@@ -16,6 +16,7 @@ class Attachment extends Model
 
     protected $casts = [
         'size' => 'integer',
+        'is_client_visible' => 'boolean',
     ];
 
     public function attachable()

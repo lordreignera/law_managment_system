@@ -112,10 +112,10 @@
                     </div>
                 </header>
 
-                <div class="kfms-chat-thread">
+                <div class="kfms-chat-thread" data-realtime-conversation="{{ $selectedConversation->id }}" data-current-user="{{ auth()->id() }}">
                     <span class="kfms-chat-date">{{ optional($selectedConversation->messages->first()?->sent_at)->format('M d, Y') ?: 'Conversation' }}</span>
                     @foreach ($selectedConversation->messages as $message)
-                        <article class="kfms-chat-message {{ $message->sender_id === auth()->id() ? 'is-mine' : '' }}">
+                        <article class="kfms-chat-message {{ $message->sender_id === auth()->id() ? 'is-mine' : '' }}" data-message-id="{{ $message->id }}">
                             <span class="kfms-chat-avatar">{{ str($message->sender?->name ?: 'S')->explode(' ')->map(fn ($part) => str($part)->substr(0, 1))->take(2)->join('') }}</span>
                             <div>
                                 <header>

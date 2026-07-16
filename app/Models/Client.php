@@ -50,6 +50,16 @@ class Client extends Model
         return $this->hasMany(Matter::class);
     }
 
+    public function letters()
+    {
+        return $this->hasMany(LegalLetter::class);
+    }
+
+    public function portalAccount()
+    {
+        return $this->hasOne(ClientPortalAccount::class);
+    }
+
     public function matter()
     {
         return $this->hasOne(Matter::class)->latestOfMany();

@@ -8,14 +8,21 @@ use App\Models\Matter;
 use App\Models\User;
 use App\Exports\LitigationExport;
 use App\Imports\LitigationImport;
+use App\Support\Litigation\LitigationQueryFilters;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Maatwebsite\Excel\Facades\Excel;
 
 class LitigationController extends Controller
 {
     public function export(Request $request)
     {
-        return Excel::download(new LitigationExport(), 'litigation-'.now()->format('Ymd-His').'.xlsx');
+        $filters = $this->filters($request);
+
+        return Excel::download(
+            new LitigationExport($filters, $request->user()->id),
+            'litigation-'.now()->format('Ymd-His').'.xlsx'
+        );
     }
 
     public function import(Request $request)
@@ -75,32 +82,24 @@ class LitigationController extends Controller
 
     public function index(Request $request)
     {
-        $events = CourtEvent::with(['matter', 'court', 'assignee'])
-            ->when($request->filled('search'), function ($query) use ($request) {
-                $search = $request->string('search')->toString();
+        $filters = $this->filters($request);
 
-                $query->where(function ($query) use ($search) {
-                    $query
-                        ->where('case_number', 'like', "%{$search}%")
-                        ->orWhere('court_name', 'like', "%{$search}%")
-                        ->orWhere('judicial_officer', 'like', "%{$search}%")
-                        ->orWhereHas('matter', fn ($query) => $query->where('reference_no', 'like', "%{$search}%")->orWhere('title', 'like', "%{$search}%"));
-                });
-            })
-            ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')->toString()))
-            ->when($request->filled('event_type'), fn ($query) => $query->where('event_type', $request->string('event_type')->toString()))
-            ->when($request->filled('assigned_to'), fn ($query) => $query->where('assigned_to', $request->integer('assigned_to')))
-            ->when($request->boolean('mine'), fn ($query) => $query->where('assigned_to', $request->user()->id))
+        $events = LitigationQueryFilters::apply(
+            CourtEvent::with(['matter', 'court', 'assignee']),
+            $filters,
+            $request->user()->id
+        )
             ->orderBy('starts_at')
             ->paginate(20)
             ->withQueryString();
 
         return view('modules.litigation.index', [
             'events' => $events,
-            'filters' => $request->only(['search', 'status', 'event_type', 'assigned_to', 'mine']),
+            'filters' => $filters,
             'statuses' => CourtEvent::STATUSES,
             'eventTypes' => CourtEvent::EVENT_TYPES,
-            'officers' => User::orderBy('name')->get(['id', 'name']),
+            'stages' => LitigationQueryFilters::STAGES,
+            'officers' => $this->staffOfficers(),
             'summary' => [
                 'Today' => CourtEvent::open()->whereDate('starts_at', today())->count(),
                 'This Week' => CourtEvent::open()->whereBetween('starts_at', [now()->startOfWeek(), now()->endOfWeek()])->count(),
@@ -115,10 +114,11 @@ class LitigationController extends Controller
         return view('modules.litigation.create', [
             'matters' => Matter::orderByDesc('id')->limit(300)->get(['id', 'reference_no', 'title']),
             'courts' => Court::orderBy('name')->get(['id', 'name']),
-            'officers' => User::orderBy('name')->get(['id', 'name']),
+            'officers' => $this->staffOfficers(),
             'statuses' => CourtEvent::STATUSES,
             'eventTypes' => CourtEvent::EVENT_TYPES,
             'selectedMatterId' => $request->integer('matter_id') ?: null,
+            'selectedEventType' => $request->string('event_type')->toString() ?: null,
         ]);
     }
 
@@ -151,7 +151,7 @@ class LitigationController extends Controller
             'event' => $litigation,
             'matters' => Matter::orderByDesc('id')->limit(300)->get(['id', 'reference_no', 'title']),
             'courts' => Court::orderBy('name')->get(['id', 'name']),
-            'officers' => User::orderBy('name')->get(['id', 'name']),
+            'officers' => $this->staffOfficers(),
             'statuses' => CourtEvent::STATUSES,
             'eventTypes' => CourtEvent::EVENT_TYPES,
         ]);
@@ -205,9 +205,40 @@ class LitigationController extends Controller
             'attachment' => ['nullable', 'file', 'max:5120'],
         ]);
 
+        if (! empty($data['assigned_to']) && ! $this->staffOfficerQuery()->whereKey($data['assigned_to'])->exists()) {
+            throw ValidationException::withMessages([
+                'assigned_to' => 'Select an active internal staff member.',
+            ]);
+        }
+
         unset($data['attachment']);
 
         return $data;
+    }
+
+    private function filters(Request $request): array
+    {
+        return collect($request->only(['search', 'status', 'event_type', 'assigned_to', 'mine', 'stage']))
+            ->filter(fn ($value) => filled($value))
+            ->all();
+    }
+
+    private function staffOfficers()
+    {
+        return $this->staffOfficerQuery()
+            ->orderBy('name')
+            ->get(['id', 'name']);
+    }
+
+    private function staffOfficerQuery()
+    {
+        return User::query()
+            ->where(function ($query) {
+                $query
+                    ->whereNull('account_type')
+                    ->orWhere('account_type', 'staff');
+            })
+            ->whereHas('staffProfile', fn ($query) => $query->where('employment_status', 'active'));
     }
 
     private function litigationMatterQuery()
@@ -228,30 +259,56 @@ class LitigationController extends Controller
                 'description' => 'Instructions received, accepted, documents requested, and internal file opened.',
                 'count' => (clone $query)->whereIn('status', ['inquiry', 'consultation', 'conflict_check', 'file_pending'])->count(),
                 'route' => route('matters.index', ['status' => 'file_pending']),
+                'action' => 'Review Files',
+                'icon' => 'mdi-folder-open-outline',
+                'tone' => 'navy',
             ],
             [
                 'stage' => 'Review, Opinion & Pleadings',
                 'description' => 'Facts reviewed, legal opinion prepared, pleadings drafted, and client approval sought.',
                 'count' => (clone $query)->whereIn('status', ['open', 'planning', 'waiting_for_client'])->count(),
                 'route' => route('matters.index', ['status' => 'planning']),
+                'action' => 'Review Work',
+                'eventRoute' => route('litigation.create', ['event_type' => 'filing_deadline']),
+                'eventAction' => 'Add Filing Deadline',
+                'icon' => 'mdi-file-document-edit-outline',
+                'tone' => 'gold',
             ],
             [
                 'stage' => 'Filing, Service & Court Process',
                 'description' => 'Court filing, summons/service, hearings, mentions, conferences, and submissions.',
                 'count' => CourtEvent::open()->count(),
-                'route' => route('litigation.index'),
+                'route' => route('litigation.index', ['stage' => 'court_process']),
+                'exportRoute' => route('litigation.export', ['stage' => 'court_process']),
+                'action' => 'Open Cause List',
+                'eventRoute' => route('litigation.create', ['event_type' => 'hearing']),
+                'eventAction' => 'Add Hearing',
+                'icon' => 'mdi-gavel',
+                'tone' => 'blue',
             ],
             [
                 'stage' => 'Judgment / Ruling',
                 'description' => 'Rulings and judgments delivered, with outcomes and next steps captured.',
                 'count' => CourtEvent::where('status', 'completed')->whereIn('event_type', ['judgment', 'ruling'])->count(),
-                'route' => route('litigation.index', ['status' => 'completed']),
+                'route' => route('litigation.index', ['stage' => 'judgment_ruling']),
+                'exportRoute' => route('litigation.export', ['stage' => 'judgment_ruling']),
+                'action' => 'View Outcomes',
+                'eventRoute' => route('litigation.create', ['event_type' => 'judgment']),
+                'eventAction' => 'Add Judgment',
+                'icon' => 'mdi-scale-balance',
+                'tone' => 'green',
             ],
             [
                 'stage' => 'Taxation & Execution',
                 'description' => 'Bill of costs, pre-taxation, taxation, garnishee, attachment, or committal follow-up.',
-                'count' => (clone $query)->whereIn('status', ['billing_pending', 'under_review'])->count(),
-                'route' => route('matters.index', ['status' => 'billing_pending']),
+                'count' => CourtEvent::whereIn('event_type', LitigationQueryFilters::STAGES['taxation_execution']['event_types'])->count(),
+                'route' => route('litigation.index', ['stage' => 'taxation_execution']),
+                'exportRoute' => route('litigation.export', ['stage' => 'taxation_execution']),
+                'action' => 'Track Execution',
+                'eventRoute' => route('litigation.create', ['event_type' => 'taxation']),
+                'eventAction' => 'Add Taxation',
+                'icon' => 'mdi-cash-register',
+                'tone' => 'red',
             ],
         ];
     }

@@ -29,6 +29,89 @@ class ClientIntakeFlowTest extends TestCase
         app(PermissionRegistrar::class)->forgetCachedPermissions();
     }
 
+    public function test_preferred_advocate_options_are_active_staff_only(): void
+    {
+        $role = Role::findOrCreate('Intake Manager');
+        foreach (['intakes.create', 'intakes.store'] as $permissionName) {
+            $role->givePermissionTo(Permission::findOrCreate($permissionName));
+        }
+
+        $staffUser = User::factory()->create(['name' => 'Active Staff Advocate']);
+        $staffUser->assignRole($role);
+        StaffProfile::create([
+            'user_id' => $staffUser->id,
+            'employment_status' => 'active',
+        ]);
+
+        $clientUser = User::factory()->create([
+            'name' => 'Client Portal User',
+            'account_type' => 'client',
+        ]);
+
+        $this->actingAs($staffUser)
+            ->get(route('intakes.create'))
+            ->assertOk()
+            ->assertSee('Active Staff Advocate')
+            ->assertDontSee('Client Portal User');
+
+        $this->actingAs($staffUser)
+            ->post(route('intakes.store'), [
+                'client_type' => 'individual',
+                'client_name' => 'Jane Client',
+                'legal_issue' => 'Employment dispute',
+                'preferred_lawyer_id' => $clientUser->id,
+                'urgency' => 'normal',
+            ])
+            ->assertSessionHasErrors('preferred_lawyer_id');
+    }
+
+    public function test_intake_index_is_review_queue_not_approved_client_history(): void
+    {
+        $role = Role::findOrCreate('Intake Manager');
+        $role->givePermissionTo(Permission::findOrCreate('intakes.index'));
+
+        $user = User::factory()->create();
+        $user->assignRole($role);
+        StaffProfile::create([
+            'user_id' => $user->id,
+            'employment_status' => 'active',
+        ]);
+
+        ClientIntake::create([
+            'intake_no' => 'CI-PENDING',
+            'client_type' => 'individual',
+            'client_name' => 'Pending Client',
+            'legal_issue' => 'Pending issue',
+            'status' => 'pending_review',
+            'review_decision' => 'pending',
+        ]);
+        ClientIntake::create([
+            'intake_no' => 'CI-REJECTED',
+            'client_type' => 'individual',
+            'client_name' => 'Rejected Client',
+            'legal_issue' => 'Rejected issue',
+            'status' => 'rejected',
+            'review_decision' => 'rejected',
+        ]);
+        ClientIntake::create([
+            'intake_no' => 'CI-APPROVED',
+            'client_type' => 'individual',
+            'client_name' => 'Approved Client',
+            'legal_issue' => 'Approved issue',
+            'status' => 'approved',
+            'review_decision' => 'approved',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('intakes.index'))
+            ->assertOk()
+            ->assertSee('Pending Client')
+            ->assertSee('Rejected Client')
+            ->assertDontSee('CI-APPROVED')
+            ->assertDontSee('Approved issue')
+            ->assertDontSee('Approve Client');
+    }
+
     public function test_intake_can_be_saved_reviewed_and_approved_before_engagement(): void
     {
         $role = Role::findOrCreate('Intake Manager');
@@ -89,8 +172,8 @@ class ClientIntakeFlowTest extends TestCase
                 'review_decision' => 'approved',
                 'review_notes' => 'No existing client or matter conflict found.',
             ])
-            ->assertRedirect(route('intakes.index', absolute: false))
-            ->assertSessionHas('status', 'Client intake review saved.');
+            ->assertRedirect(route('clients.index', absolute: false))
+            ->assertSessionHas('status', 'Client intake approved. The client is now in the approved client register.');
 
         $intake->refresh();
 

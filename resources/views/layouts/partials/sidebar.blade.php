@@ -42,6 +42,21 @@
             ],
             'permission_any' => ['litigation.dashboard', 'litigation.index', 'litigation.create'],
         ],
+        [
+            'label' => 'Letters & Opinions',
+            'icon' => 'mdi-file-sign',
+            'route' => 'letters.dashboard',
+            'active' => ['letters.*'],
+            'children' => [
+                ['label' => 'Letters Dashboard', 'route' => 'letters.dashboard', 'active' => 'letters.dashboard', 'permission' => 'letters.dashboard'],
+                ['label' => 'All Letters', 'route' => 'letters.index', 'active' => 'letters.index', 'permission' => 'letters.index'],
+                ['label' => 'Create Letter', 'route' => 'letters.create', 'active' => 'letters.create', 'permission' => 'letters.create'],
+                ['label' => 'Templates', 'route' => 'letters.templates.index', 'active' => 'letters.templates.*', 'permission' => 'letters.templates.index'],
+                ['label' => 'Pending Review', 'route' => 'letters.index', 'query' => ['status' => 'pending_review'], 'permission' => 'letters.index'],
+                ['label' => 'Sent Letters', 'route' => 'letters.index', 'query' => ['status' => 'sent'], 'permission' => 'letters.index'],
+            ],
+            'permission_any' => ['letters.dashboard', 'letters.index', 'letters.create', 'letters.templates.index'],
+        ],
         ['label' => 'Firm Calendar', 'icon' => 'mdi-calendar-month', 'route' => 'calendar.index', 'active' => 'calendar.*', 'permission' => 'calendar.index'],
         [
             'label' => 'Recoveries',
@@ -57,7 +72,19 @@
             ],
             'permission_any' => ['recoveries.dashboard', 'recoveries.index', 'recoveries.import', 'recoveries.mine', 'recoveries.reports'],
         ],
-        ['label' => 'Securities', 'icon' => 'mdi-file-document', 'route' => 'land-titles.index', 'permission' => 'land-titles.index'],
+        [
+            'label' => 'Securities',
+            'icon' => 'mdi-file-document',
+            'route' => 'land-titles.dashboard',
+            'active' => 'land-titles.*',
+            'children' => [
+                ['label' => 'Securities Dashboard', 'route' => 'land-titles.dashboard', 'active' => 'land-titles.dashboard', 'permission' => 'land-titles.dashboard'],
+                ['label' => 'Securities Register', 'route' => 'land-titles.index', 'active' => 'land-titles.index', 'permission' => 'land-titles.index'],
+                ['label' => 'Import Securities', 'route' => 'land-titles.import', 'active' => 'land-titles.import', 'permission' => 'land-titles.import'],
+                ['label' => 'Add Security', 'route' => 'land-titles.create', 'active' => 'land-titles.create', 'permission' => 'land-titles.create'],
+            ],
+            'permission_any' => ['land-titles.dashboard', 'land-titles.index', 'land-titles.import', 'land-titles.create'],
+        ],
         [
             'label' => 'Finance',
             'icon' => 'mdi-cash-multiple',
@@ -66,11 +93,12 @@
             'children' => [
                 ['label' => 'Dashboard', 'route' => 'finance.dashboard', 'active' => 'finance.dashboard', 'permission' => 'finance.dashboard'],
                 ['label' => 'Overview', 'route' => 'finance.index', 'active' => 'finance.index', 'permission' => 'finance.index'],
+                ['label' => 'Chart of Accounts', 'route' => 'finance.chart-accounts.index', 'active' => 'finance.chart-accounts.*', 'permission' => 'finance.chart-accounts.index'],
                 ['label' => 'Expenses', 'route' => 'expenses.index', 'active' => 'expenses.*', 'permission' => 'expenses.index'],
                 ['label' => 'Petty Cash', 'route' => 'petty-cash.index', 'active' => 'petty-cash.*', 'permission' => 'petty-cash.index'],
                 ['label' => 'Ledger', 'route' => 'ledger.index', 'active' => 'ledger.*', 'permission' => 'ledger.index'],
             ],
-            'permission_any' => ['finance.dashboard', 'finance.index', 'expenses.index', 'petty-cash.index', 'ledger.index'],
+            'permission_any' => ['finance.dashboard', 'finance.index', 'finance.chart-accounts.index', 'expenses.index', 'petty-cash.index', 'ledger.index'],
         ],
         [
             'label' => 'Human Resources',
@@ -86,7 +114,7 @@
         ],
         ['label' => 'Requisitions', 'icon' => 'mdi-clipboard-text', 'route' => 'requisitions.index', 'active' => 'requisitions.*', 'permission' => 'requisitions.index'],
         [
-            'label' => 'Access Control',
+            'label' => 'User Management',
             'icon' => 'mdi-shield-account',
             'route' => 'access.users.index',
             'active' => 'access.*',

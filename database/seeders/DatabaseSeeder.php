@@ -51,9 +51,13 @@ class DatabaseSeeder extends Seeder
             PaymentModeSeeder::class,
             BillingTypeSeeder::class,
             CurrencyTypeSeeder::class,
+            AccountClassSeeder::class,
+            ChartAccountSeeder::class,
+            FinanceAccountMappingSeeder::class,
             RequisitionCategorySeeder::class,
             ExpenseCategorySeeder::class,
             LetterheadSeeder::class,
+            LetterTemplateSeeder::class,
             BillableRateSeeder::class,
         ]);
 
@@ -84,16 +88,17 @@ class DatabaseSeeder extends Seeder
             'Super Admin' => array_keys(RoutePermissionRegistry::MODULES),
             'Administrator' => array_keys(RoutePermissionRegistry::MODULES),
 
-            'Managing Partner' => ['dashboard', 'messages', 'clients', 'intakes', 'matters', 'litigation', 'recoveries', 'land-titles', 'finance', 'expenses', 'petty-cash', 'ledger', 'hr', 'staff', 'leave', 'requisitions', 'branches', 'holidays'],
-            'Senior Partner' => ['dashboard', 'messages', 'clients', 'intakes', 'matters', 'litigation'],
-            'Litigation Officer' => ['dashboard', 'messages', 'clients', 'intakes', 'matters', 'litigation', 'calendar'],
-            'Advocate' => ['dashboard', 'messages', 'clients', 'intakes', 'matters', 'litigation'],
-            'Paralegal' => ['dashboard', 'messages', 'intakes', 'matters', 'litigation'],
+            'Managing Partner' => ['dashboard', 'messages', 'clients', 'intakes', 'matters', 'litigation', 'letters', 'recoveries', 'land-titles', 'finance', 'expenses', 'petty-cash', 'ledger', 'hr', 'staff', 'leave', 'requisitions', 'branches', 'holidays'],
+            'Senior Partner' => ['dashboard', 'messages', 'clients', 'intakes', 'matters', 'litigation', 'letters'],
+            'Litigation Officer' => ['dashboard', 'messages', 'clients', 'intakes', 'matters', 'litigation', 'letters', 'calendar'],
+            'Advocate' => ['dashboard', 'messages', 'clients', 'intakes', 'matters', 'litigation', 'letters'],
+            'Paralegal' => ['dashboard', 'messages', 'intakes', 'matters', 'litigation', 'letters'],
             'Recoveries Manager' => ['dashboard', 'messages', 'recoveries'],
             'Recovery Officer' => ['dashboard', 'messages'],
+            'Securities Manager' => ['dashboard', 'messages', 'land-titles'],
             'Accountant' => ['dashboard', 'messages', 'finance', 'expenses', 'petty-cash', 'ledger', 'requisitions'],
             'HR Manager' => ['dashboard', 'messages', 'hr', 'staff', 'leave'],
-            'Front Desk' => ['dashboard', 'messages', 'clients', 'intakes'],
+            'Front Desk' => ['dashboard', 'messages', 'clients', 'intakes', 'letters'],
             'IT Manager' => ['dashboard', 'messages', 'access', 'settings', 'branches', 'holidays'],
         ];
 
@@ -103,6 +108,8 @@ class DatabaseSeeder extends Seeder
                 : $registry->permissionsForModules($modules);
             Role::create(['name' => $roleName, 'guard_name' => 'web'])->syncPermissions($perms);
         }
+
+        Role::firstOrCreate(['name' => 'Client', 'guard_name' => 'web']);
 
         $broadcastPermission = Permission::firstOrCreate([
             'name' => 'messages.broadcast',

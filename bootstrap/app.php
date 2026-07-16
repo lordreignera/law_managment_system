@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\EnsureRoutePermission;
+use App\Http\Middleware\EnsureClientPortalAccount;
 use App\Http\Middleware\EnsureStaffIsActive;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -13,12 +14,14 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
         api: __DIR__.'/../routes/api.php',
+        channels: __DIR__.'/../routes/channels.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
             'active.staff' => EnsureStaffIsActive::class,
+            'client.portal' => EnsureClientPortalAccount::class,
             'route.permission' => EnsureRoutePermission::class,
             'permission' => PermissionMiddleware::class,
             'role' => RoleMiddleware::class,

@@ -19,8 +19,8 @@
                     <i class="mdi mdi-pencil"></i>
                     Edit
                 </a>
-                @if ($title->status !== 'returned')
-                    <a class="kfms-link-btn" href="#return-security">
+                @if (! in_array($title->status, ['returned', 'closed'], true))
+                    <a class="kfms-link-btn" href="{{ route('land-titles.return.form', $title) }}">
                         <i class="mdi mdi-keyboard-return"></i>
                         Return Security
                     </a>
@@ -113,51 +113,6 @@
             </div>
         </div>
     </section>
-
-    @if ($title->status !== 'returned')
-        <section class="kfms-panel" id="return-security">
-            <div class="kfms-panel-header">
-                <div>
-                    <h2>Return Security</h2>
-                    <span>Record where the title is going back, when it returned, and attach proof if available.</span>
-                </div>
-            </div>
-
-            <form class="kfms-form" method="POST" action="{{ route('land-titles.return', $title) }}" enctype="multipart/form-data">
-                @csrf
-                @method('PATCH')
-                <div class="kfms-form-grid">
-                    <label>
-                        <span>Returned To <span class="kfms-required">*</span></span>
-                        <input type="text" name="returned_to" value="{{ old('returned_to', $title->returned_to ?: $title->bankBranch?->name ?: $title->bank?->name) }}" required>
-                        @error('returned_to') <small>{{ $message }}</small> @enderror
-                    </label>
-                    <label>
-                        <span>Date &amp; Time Returned <span class="kfms-required">*</span></span>
-                        <input type="datetime-local" name="returned_at" value="{{ old('returned_at', now()->format('Y-m-d\TH:i')) }}" required>
-                        @error('returned_at') <small>{{ $message }}</small> @enderror
-                    </label>
-                    <label class="kfms-span-2">
-                        <span>Return Document</span>
-                        <input type="file" name="documents[]" multiple accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx">
-                        @error('documents') <small>{{ $message }}</small> @enderror
-                        @error('documents.*') <small>{{ $message }}</small> @enderror
-                    </label>
-                    <label class="kfms-span-2">
-                        <span>Return Notes</span>
-                        <textarea name="notes" rows="3">{{ old('notes', $title->notes) }}</textarea>
-                        @error('notes') <small>{{ $message }}</small> @enderror
-                    </label>
-                </div>
-                <div class="kfms-form-actions">
-                    <button type="submit">
-                        <i class="mdi mdi-keyboard-return"></i>
-                        Mark as Returned
-                    </button>
-                </div>
-            </form>
-        </section>
-    @endif
 
     <section class="kfms-panel">
         <div class="kfms-panel-header">

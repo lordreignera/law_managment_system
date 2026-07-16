@@ -132,6 +132,69 @@ class LitigationFlowTest extends TestCase
         });
     }
 
+    public function test_litigation_lifecycle_actions_filter_export_and_use_staff_only_advocates(): void
+    {
+        $matter = $this->matter();
+        $advocate = $this->activeUser([
+            'litigation.dashboard',
+            'litigation.index',
+            'litigation.create',
+            'litigation.export',
+        ], 'Litigation Officer');
+        $advocate->update(['name' => 'Active Litigation Advocate']);
+
+        User::factory()->create([
+            'name' => 'Portal Client User',
+            'email' => 'portal.client@example.test',
+            'account_type' => 'client',
+        ]);
+
+        CourtEvent::create([
+            'matter_id' => $matter->id,
+            'assigned_to' => $advocate->id,
+            'event_type' => 'taxation',
+            'case_number' => 'TAX-001-2026',
+            'status' => 'scheduled',
+            'starts_at' => now()->addDays(4),
+        ]);
+
+        CourtEvent::create([
+            'matter_id' => $matter->id,
+            'assigned_to' => $advocate->id,
+            'event_type' => 'judgment',
+            'case_number' => 'JUD-001-2026',
+            'status' => 'completed',
+            'starts_at' => now()->subDay(),
+        ]);
+
+        $this->actingAs($advocate)
+            ->get(route('litigation.dashboard'))
+            ->assertOk()
+            ->assertSee('Add Hearing')
+            ->assertSee('Add Judgment')
+            ->assertSee('Add Taxation')
+            ->assertSee('Track Execution')
+            ->assertSee(route('litigation.index', ['stage' => 'taxation_execution']), false)
+            ->assertSee(route('litigation.export', ['stage' => 'taxation_execution']), false);
+
+        $this->actingAs($advocate)
+            ->get(route('litigation.index', ['stage' => 'taxation_execution']))
+            ->assertOk()
+            ->assertSee('TAX-001-2026')
+            ->assertDontSee('JUD-001-2026');
+
+        $this->actingAs($advocate)
+            ->get(route('litigation.export', ['stage' => 'taxation_execution']))
+            ->assertOk();
+
+        $this->actingAs($advocate)
+            ->get(route('litigation.create', ['event_type' => 'taxation']))
+            ->assertOk()
+            ->assertSee('value="taxation" selected', false)
+            ->assertSee('Active Litigation Advocate')
+            ->assertDontSee('Portal Client User');
+    }
+
     public function test_court_reminder_command_runs(): void
     {
         $matter = $this->matter();

@@ -21,6 +21,7 @@
         <span>Status <span class="kfms-required">*</span></span>
         <select name="status" required>
             @foreach ($statuses as $value => $label)
+                @continue($value === 'returned' && ($title->status ?? null) !== 'returned')
                 <option value="{{ $value }}" @selected(old('status', $title->status ?? 'pending') === $value)>{{ $label }}</option>
             @endforeach
         </select>
@@ -102,12 +103,6 @@
     </label>
 
     <label>
-        <span>Returned To</span>
-        <input type="text" name="returned_to" value="{{ old('returned_to', $title->returned_to) }}" placeholder="Bank branch, officer, or institution contact">
-        @error('returned_to') <small>{{ $message }}</small> @enderror
-    </label>
-
-    <label>
         <span>Instruction Date</span>
         <input type="date" name="instruction_date" value="{{ old('instruction_date', $title->instruction_date?->toDateString()) }}">
         @error('instruction_date') <small>{{ $message }}</small> @enderror
@@ -123,12 +118,6 @@
         <span>Date &amp; Time Dispatched</span>
         <input type="datetime-local" name="dispatched_at" value="{{ old('dispatched_at', $title->dispatched_at?->format('Y-m-d\TH:i')) }}">
         @error('dispatched_at') <small>{{ $message }}</small> @enderror
-    </label>
-
-    <label>
-        <span>Date &amp; Time Returned</span>
-        <input type="datetime-local" name="returned_at" value="{{ old('returned_at', $title->returned_at?->format('Y-m-d\TH:i')) }}">
-        @error('returned_at') <small>{{ $message }}</small> @enderror
     </label>
 
     <label class="kfms-span-2">

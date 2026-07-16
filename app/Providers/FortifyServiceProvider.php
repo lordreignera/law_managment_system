@@ -6,6 +6,8 @@ use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
 use App\Actions\Fortify\UpdateUserPassword;
 use App\Actions\Fortify\UpdateUserProfileInformation;
+use App\Http\Responses\LoginResponse;
+use App\Http\Responses\LogoutResponse;
 use App\Http\Responses\RegisterResponse;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -22,6 +24,8 @@ class FortifyServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $this->app->singleton(\Laravel\Fortify\Contracts\LoginResponse::class, LoginResponse::class);
+        $this->app->singleton(\Laravel\Fortify\Contracts\LogoutResponse::class, LogoutResponse::class);
         $this->app->singleton(\Laravel\Fortify\Contracts\RegisterResponse::class, RegisterResponse::class);
     }
 

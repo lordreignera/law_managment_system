@@ -16,6 +16,10 @@ class EnsureStaffIsActive
             abort(403);
         }
 
+        if (method_exists($user, 'isClientAccount') && $user->isClientAccount()) {
+            return redirect()->route('client.dashboard');
+        }
+
         $status = $user->staffProfile()->value('employment_status');
 
         if ($status === null || $status === 'active') {

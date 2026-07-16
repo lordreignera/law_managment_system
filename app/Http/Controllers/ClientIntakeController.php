@@ -10,12 +10,17 @@ use App\Support\MonthlyReferenceNumber;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class ClientIntakeController extends Controller
 {
     public function index(Request $request)
     {
+        $reviewQueueStatuses = ['pending_review', 'rejected', 'more_information_needed'];
+        $reviewQueueDecisions = ['pending', 'rejected', 'more_information_needed'];
+
         $intakes = ClientIntake::with(['practiceArea', 'preferredLawyer'])
+            ->whereIn('status', $reviewQueueStatuses)
             ->when($request->filled('search'), function ($query) use ($request) {
                 $search = $request->string('search')->toString();
 
@@ -26,8 +31,14 @@ class ClientIntakeController extends Controller
                         ->orWhere('legal_issue', 'like', "%{$search}%");
                 });
             })
-            ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')->toString()))
-            ->when($request->filled('review_decision'), fn ($query) => $query->where('review_decision', $request->string('review_decision')->toString()))
+            ->when(
+                in_array($request->string('status')->toString(), $reviewQueueStatuses, true),
+                fn ($query) => $query->where('status', $request->string('status')->toString())
+            )
+            ->when(
+                in_array($request->string('review_decision')->toString(), $reviewQueueDecisions, true),
+                fn ($query) => $query->where('review_decision', $request->string('review_decision')->toString())
+            )
             ->latest()
             ->paginate(15)
             ->withQueryString();
@@ -35,8 +46,8 @@ class ClientIntakeController extends Controller
         return view('modules.intakes.index', [
             'intakes' => $intakes,
             'filters' => $request->only(['search', 'status', 'review_decision']),
-            'statuses' => ClientIntake::STATUSES,
-            'reviewDecisions' => ClientIntake::REVIEW_DECISIONS,
+            'statuses' => collect(ClientIntake::STATUSES)->only($reviewQueueStatuses)->all(),
+            'reviewDecisions' => collect(ClientIntake::REVIEW_DECISIONS)->only($reviewQueueDecisions)->all(),
         ]);
     }
 
@@ -45,7 +56,7 @@ class ClientIntakeController extends Controller
         return view('modules.intakes.create', [
             'intakeNumber' => MonthlyReferenceNumber::make(ClientIntake::class, 'intake_no', 'CI'),
             'practiceAreas' => PracticeArea::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
-            'users' => User::orderBy('name')->get(),
+            'users' => $this->staffAdvocates()->get(),
             'urgencies' => ClientIntake::URGENCIES,
             'referralSources' => ClientIntake::REFERRAL_SOURCES,
         ]);
@@ -81,6 +92,12 @@ class ClientIntakeController extends Controller
             'conflict_parties.*.contact' => ['nullable', 'string', 'max:191'],
             'conflict_parties.*.notes' => ['nullable', 'string', 'max:1000'],
         ]);
+
+        if (filled($data['preferred_lawyer_id'] ?? null) && ! $this->staffAdvocates()->whereKey($data['preferred_lawyer_id'])->exists()) {
+            throw ValidationException::withMessages([
+                'preferred_lawyer_id' => 'The preferred advocate must be an active staff member.',
+            ]);
+        }
 
         $intake = DB::transaction(function () use ($data) {
             $conflictParties = collect($data['conflict_parties'] ?? [])
@@ -129,7 +146,7 @@ class ClientIntakeController extends Controller
             'review_notes' => ['required', 'string', 'max:3000'],
         ]);
 
-        DB::transaction(function () use ($data, $intake) {
+        $client = DB::transaction(function () use ($data, $intake) {
             $client = null;
 
             if ($data['review_decision'] === 'approved') {
@@ -156,11 +173,31 @@ class ClientIntakeController extends Controller
                 'reviewed_at' => now(),
                 'status' => $data['review_decision'] === 'approved' ? 'approved' : $data['review_decision'],
             ]);
+
+            return $client;
         });
+
+        if ($client) {
+            return redirect()
+                ->route('clients.index')
+                ->with('status', 'Client intake approved. The client is now in the approved client register.');
+        }
 
         return redirect()
             ->route('intakes.index')
             ->with('status', 'Client intake review saved.');
+    }
+
+    private function staffAdvocates()
+    {
+        return User::query()
+            ->where(function ($query) {
+                $query
+                    ->whereNull('account_type')
+                    ->orWhere('account_type', 'staff');
+            })
+            ->whereHas('staffProfile', fn ($query) => $query->where('employment_status', 'active'))
+            ->orderBy('name');
     }
 
 }

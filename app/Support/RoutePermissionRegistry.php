@@ -28,6 +28,7 @@ class RoutePermissionRegistry
         'intakes' => 'Client Intakes',
         'matters' => 'Matters',
         'litigation' => 'Litigation',
+        'letters' => 'Letters & Opinions',
         'calendar' => 'Firm Calendar',
         'recoveries' => 'Recoveries',
         'land-titles' => 'Securities',

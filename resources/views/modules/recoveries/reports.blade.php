@@ -45,6 +45,93 @@
 
     <section class="kfms-panel">
         <div class="kfms-panel-header">
+            <div>
+                <h2>Daily / Weekly Collections</h2>
+                <span>Filter collection activity by assigned officer and bank/client</span>
+            </div>
+            <div class="kfms-toolbar-actions">
+                <a class="kfms-link-btn" href="{{ route('recoveries.export', array_merge($reportFilters, ['type' => 'collections', 'format' => 'xlsx', 'year' => $year])) }}"><i class="mdi mdi-file-excel"></i> Excel</a>
+                <a class="kfms-link-btn" href="{{ route('recoveries.export', array_merge($reportFilters, ['type' => 'collections', 'format' => 'pdf', 'year' => $year])) }}"><i class="mdi mdi-file-pdf-box"></i> PDF</a>
+            </div>
+        </div>
+
+        <form class="kfms-table-toolbar" method="GET" action="{{ route('recoveries.reports') }}">
+            <input type="hidden" name="year" value="{{ $year }}">
+            <label>
+                <span>Report Type</span>
+                <select name="grain">
+                    <option value="daily" @selected($reportFilters['grain'] === 'daily')>Daily</option>
+                    <option value="weekly" @selected($reportFilters['grain'] === 'weekly')>Weekly</option>
+                </select>
+            </label>
+            <label>
+                <span>From</span>
+                <input type="date" name="date_from" value="{{ $reportFilters['date_from'] }}">
+            </label>
+            <label>
+                <span>To</span>
+                <input type="date" name="date_to" value="{{ $reportFilters['date_to'] }}">
+            </label>
+            <label>
+                <span>Bank / Client</span>
+                <select name="client">
+                    <option value="">All clients</option>
+                    @foreach ($clients as $client)
+                        <option value="{{ $client->id }}" @selected($reportFilters['client'] == $client->id)>{{ $client->name }}</option>
+                    @endforeach
+                </select>
+            </label>
+            <label>
+                <span>Assigned Officer</span>
+                <select name="officer">
+                    <option value="">All officers</option>
+                    @foreach ($officers as $officer)
+                        <option value="{{ $officer->id }}" @selected($reportFilters['officer'] == $officer->id)>{{ $officer->name }}</option>
+                    @endforeach
+                </select>
+            </label>
+            <div class="kfms-toolbar-actions">
+                <button class="kfms-link-btn" type="submit"><i class="mdi mdi-filter-outline"></i> Apply</button>
+                <a class="kfms-link-btn" href="{{ route('recoveries.reports') }}">Reset</a>
+            </div>
+        </form>
+
+        <div class="kfms-table-wrap">
+            <table class="kfms-table">
+                <thead>
+                    <tr>
+                        <th>Period</th>
+                        <th>Bank / Client</th>
+                        <th>Officer</th>
+                        <th>Accounts Touched</th>
+                        <th>Activities</th>
+                        <th>Payments</th>
+                        <th>Promised</th>
+                        <th>Recovered</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse ($activityRows as $row)
+                        <tr>
+                            <td>{{ $row['period'] }}</td>
+                            <td>{{ $row['client'] }}</td>
+                            <td>{{ $row['officer'] }}</td>
+                            <td>{{ number_format($row['accounts']) }}</td>
+                            <td>{{ number_format($row['activities']) }}</td>
+                            <td>{{ number_format($row['payments']) }}</td>
+                            <td>{{ number_format($row['promised'], 2) }}</td>
+                            <td>{{ number_format($row['recovered'], 2) }}</td>
+                        </tr>
+                    @empty
+                        <tr><td colspan="8" class="kfms-empty">No collection activity found for this filter.</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="kfms-panel">
+        <div class="kfms-panel-header">
             <div><h2>Monthly Recoveries</h2><span>Opened &amp; recovered per month</span></div>
             <div class="kfms-toolbar-actions">
                 <a class="kfms-link-btn" href="{{ route('recoveries.export', ['type' => 'monthly', 'format' => 'xlsx', 'year' => $year]) }}"><i class="mdi mdi-file-excel"></i> Excel</a>

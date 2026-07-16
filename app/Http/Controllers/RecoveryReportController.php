@@ -5,8 +5,11 @@ namespace App\Http\Controllers;
 use App\Exports\RecoveryReportExport;
 use App\Models\RecoveryAccount;
 use App\Models\RecoveryActivity;
+use App\Models\RecoveryClient;
+use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Maatwebsite\Excel\Facades\Excel;
 
 class RecoveryReportController extends Controller
@@ -53,6 +56,15 @@ class RecoveryReportController extends Controller
     {
         $user = $request->user();
         $year = $request->filled('year') ? (int) $request->integer('year') : (int) now()->year;
+        $grain = in_array($request->string('grain')->toString(), ['daily', 'weekly'], true)
+            ? $request->string('grain')->toString()
+            : 'weekly';
+        $dateFrom = $request->filled('date_from')
+            ? Carbon::parse($request->string('date_from')->toString())->startOfDay()
+            : now()->startOfWeek()->startOfDay();
+        $dateTo = $request->filled('date_to')
+            ? Carbon::parse($request->string('date_to')->toString())->endOfDay()
+            : now()->endOfWeek()->endOfDay();
 
         $accounts = RecoveryAccount::with(['client', 'assignee'])
             ->forBranchOf($user)
@@ -110,9 +122,19 @@ class RecoveryReportController extends Controller
         return [
             'year' => $year,
             'years' => $this->yearOptions($accounts),
+            'clients' => RecoveryClient::where('is_active', true)->orderBy('name')->get(['id', 'name']),
+            'officers' => User::role('Recovery Officer')->orderBy('name')->get(['id', 'name']),
+            'reportFilters' => [
+                'grain' => $grain,
+                'date_from' => $dateFrom->toDateString(),
+                'date_to' => $dateTo->toDateString(),
+                'client' => $request->filled('client') ? $request->integer('client') : null,
+                'officer' => $request->filled('officer') ? $request->integer('officer') : null,
+            ],
             'monthly' => $monthly,
             'byOfficer' => $byOfficer,
             'byClient' => $byClient,
+            'activityRows' => $this->activityRows($accounts, $request, $grain, $dateFrom, $dateTo),
             'summary' => $summary,
         ];
     }
@@ -121,6 +143,7 @@ class RecoveryReportController extends Controller
     {
         $years = $accounts
             ->map(fn ($a) => (int) $a->created_at->year)
+            ->toBase()
             ->push((int) now()->year)
             ->unique()
             ->sortDesc()
@@ -136,6 +159,20 @@ class RecoveryReportController extends Controller
     private function dataset(string $type, array $report): array
     {
         return match ($type) {
+            'collections' => [
+                ['Period', 'Bank / Client', 'Officer', 'Accounts Touched', 'Activities', 'Payments', 'Promised', 'Recovered'],
+                $report['activityRows']->map(fn ($r) => [
+                    $r['period'],
+                    $r['client'],
+                    $r['officer'],
+                    $r['accounts'],
+                    $r['activities'],
+                    $r['payments'],
+                    number_format($r['promised'], 2),
+                    number_format($r['recovered'], 2),
+                ])->all(),
+                ucfirst($report['reportFilters']['grain']).' Recovery Collections',
+            ],
             'monthly' => [
                 ['Month', 'Recoveries Opened', 'Amount Recovered'],
                 $report['monthly']->map(fn ($r) => [$r['month'], $r['opened'], number_format($r['recovered'], 2)])->all(),
@@ -152,5 +189,53 @@ class RecoveryReportController extends Controller
                 'Recoveries by Officer '.$report['year'],
             ],
         };
+    }
+
+    private function activityRows($accounts, Request $request, string $grain, Carbon $dateFrom, Carbon $dateTo)
+    {
+        $filteredAccounts = $accounts
+            ->when($request->filled('client'), fn ($accounts) => $accounts->where('recovery_client_id', $request->integer('client')))
+            ->when($request->filled('officer'), fn ($accounts) => $accounts->where('assigned_to', $request->integer('officer')));
+
+        $activities = RecoveryActivity::with(['account.client', 'account.assignee'])
+            ->whereIn('recovery_account_id', $filteredAccounts->pluck('id'))
+            ->whereBetween('activity_at', [$dateFrom, $dateTo])
+            ->orderBy('activity_at')
+            ->get();
+
+        return $activities
+            ->groupBy(function (RecoveryActivity $activity) use ($grain) {
+                $periodStart = $grain === 'daily'
+                    ? $activity->activity_at->copy()->startOfDay()
+                    : $activity->activity_at->copy()->startOfWeek();
+
+                return implode('|', [
+                    $periodStart->toDateString(),
+                    $activity->account?->recovery_client_id ?: 'none',
+                    $activity->account?->assigned_to ?: 'none',
+                ]);
+            })
+            ->map(function ($group) use ($grain) {
+                $first = $group->first();
+                $periodStart = $grain === 'daily'
+                    ? $first->activity_at->copy()->startOfDay()
+                    : $first->activity_at->copy()->startOfWeek();
+
+                return [
+                    'period' => $grain === 'daily'
+                        ? $periodStart->format('d M Y')
+                        : $periodStart->format('d M').' - '.$periodStart->copy()->endOfWeek()->format('d M Y'),
+                    'client' => $first->account?->client?->name ?: 'Unknown',
+                    'officer' => $first->account?->assignee?->name ?: 'Unassigned',
+                    'accounts' => $group->pluck('recovery_account_id')->unique()->count(),
+                    'activities' => $group->count(),
+                    'payments' => $group->filter(fn ($activity) => $activity->activity_type === 'payment' || (float) $activity->amount_paid > 0)->count(),
+                    'promised' => (float) $group->sum('promised_amount'),
+                    'recovered' => (float) $group->sum('amount_paid'),
+                    'sort_key' => $periodStart->timestamp,
+                ];
+            })
+            ->sortByDesc('sort_key')
+            ->values();
     }
 }

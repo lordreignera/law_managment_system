@@ -26,6 +26,12 @@
                         </a>
                     @endcan
                 @endif
+                @can('letters.create')
+                    <a class="kfms-link-btn" href="{{ route('letters.create', ['matter_id' => $matter->id, 'client_id' => $matter->client_id]) }}">
+                        <i class="mdi mdi-file-sign"></i>
+                        Create Letter
+                    </a>
+                @endcan
                 <a class="kfms-link-btn" href="{{ route('matters.index') }}">
                     <i class="mdi mdi-arrow-left"></i>
                     Back to Matters

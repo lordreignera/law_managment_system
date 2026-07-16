@@ -35,6 +35,10 @@ class DashboardController extends Controller
             return redirect()->route('recoveries.dashboard');
         }
 
+        if ($user->hasRole('Securities Manager') && $user->can('land-titles.dashboard')) {
+            return redirect()->route('land-titles.dashboard');
+        }
+
         $can = fn (string $permission) => $user->can($permission);
         $link = fn (string $permission, string $route, array $params = []) => $can($permission) ? route($route, $params) : null;
 

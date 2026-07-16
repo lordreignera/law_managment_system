@@ -29,16 +29,40 @@
             </div>
         </div>
 
-        <div class="kfms-litigation-lifecycle">
+        <div class="kfms-litigation-actions">
             @foreach ($lifecycle as $item)
-                <a href="{{ $item['route'] }}">
-                    <span>{{ $loop->iteration }}</span>
-                    <div>
+                <article class="kfms-litigation-step kfms-litigation-step-{{ $item['tone'] ?? 'navy' }}">
+                    <span class="kfms-litigation-step-icon">
+                        <i class="mdi {{ $item['icon'] ?? 'mdi-briefcase-outline' }}"></i>
+                    </span>
+                    <div class="kfms-litigation-step-main">
                         <strong>{{ $item['stage'] }}</strong>
                         <p>{{ $item['description'] }}</p>
                     </div>
                     <em>{{ number_format($item['count']) }}</em>
-                </a>
+                    <div class="kfms-litigation-step-actions">
+                        <a href="{{ $item['route'] }}">
+                            <i class="mdi mdi-arrow-right"></i>
+                            {{ $item['action'] ?? 'Open' }}
+                        </a>
+                        @isset($item['eventRoute'])
+                            @can('litigation.create')
+                                <a href="{{ $item['eventRoute'] }}">
+                                    <i class="mdi mdi-plus"></i>
+                                    {{ $item['eventAction'] ?? 'Add Event' }}
+                                </a>
+                            @endcan
+                        @endisset
+                        @isset($item['exportRoute'])
+                            @can('litigation.export')
+                                <a href="{{ $item['exportRoute'] }}">
+                                    <i class="mdi mdi-microsoft-excel"></i>
+                                    Export
+                                </a>
+                            @endcan
+                        @endisset
+                    </div>
+                </article>
             @endforeach
         </div>
     </section>

@@ -26,6 +26,12 @@
                         Record Expense
                     </a>
                 @endcan
+                @can('finance.chart-accounts.index')
+                    <a class="kfms-link-btn kfms-link-btn-info" href="{{ route('finance.chart-accounts.index') }}">
+                        <i class="mdi mdi-format-list-numbered"></i>
+                        Chart of Accounts
+                    </a>
+                @endcan
                 @can('finance.index')
                     <a class="kfms-btn" href="{{ route('finance.index') }}">
                         <i class="mdi mdi-file-document-outline"></i>

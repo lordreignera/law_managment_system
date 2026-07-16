@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 
 @section('title', 'Cause List')
-@section('page-title', 'Litigation — Cause List')
+@section('page-title', 'Litigation - Cause List')
 
 @section('content')
     <div class="kfms-stat-grid">
@@ -21,7 +21,7 @@
             </div>
             <div class="kfms-toolbar-actions">
                 @can('litigation.export')
-                    <a class="kfms-link-btn" href="{{ route('litigation.export') }}">
+                    <a class="kfms-link-btn kfms-link-btn-success" href="{{ route('litigation.export', $filters) }}">
                         <i class="mdi mdi-microsoft-excel"></i>
                         Export
                     </a>
@@ -33,7 +33,7 @@
                         <button type="submit"><i class="mdi mdi-upload"></i> Import</button>
                     </form>
                 @endcan
-                <a class="kfms-link-btn" href="{{ route('calendar.index') }}">
+                <a class="kfms-link-btn kfms-link-btn-info" href="{{ route('calendar.index') }}">
                     <i class="mdi mdi-calendar-month"></i>
                     Calendar
                 </a>
@@ -52,6 +52,15 @@
             <label class="kfms-search-box">
                 <i class="mdi mdi-magnify"></i>
                 <input type="search" name="search" value="{{ $filters['search'] ?? '' }}" placeholder="Search case no, court, officer or matter">
+            </label>
+            <label>
+                <span>Lifecycle Stage</span>
+                <select name="stage">
+                    <option value="">All Stages</option>
+                    @foreach ($stages as $value => $stage)
+                        <option value="{{ $value }}" @selected(($filters['stage'] ?? '') === $value)>{{ $stage['label'] }}</option>
+                    @endforeach
+                </select>
             </label>
             <label>
                 <span>Status</span>

@@ -37,6 +37,12 @@
                         Edit / Assign
                     </a>
                 @endcan
+                @can('letters.create')
+                    <a class="kfms-link-btn" href="{{ route('letters.create', ['recovery_account_id' => $account->id, 'letter_type' => 'demand_notice']) }}">
+                        <i class="mdi mdi-file-sign"></i>
+                        Demand Notice
+                    </a>
+                @endcan
                 <a class="kfms-link-btn" href="{{ route('recoveries.index') }}">
                     <i class="mdi mdi-arrow-left"></i>
                     Back

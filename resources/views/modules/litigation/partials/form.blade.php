@@ -1,6 +1,7 @@
 @php
     $event = $event ?? null;
     $selectedMatterId = $selectedMatterId ?? null;
+    $selectedEventType = $selectedEventType ?? null;
 @endphp
 
 <div class="kfms-form-grid">
@@ -21,7 +22,7 @@
         <span>Event Type</span>
         <select name="event_type" required>
             @foreach ($eventTypes as $value => $label)
-                <option value="{{ $value }}" @selected(old('event_type', $event?->event_type) === $value)>{{ $label }}</option>
+                <option value="{{ $value }}" @selected(old('event_type', $event?->event_type ?? $selectedEventType) === $value)>{{ $label }}</option>
             @endforeach
         </select>
         @error('event_type') <small>{{ $message }}</small> @enderror

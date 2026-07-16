@@ -1,19 +1,25 @@
 @extends('layouts.admin')
 
-@section('title', 'Client Intakes')
-@section('page-title', 'Client Intakes')
+@section('title', 'Client Intake Review')
+@section('page-title', 'Client Intake Review')
 
 @section('content')
     <section class="kfms-panel">
         <div class="kfms-panel-header">
             <div>
-                <h2>Intake Register</h2>
-                <span>{{ $intakes->total() }} intake requests</span>
+                <h2>Intake Review Queue</h2>
+                <span>{{ $intakes->total() }} pending, rejected, or returned intake requests</span>
             </div>
-            <a class="kfms-btn" href="{{ route('intakes.create') }}">
-                <i class="mdi mdi-plus"></i>
-                New Intake
-            </a>
+            <div class="kfms-toolbar-actions">
+                <a class="kfms-link-btn" href="{{ route('clients.index') }}">
+                    <i class="mdi mdi-account-check"></i>
+                    Approved Clients
+                </a>
+                <a class="kfms-btn" href="{{ route('intakes.create') }}">
+                    <i class="mdi mdi-plus"></i>
+                    New Intake
+                </a>
+            </div>
         </div>
 
         @if (session('status'))
@@ -28,7 +34,7 @@
             <label>
                 <span>Status</span>
                 <select name="status">
-                    <option value="">All Statuses</option>
+                    <option value="">All Review Queue Statuses</option>
                     @foreach ($statuses as $value => $label)
                         <option value="{{ $value }}" @selected(($filters['status'] ?? '') === $value)>{{ $label }}</option>
                     @endforeach
@@ -37,7 +43,7 @@
             <label>
                 <span>Decision</span>
                 <select name="review_decision">
-                    <option value="">All Decisions</option>
+                    <option value="">All Open Decisions</option>
                     @foreach ($reviewDecisions as $value => $label)
                         <option value="{{ $value }}" @selected(($filters['review_decision'] ?? '') === $value)>{{ $label }}</option>
                     @endforeach
@@ -77,7 +83,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="kfms-empty">No intake requests yet.</td>
+                            <td colspan="7" class="kfms-empty">No intake requests are waiting for review.</td>
                         </tr>
                     @endforelse
                 </tbody>

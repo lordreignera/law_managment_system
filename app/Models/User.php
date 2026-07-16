@@ -3,7 +3,7 @@
 namespace App\Models;
 
 use App\Notifications\BrandedResetPassword;
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -14,7 +14,7 @@ use Laravel\Jetstream\HasProfilePhoto;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
     use HasApiTokens;
 
@@ -34,6 +34,7 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
+        'account_type',
         'password',
         'branch_id',
         'department_id',
@@ -97,6 +98,16 @@ class User extends Authenticatable
     public function staffProfile()
     {
         return $this->hasOne(StaffProfile::class);
+    }
+
+    public function clientPortalAccount()
+    {
+        return $this->hasOne(ClientPortalAccount::class);
+    }
+
+    public function isClientAccount(): bool
+    {
+        return $this->account_type === 'client';
     }
 
     public function assignedRecoveries()

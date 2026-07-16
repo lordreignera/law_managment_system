@@ -7,6 +7,7 @@ use App\Models\Conversation;
 use App\Models\Department;
 use App\Models\Message;
 use App\Models\User;
+use App\Support\MessageBroadcaster;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -31,7 +32,7 @@ class MessageController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'audience_type' => ['required', Rule::in(array_keys(Conversation::AUDIENCE_TYPES))],
+            'audience_type' => ['required', Rule::in(array_keys($this->composableAudienceTypes()))],
             'title' => ['required', 'string', 'max:191'],
             'body' => ['nullable', 'required_without:attachments', 'string', 'max:5000'],
             'recipient_user_ids' => ['required_if:audience_type,users', 'array'],
@@ -55,7 +56,7 @@ class MessageController extends Controller
             ]);
         }
 
-        $conversation = DB::transaction(function () use ($request, $data, $participantIds) {
+        [$conversation, $message] = DB::transaction(function () use ($request, $data, $participantIds) {
             $conversation = Conversation::create([
                 'created_by' => $request->user()->id,
                 'branch_id' => $data['audience_type'] === 'branch' ? $data['branch_id'] : null,
@@ -82,8 +83,10 @@ class MessageController extends Controller
 
             $this->storeAttachments($request, $message);
 
-            return $conversation;
+            return [$conversation, $message];
         });
+
+        MessageBroadcaster::dispatch($message);
 
         return redirect()
             ->route('messages.show', $conversation)
@@ -101,7 +104,7 @@ class MessageController extends Controller
             'attachments.*' => $this->messageAttachmentRules(),
         ]);
 
-        DB::transaction(function () use ($request, $conversation, $data) {
+        $message = DB::transaction(function () use ($request, $conversation, $data) {
             $message = Message::create([
                 'conversation_id' => $conversation->id,
                 'sender_id' => $request->user()->id,
@@ -113,7 +116,11 @@ class MessageController extends Controller
 
             $conversation->update(['last_message_at' => now()]);
             $this->markReadFor($conversation, $request->user());
+
+            return $message;
         });
+
+        MessageBroadcaster::dispatch($message);
 
         return redirect()
             ->route('messages.show', $conversation)
@@ -172,7 +179,7 @@ class MessageController extends Controller
                 ->get(['id', 'name', 'email', 'branch_id', 'department_id']),
             'branches' => Branch::where('is_active', true)->orderBy('name')->get(['id', 'name']),
             'departments' => Department::where('is_active', true)->orderBy('name')->get(['id', 'name', 'branch_id']),
-            'audienceTypes' => Conversation::AUDIENCE_TYPES,
+            'audienceTypes' => $this->composableAudienceTypes(),
             'filters' => $request->only(['search', 'audience_type', 'unread']),
         ]);
     }
@@ -198,6 +205,13 @@ class MessageController extends Controller
         return User::query()
             ->whereHas('staffProfile', fn (Builder $query) => $query->where('employment_status', 'active'))
             ->orderBy('name');
+    }
+
+    private function composableAudienceTypes(): array
+    {
+        return collect(Conversation::AUDIENCE_TYPES)
+            ->except('client_matter')
+            ->all();
     }
 
     private function authorizeConversation(Request $request, Conversation $conversation): void

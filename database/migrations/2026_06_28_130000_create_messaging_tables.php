@@ -11,6 +11,8 @@ return new class extends Migration
         Schema::create('conversations', function (Blueprint $table) {
             $table->id();
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('client_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('matter_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('branch_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('department_id')->nullable()->constrained()->nullOnDelete();
             $table->string('audience_type', 40);
@@ -22,6 +24,7 @@ return new class extends Migration
             $table->softDeletes();
 
             $table->index(['audience_type', 'last_message_at']);
+            $table->index(['client_id', 'matter_id']);
             $table->index(['branch_id', 'department_id']);
         });
 

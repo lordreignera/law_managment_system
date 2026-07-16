@@ -37,7 +37,15 @@ class LitigationImport implements ToCollection, WithHeadingRow
 
             $assignedTo = null;
             if ($email = $this->str($row['assigned_to_email'] ?? null)) {
-                $assignedTo = User::where('email', $email)->value('id');
+                $assignedTo = User::query()
+                    ->where('email', $email)
+                    ->where(function ($query) {
+                        $query
+                            ->whereNull('account_type')
+                            ->orWhere('account_type', 'staff');
+                    })
+                    ->whereHas('staffProfile', fn ($query) => $query->where('employment_status', 'active'))
+                    ->value('id');
             }
 
             CourtEvent::create([
