@@ -3,10 +3,10 @@
 namespace App\Models;
 
 use App\Models\Concerns\HasAttachments;
+use App\Support\StorageUrl;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Facades\Storage;
 
 class LegalLetter extends Model
 {
@@ -112,7 +112,7 @@ class LegalLetter extends Model
             return null;
         }
 
-        return Storage::disk('public')->url($this->signature_path);
+        return StorageUrl::for($this->signature_path, StorageUrl::profileDisk());
     }
 
     public function renderedBody(): string

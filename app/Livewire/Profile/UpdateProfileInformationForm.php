@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Profile;
 
+use App\Support\StorageUrl;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Fortify\Contracts\UpdatesUserProfileInformation;
@@ -65,7 +66,7 @@ class UpdateProfileInformationForm extends Component
         $user = Auth::user();
 
         if ($user->signature_path) {
-            Storage::disk('public')->delete($user->signature_path);
+            Storage::disk(StorageUrl::profileDisk())->delete($user->signature_path);
         }
 
         $user->forceFill(['signature_path' => null])->save();

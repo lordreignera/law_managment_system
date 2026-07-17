@@ -5,15 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\Client;
 use App\Models\ClientPortalAccount;
 use App\Models\User;
-use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
 use Spatie\Permission\Models\Role;
-use Throwable;
 
 class ClientPortalAuthController extends Controller
 {
@@ -121,34 +118,14 @@ class ClientPortalAuthController extends Controller
             'registered_phone' => $client->phone,
         ]);
 
-        $verificationMailSent = true;
-
-        try {
-            event(new Registered($user));
-        } catch (Throwable $exception) {
-            $verificationMailSent = false;
-
-            $user->markEmailAsVerified();
-            $portalAccount->update(['verified_at' => now()]);
-
-            Log::warning('Client portal verification email failed.', [
-                'user_id' => $user->id,
-                'email' => $user->email,
-                'error' => $exception->getMessage(),
-            ]);
-        }
+        $user->markEmailAsVerified();
+        $portalAccount->update(['verified_at' => now()]);
 
         Auth::login($user);
 
-        if (! $verificationMailSent) {
-            return redirect()
-                ->route('client.dashboard')
-                ->with('status', 'Your client record was confirmed and your portal is active. The verification email could not be sent because the mail server is not reachable.');
-        }
-
         return redirect()
-            ->route('verification.notice')
-            ->with('status', 'We found your client record. Please verify your email to activate your client portal.');
+            ->route('client.dashboard')
+            ->with('status', 'Your client record was confirmed and your portal is active.');
     }
 
     private function normalizePhone(?string $phone): ?string

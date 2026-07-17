@@ -40,6 +40,9 @@ Route::get('/', function () {
     return auth()->check() ? redirect()->route('dashboard') : redirect()->route('login');
 });
 
+Route::view('/user-guidelines', 'help.staff-guidelines')->name('help.staff-guidelines');
+Route::view('/client-portal/guidelines', 'help.client-guidelines')->name('help.client-guidelines');
+
 Route::get('/client-portal', [ClientPortalAuthController::class, 'welcome'])->name('client.portal');
 
 Route::middleware('guest')->group(function () {

@@ -3,6 +3,7 @@
 namespace App\Actions\Fortify;
 
 use App\Models\User;
+use App\Support\StorageUrl;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
@@ -31,11 +32,11 @@ class UpdateUserProfileInformation implements UpdatesUserProfileInformation
 
         if (isset($input['signature'])) {
             if ($user->signature_path) {
-                Storage::disk('public')->delete($user->signature_path);
+                Storage::disk(StorageUrl::profileDisk())->delete($user->signature_path);
             }
 
             $user->forceFill([
-                'signature_path' => $input['signature']->store('signatures', 'public'),
+                'signature_path' => $input['signature']->store('signatures', StorageUrl::profileDisk()),
             ])->save();
         }
 

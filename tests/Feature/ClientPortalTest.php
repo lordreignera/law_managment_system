@@ -10,12 +10,7 @@ use App\Models\PracticeArea;
 use App\Models\StaffProfile;
 use App\Models\User;
 use App\Support\MonthlyReferenceNumber;
-use Illuminate\Auth\Events\Registered;
-use Illuminate\Auth\Notifications\VerifyEmail;
-use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Notification;
-use RuntimeException;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -30,6 +25,15 @@ class ClientPortalTest extends TestCase
             ->assertSee('Client Portal')
             ->assertSee('Create Portal Account')
             ->assertSee('Sign In');
+    }
+
+    public function test_client_portal_login_context_hides_staff_access_request(): void
+    {
+        $this->get(route('login', ['portal' => 'client']))
+            ->assertOk()
+            ->assertSee('Private client portal')
+            ->assertSee('Access Your Portal')
+            ->assertDontSee('Request Access');
     }
 
     public function test_authenticated_client_opening_portal_goes_to_dashboard(): void
@@ -59,8 +63,6 @@ class ClientPortalTest extends TestCase
 
     public function test_only_existing_client_email_can_register_for_portal(): void
     {
-        Notification::fake();
-
         $this->post(route('client.register.store'), [
             'email' => 'unknown@example.test',
             'password' => 'password',
@@ -81,17 +83,18 @@ class ClientPortalTest extends TestCase
             'phone' => '+256 700 111222',
             'password' => 'password',
             'password_confirmation' => 'password',
-        ])->assertRedirect(route('verification.notice'));
+        ])->assertRedirect(route('client.dashboard'));
 
         $user = User::where('email', 'client@example.test')->first();
 
         $this->assertNotNull($user);
         $this->assertSame('client', $user->account_type);
+        $this->assertTrue($user->hasVerifiedEmail());
         $this->assertDatabaseHas('client_portal_accounts', [
             'client_id' => $client->id,
             'user_id' => $user->id,
+            'registered_phone' => '+256 700 111222',
         ]);
-        Notification::assertSentTo($user, VerifyEmail::class);
     }
 
     public function test_client_portal_account_cannot_be_duplicated(): void
@@ -150,46 +153,23 @@ class ClientPortalTest extends TestCase
             ]);
     }
 
-    public function test_matched_client_can_access_dashboard_when_verification_email_fails(): void
+    public function test_matched_client_can_access_dashboard_after_portal_registration(): void
     {
-        $dispatcher = new class implements Dispatcher {
-            public function listen($events, $listener = null) {}
-            public function hasListeners($eventName) { return false; }
-            public function subscribe($subscriber) {}
-            public function until($event, $payload = []) { return null; }
-            public function push($event, $payload = []) {}
-            public function flush($event) {}
-            public function forget($event) {}
-            public function forgetPushed() {}
-
-            public function dispatch($event, $payload = [], $halt = false)
-            {
-                if ($event instanceof Registered) {
-                    throw new RuntimeException('SMTP host could not be resolved.');
-                }
-
-                return null;
-            }
-        };
-
-        $this->app->instance('events', $dispatcher);
-        $this->app->instance(Dispatcher::class, $dispatcher);
-
         $client = Client::create([
             'client_no' => MonthlyReferenceNumber::make(Client::class, 'client_no', 'CL'),
             'client_type' => 'individual',
-            'name' => 'Mail Failure Client',
-            'email' => 'mail.failure@example.test',
+            'name' => 'Portal Registration Client',
+            'email' => 'portal.registration@example.test',
             'status' => 'active',
         ]);
 
         $this->post(route('client.register.store'), [
-            'email' => 'mail.failure@example.test',
+            'email' => 'portal.registration@example.test',
             'password' => 'password',
             'password_confirmation' => 'password',
         ])->assertRedirect(route('client.dashboard'));
 
-        $user = User::where('email', 'mail.failure@example.test')->first();
+        $user = User::where('email', 'portal.registration@example.test')->first();
         $portalAccount = ClientPortalAccount::where('client_id', $client->id)->first();
 
         $this->assertNotNull($user);

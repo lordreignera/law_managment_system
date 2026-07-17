@@ -695,6 +695,116 @@ body.kfms-auth-body {
     font-size: 17px;
 }
 
+.kca-login-support a,
+.kca-client-welcome-note a {
+    color: var(--kca-navy);
+    display: inline-block;
+    font-weight: 900;
+    margin-left: 6px;
+    text-decoration: none;
+}
+
+.kca-login-support a:hover,
+.kca-client-welcome-note a:hover {
+    color: #0759b8;
+}
+
+.kca-guidelines-card {
+    width: min(100%, 620px);
+}
+
+.kca-guidelines-card .kca-form-panel {
+    padding: 30px 44px;
+}
+
+.kca-guidelines-list {
+    display: grid;
+    gap: 12px;
+}
+
+.kca-guidelines-list article {
+    align-items: flex-start;
+    background: #fbfcfe;
+    border: 1px solid #dbe4ef;
+    border-radius: 8px;
+    display: grid;
+    gap: 12px;
+    grid-template-columns: 40px minmax(0, 1fr);
+    padding: 14px;
+}
+
+.kca-guidelines-list i {
+    align-items: center;
+    background: #eef6ff;
+    border-radius: 8px;
+    color: var(--kca-navy);
+    display: inline-flex;
+    font-size: 22px;
+    height: 40px;
+    justify-content: center;
+    width: 40px;
+}
+
+.kca-guidelines-list strong {
+    color: var(--kca-text);
+    display: block;
+    font-size: 14px;
+    margin-bottom: 4px;
+}
+
+.kca-guidelines-list span {
+    color: #607086;
+    display: block;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.kca-guidelines-actions {
+    display: grid;
+    gap: 10px;
+    grid-template-columns: 1fr 1fr;
+    margin-top: 18px;
+}
+
+.kca-client-register-stage {
+    align-items: center;
+}
+
+.kca-client-register-card {
+    width: min(100%, 520px);
+}
+
+.kca-client-register-card .kca-form-panel {
+    padding: 24px 44px 22px;
+}
+
+.kca-client-register-card .kca-login-logo-image {
+    max-width: 270px;
+    width: 76%;
+}
+
+.kca-client-register-card .kca-form-title p {
+    max-width: 330px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.kca-client-register-card .kca-primary-button {
+    padding: 0 16px;
+    white-space: normal;
+}
+
+.kca-client-register-card .kca-primary-button strong {
+    display: inline-block;
+    font-size: 15px;
+    line-height: 1.2;
+}
+
+.kca-client-register-card input[readonly] {
+    color: #5f6f86;
+    cursor: default;
+}
+
 .kca-client-portal-button {
     margin-top: 10px;
 }
@@ -810,16 +920,15 @@ body.kfms-auth-body {
 }
 
 .kca-client-slides {
-    display: flex;
+    display: block;
     height: 100%;
-    transition: transform 320ms ease;
+    position: relative;
     width: 100%;
 }
 
 .kca-client-slide {
     box-sizing: border-box;
-    display: flex;
-    flex: 0 0 100%;
+    display: none;
     flex-direction: column;
     justify-content: center;
     max-width: 100%;
@@ -827,16 +936,11 @@ body.kfms-auth-body {
     padding-right: 44px;
 }
 
-#client-slide-1:checked ~ .kca-client-slides {
-    transform: translateX(0);
-}
-
-#client-slide-2:checked ~ .kca-client-slides {
-    transform: translateX(-100%);
-}
-
-#client-slide-3:checked ~ .kca-client-slides {
-    transform: translateX(-200%);
+#client-slide-1:checked ~ .kca-client-slides .kca-client-slide:nth-child(1),
+#client-slide-2:checked ~ .kca-client-slides .kca-client-slide:nth-child(2),
+#client-slide-3:checked ~ .kca-client-slides .kca-client-slide:nth-child(3) {
+    display: flex;
+    min-height: 390px;
 }
 
 .kca-client-slide-icon {
@@ -1226,6 +1330,19 @@ body.kfms-auth-body {
         padding: 22px 20px 20px;
     }
 
+    .kca-client-register-card {
+        width: min(100%, 430px);
+    }
+
+    .kca-client-register-card .kca-form-panel {
+        padding: 20px 18px;
+    }
+
+    .kca-client-register-card .kca-login-logo-image {
+        max-width: 235px;
+        width: 78%;
+    }
+
     .kca-login-refined .kca-form-title h2 {
         font-size: 23px;
     }
@@ -1233,6 +1350,14 @@ body.kfms-auth-body {
     .kca-login-support {
         align-items: flex-start;
         text-align: left;
+    }
+
+    .kca-guidelines-card .kca-form-panel {
+        padding: 22px 18px;
+    }
+
+    .kca-guidelines-actions {
+        grid-template-columns: 1fr;
     }
 
     .kca-product-lockup img {

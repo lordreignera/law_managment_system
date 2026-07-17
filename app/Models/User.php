@@ -3,12 +3,12 @@
 namespace App\Models;
 
 use App\Notifications\BrandedResetPassword;
+use App\Support\StorageUrl;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Support\Facades\Storage;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Jetstream\HasProfilePhoto;
 use Laravel\Sanctum\HasApiTokens;
@@ -117,9 +117,13 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function getSignatureUrlAttribute(): ?string
     {
-        return $this->signature_path
-            ? Storage::disk('public')->url($this->signature_path)
-            : null;
+        return StorageUrl::for($this->signature_path, StorageUrl::profileDisk());
+    }
+
+    public function getProfilePhotoUrlAttribute(): string
+    {
+        return StorageUrl::for($this->profile_photo_path, StorageUrl::profileDisk())
+            ?: $this->defaultProfilePhotoUrl();
     }
 
     public function createdConversations()

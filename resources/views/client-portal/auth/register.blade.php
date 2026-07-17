@@ -1,6 +1,6 @@
 <x-guest-layout>
-    <main class="kca-auth-stage kca-login-stage">
-        <section class="kca-auth-card kca-login-card kca-login-card-centered kca-login-refined">
+    <main class="kca-auth-stage kca-login-stage kca-client-register-stage">
+        <section class="kca-auth-card kca-login-card kca-login-card-centered kca-login-refined kca-client-register-card">
             <div class="kca-login-card-accent" aria-hidden="true"></div>
             <section class="kca-form-panel">
                 <div class="kca-form-wrap">
@@ -12,7 +12,7 @@
                         <div class="kca-login-brandmark">
                             <x-company-logo mark-class="kca-login-logo-mark" image-class="kca-login-logo-image" />
                         </div>
-                        <p>Use the email already registered with the firm to activate your portal.</p>
+                        <p>Use the email already registered with the firm to sign in to your portal.</p>
                     </div>
 
                     @if ($errors->any())
@@ -35,7 +35,7 @@
                             <span>Registered Phone Number</span>
                             <div>
                                 <i class="mdi mdi-phone-outline"></i>
-                                <input id="phone" type="text" name="phone" value="{{ old('phone') }}" placeholder="Filled after email is confirmed" autocomplete="tel">
+                                <input id="phone" type="text" name="phone" value="{{ old('phone') }}" placeholder="Filled after email is confirmed" autocomplete="tel" readonly>
                             </div>
                         </label>
                         <input id="client_no" type="hidden" name="client_no" value="">
@@ -63,20 +63,23 @@
                         </label>
 
                         <button class="kca-primary-button" type="submit">
-                            <i class="mdi mdi-email-check-outline"></i>
-                            Verify Email & Create Portal
+                            <i class="mdi mdi-account-key-outline"></i>
+                            <strong>Access Your Portal</strong>
                         </button>
                     </form>
 
                     <div class="kca-divider"><span>Already activated?</span></div>
-                    <a class="kca-outline-button" href="{{ route('login') }}">
+                    <a class="kca-outline-button" href="{{ route('login', ['portal' => 'client']) }}">
                         <i class="mdi mdi-login"></i>
                         <strong>Sign In</strong>
                     </a>
 
                     <div class="kca-login-support">
                         <i class="mdi mdi-shield-check-outline"></i>
-                        <span>Only emails already registered as firm clients can create portal access.</span>
+                        <span>
+                            Only emails already registered as firm clients can create portal access.
+                            <a href="{{ route('help.client-guidelines') }}">User Guidelines</a>
+                        </span>
                     </div>
                 </div>
             </section>
@@ -140,6 +143,7 @@
                     }
 
                     phoneInput.value = payload.phone || '';
+                    phoneInput.readOnly = true;
                     if (clientNoInput) {
                         clientNoInput.value = payload.client_no || '';
                     }

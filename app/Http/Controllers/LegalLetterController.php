@@ -9,6 +9,7 @@ use App\Models\LetterTemplate;
 use App\Models\Matter;
 use App\Models\RecoveryAccount;
 use App\Models\User;
+use App\Support\StorageUrl;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -329,14 +330,14 @@ class LegalLetterController extends Controller
         }
 
         if ($data['signature_mode'] === 'upload' && $request->hasFile('signature_upload')) {
-            $data['signature_path'] = $request->file('signature_upload')->store('signatures/letters', 'public');
+            $data['signature_path'] = $request->file('signature_upload')->store('signatures/letters', StorageUrl::profileDisk());
             $data['signed_by'] = $request->user()->id;
         }
 
         if ($data['signature_mode'] === 'drawn' && str_starts_with((string) $request->input('drawn_signature'), 'data:image/png;base64,')) {
             $base64 = Str::after($request->input('drawn_signature'), 'data:image/png;base64,');
             $path = 'signatures/letters/'.Str::uuid().'.png';
-            Storage::disk('public')->put($path, base64_decode($base64));
+            Storage::disk(StorageUrl::profileDisk())->put($path, base64_decode($base64));
             $data['signature_path'] = $path;
             $data['signed_by'] = $request->user()->id;
         }

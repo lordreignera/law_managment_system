@@ -1,3 +1,7 @@
+@php
+    $isClientPortalLogin = request('portal') === 'client';
+@endphp
+
 <x-guest-layout>
     <main class="kca-auth-stage kca-login-stage">
         <section class="kca-auth-card kca-login-card kca-login-card-centered kca-login-refined">
@@ -7,12 +11,12 @@
                     <div class="kca-form-title">
                         <div class="kca-login-kicker">
                             <i class="mdi mdi-shield-lock-outline"></i>
-                            <span>Secure legal workspace</span>
+                            <span>{{ $isClientPortalLogin ? 'Private client portal' : 'Secure legal workspace' }}</span>
                         </div>
                         <div class="kca-login-brandmark">
                             <x-company-logo mark-class="kca-login-logo-mark" image-class="kca-login-logo-image" />
                         </div>
-                        <p>Sign in to continue to your workspace.</p>
+                        <p>{{ $isClientPortalLogin ? 'Sign in to access your client portal.' : 'Sign in to continue to your workspace.' }}</p>
                     </div>
 
                     @if ($errors->any())
@@ -62,7 +66,13 @@
                         </button>
                     </form>
 
-                    @if (Route::has('register'))
+                    @if ($isClientPortalLogin)
+                        <div class="kca-divider"><span>No portal account?</span></div>
+                        <a class="kca-outline-button" href="{{ route('client.register') }}">
+                            <i class="mdi mdi-account-key-outline"></i>
+                            <strong>Access Your Portal</strong>
+                        </a>
+                    @elseif (Route::has('register'))
                         <div class="kca-divider"><span>New here?</span></div>
                         <a class="kca-outline-button" href="{{ route('register') }}">
                             <i class="mdi mdi-account-plus-outline"></i>
@@ -71,8 +81,11 @@
                     @endif
 
                     <div class="kca-login-support">
-                        <i class="mdi mdi-scale-balance"></i>
-                        <span>Private access for approved users only.</span>
+                        <i class="mdi {{ $isClientPortalLogin ? 'mdi-shield-check-outline' : 'mdi-scale-balance' }}"></i>
+                        <span>
+                            {{ $isClientPortalLogin ? 'Use the email already registered with the firm.' : 'Private access for approved users only.' }}
+                            <a href="{{ $isClientPortalLogin ? route('help.client-guidelines') : route('help.staff-guidelines') }}">User Guidelines</a>
+                        </span>
                     </div>
                 </div>
             </section>
