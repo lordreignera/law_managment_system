@@ -9,6 +9,7 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Jetstream\HasProfilePhoto;
 use Laravel\Sanctum\HasApiTokens;
@@ -117,13 +118,32 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function getSignatureUrlAttribute(): ?string
     {
+        if ($this->signature_path && Route::has('profile-media.signature')) {
+            return route('profile-media.signature', [
+                'user' => $this,
+                'v' => $this->profileMediaVersion($this->signature_path),
+            ], false);
+        }
+
         return StorageUrl::for($this->signature_path, StorageUrl::profileDisk());
     }
 
     public function getProfilePhotoUrlAttribute(): string
     {
+        if ($this->profile_photo_path && Route::has('profile-media.photo')) {
+            return route('profile-media.photo', [
+                'user' => $this,
+                'v' => $this->profileMediaVersion($this->profile_photo_path),
+            ], false);
+        }
+
         return StorageUrl::for($this->profile_photo_path, StorageUrl::profileDisk())
             ?: $this->defaultProfilePhotoUrl();
+    }
+
+    private function profileMediaVersion(?string $path): string
+    {
+        return substr(md5(($path ?: '').'|'.optional($this->updated_at)->timestamp), 0, 12);
     }
 
     public function createdConversations()

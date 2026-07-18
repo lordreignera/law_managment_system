@@ -27,6 +27,7 @@ use App\Http\Controllers\MatterBillingController;
 use App\Http\Controllers\MatterInstructionController;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\PettyCashController;
+use App\Http\Controllers\ProfileMediaController;
 use App\Http\Controllers\PublicHolidayController;
 use App\Http\Controllers\RecoveryActivityController;
 use App\Http\Controllers\RecoveryController;
@@ -56,6 +57,11 @@ Route::middleware([
     config('jetstream.auth_session'),
     'verified',
 ])->group(function () {
+    Route::get('/profile-media/users/{user}/photo', [ProfileMediaController::class, 'photo'])
+        ->name('profile-media.photo');
+    Route::get('/profile-media/users/{user}/signature', [ProfileMediaController::class, 'signature'])
+        ->name('profile-media.signature');
+
     Route::middleware('client.portal')->prefix('client')->name('client.')->group(function () {
         Route::get('/dashboard', [ClientPortalController::class, 'dashboard'])->name('dashboard');
         Route::view('/help', 'client-portal.help')->name('help');

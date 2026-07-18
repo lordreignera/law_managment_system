@@ -4,6 +4,10 @@
 @section('page-title', 'Profile')
 
 @section('content')
+    @php
+        $profileUser = auth()->user()->fresh();
+    @endphp
+
     <section class="kfms-panel kfms-profile-shell">
         <div class="kfms-panel-header">
             <div>
@@ -17,13 +21,13 @@
         </div>
 
         <div class="kfms-profile-summary">
-            <img class="kfms-profile-avatar" src="{{ auth()->user()->profile_photo_url }}" alt="{{ auth()->user()->name }}">
+            <img class="kfms-profile-avatar" src="{{ $profileUser->profile_photo_url }}" alt="{{ $profileUser->name }}">
             <div>
-                <strong>{{ auth()->user()->name }}</strong>
-                <span>{{ auth()->user()->email }}</span>
-                @if (auth()->user()->signature_url)
+                <strong>{{ $profileUser->name }}</strong>
+                <span>{{ $profileUser->email }}</span>
+                @if ($profileUser->signature_url)
                     <em>
-                        <img src="{{ auth()->user()->signature_url }}" alt="Signature">
+                        <img src="{{ $profileUser->signature_url }}" alt="Signature">
                         Signature on file
                     </em>
                 @else

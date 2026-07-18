@@ -46,6 +46,8 @@ class UpdateProfileInformationForm extends Component
 
         $updater->update(Auth::user(), $input);
 
+        Auth::setUser(Auth::user()->fresh());
+
         if ($this->photo || $this->signature) {
             return redirect()->route('profile.show');
         }
@@ -57,6 +59,8 @@ class UpdateProfileInformationForm extends Component
     public function deleteProfilePhoto(): void
     {
         Auth::user()->deleteProfilePhoto();
+
+        Auth::setUser(Auth::user()->fresh());
 
         $this->dispatch('refresh-navigation-menu');
     }
@@ -70,6 +74,8 @@ class UpdateProfileInformationForm extends Component
         }
 
         $user->forceFill(['signature_path' => null])->save();
+
+        Auth::setUser($user->fresh());
 
         $this->dispatch('saved');
     }

@@ -327,6 +327,33 @@ body.kfms-template {
     width: 32px;
 }
 
+.kfms-navbar-avatar {
+    align-items: center;
+    background: #eef3f8;
+    border: 1px solid #cfd8e5;
+    border-radius: 4px;
+    display: inline-flex;
+    flex: 0 0 34px;
+    height: 34px;
+    justify-content: center;
+    margin-right: 10px;
+    overflow: hidden;
+    width: 34px;
+}
+
+.kfms-navbar-avatar img {
+    display: block;
+    height: 100%;
+    object-fit: cover;
+    width: 100%;
+}
+
+.kfms-navbar-avatar-fallback {
+    color: #174074;
+    font-size: 12px;
+    font-weight: 800;
+}
+
 .kfms-eyebrow {
     color: #97a0af;
     display: block;
@@ -1832,6 +1859,15 @@ body.kfms-template {
     max-height: 72px;
     max-width: 280px;
     object-fit: contain;
+}
+
+.kfms-profile-inline-actions {
+    align-items: center;
+    border-top: 1px solid #e6edf5;
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 4px;
+    padding-top: 16px;
 }
 
 .kfms-profile-filter {

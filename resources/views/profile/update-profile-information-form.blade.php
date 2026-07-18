@@ -25,6 +25,9 @@
                             " />
 
                 <x-label for="photo" value="{{ __('Photo') }}" />
+                <p class="text-sm text-gray-600 mt-1">
+                    {{ __('Upload a JPG, PNG, or WEBP profile image, up to 10MB.') }}
+                </p>
 
                 <!-- Current Profile Photo -->
                 <div class="mt-2" x-show="! photoPreview">
@@ -72,7 +75,7 @@
             <x-label for="signature" value="{{ __('Signature') }}" />
 
             <p class="text-sm text-gray-600 mt-1">
-                {{ __('Upload a clear PNG, JPG, or WEBP signature image. This will be available for signing documents later.') }}
+                {{ __('Upload a clear PNG, JPG, or WEBP signature image, up to 10MB. This will be available for signing documents later.') }}
             </p>
 
             <div class="kfms-signature-preview mt-3" x-show="! signaturePreview">
@@ -129,15 +132,19 @@
                 @endif
             @endif
         </div>
+
+        <div class="col-span-6">
+            <div class="kfms-profile-inline-actions">
+                <x-action-message class="me-3" on="saved">
+                    {{ __('Saved.') }}
+                </x-action-message>
+
+                <x-button wire:loading.attr="disabled" wire:target="photo,signature,updateProfileInformation">
+                    <span wire:loading.remove wire:target="updateProfileInformation">{{ __('Save Profile Changes') }}</span>
+                    <span wire:loading wire:target="updateProfileInformation">{{ __('Saving...') }}</span>
+                </x-button>
+            </div>
+        </div>
     </x-slot>
 
-    <x-slot name="actions">
-        <x-action-message class="me-3" on="saved">
-            {{ __('Saved.') }}
-        </x-action-message>
-
-        <x-button wire:loading.attr="disabled" wire:target="photo,signature">
-            {{ __('Save') }}
-        </x-button>
-    </x-slot>
 </x-form-section>

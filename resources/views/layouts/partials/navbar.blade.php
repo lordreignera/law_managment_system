@@ -98,8 +98,23 @@
             <li class="nav-item dropdown">
                 <a class="nav-link" id="profileDropdown" href="#" data-bs-toggle="dropdown">
                     <div class="navbar-profile">
-                        <img class="kfms-profile-initial small" src="{{ auth()->user()->profile_photo_url }}" alt="{{ auth()->user()->name }}">
-                        <p class="mb-0 d-none d-sm-block navbar-profile-name">{{ auth()->user()->name }}</p>
+                        @php
+                            $navbarUser = auth()->user()?->fresh();
+                            $navbarInitials = collect(explode(' ', trim($navbarUser?->name ?: 'User')))
+                                ->filter()
+                                ->take(2)
+                                ->map(fn ($part) => mb_substr($part, 0, 1))
+                                ->join('');
+                        @endphp
+
+                        @if ($navbarUser?->profile_photo_path)
+                            <span class="kfms-navbar-avatar">
+                                <img src="{{ $navbarUser->profile_photo_url }}" alt="{{ $navbarUser->name }}">
+                            </span>
+                        @else
+                            <span class="kfms-navbar-avatar kfms-navbar-avatar-fallback">{{ strtoupper($navbarInitials ?: 'U') }}</span>
+                        @endif
+                        <p class="mb-0 d-none d-sm-block navbar-profile-name">{{ $navbarUser?->name }}</p>
                         <i class="mdi mdi-menu-down d-none d-sm-block"></i>
                     </div>
                 </a>
