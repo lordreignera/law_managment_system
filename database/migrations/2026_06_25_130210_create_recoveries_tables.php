@@ -66,6 +66,7 @@ return new class extends Migration
             $table->decimal('arrears_amount', 18, 2)->default(0);
             $table->decimal('outstanding_amount', 18, 2)->default(0);
             $table->decimal('amount_recovered', 18, 2)->default(0);
+            $table->decimal('opening_recovered_amount', 18, 2)->default(0);
             $table->string('currency', 10)->default('UGX');
             $table->string('bucket')->nullable();
             $table->text('collateral_held')->nullable();
@@ -81,10 +82,12 @@ return new class extends Migration
             $table->foreignId('recovery_account_id')->constrained()->cascadeOnDelete();
             $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete();
             $table->string('activity_type')->default('call');
+            $table->string('response_outcome')->default('no_response')->index();
             $table->dateTime('activity_at');
             $table->decimal('promised_amount', 18, 2)->nullable();
             $table->date('promised_on')->nullable();
             $table->decimal('amount_paid', 18, 2)->nullable();
+            $table->decimal('outstanding_balance_after', 18, 2)->nullable();
             $table->text('notes');
             $table->timestamps();
         });

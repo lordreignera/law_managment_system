@@ -1,5 +1,7 @@
 @csrf
 @php
+    $showDispatchedAt = $showDispatchedAt ?? $title->exists;
+    $allowMovementStatuses = $allowMovementStatuses ?? $title->exists;
     $selectedBankId = (string) old('bank_id', $title->bank_id);
     $selectedBankBranchId = (string) old('bank_branch_id', $title->bank_branch_id);
     $bankBranchOptions = $bankBranches
@@ -21,6 +23,7 @@
         <span>Status <span class="kfms-required">*</span></span>
         <select name="status" required>
             @foreach ($statuses as $value => $label)
+                @continue(! $allowMovementStatuses && in_array($value, ['dispatched', 'returned', 'closed'], true))
                 @continue($value === 'returned' && ($title->status ?? null) !== 'returned')
                 <option value="{{ $value }}" @selected(old('status', $title->status ?? 'pending') === $value)>{{ $label }}</option>
             @endforeach
@@ -114,11 +117,13 @@
         @error('received_at') <small>{{ $message }}</small> @enderror
     </label>
 
-    <label>
-        <span>Date &amp; Time Dispatched</span>
-        <input type="datetime-local" name="dispatched_at" value="{{ old('dispatched_at', $title->dispatched_at?->format('Y-m-d\TH:i')) }}">
-        @error('dispatched_at') <small>{{ $message }}</small> @enderror
-    </label>
+    @if ($showDispatchedAt)
+        <label>
+            <span>Date &amp; Time Dispatched</span>
+            <input type="datetime-local" name="dispatched_at" value="{{ old('dispatched_at', $title->dispatched_at?->format('Y-m-d\TH:i')) }}">
+            @error('dispatched_at') <small>{{ $message }}</small> @enderror
+        </label>
+    @endif
 
     <label class="kfms-span-2">
         <span>Upload Document</span>

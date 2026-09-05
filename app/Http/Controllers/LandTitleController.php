@@ -334,7 +334,9 @@ class LandTitleController extends Controller
             $bankBranchRule->where('bank_id', $request->integer('bank_id'));
         }
 
+        $blockedCreateStatuses = $landTitle ? [] : ['dispatched', 'returned', 'closed'];
         $allowedStatuses = collect(array_keys(LandTitle::STATUSES))
+            ->reject(fn (string $status) => in_array($status, $blockedCreateStatuses, true))
             ->reject(fn (string $status) => $status === 'returned' && $landTitle?->status !== 'returned')
             ->values()
             ->all();

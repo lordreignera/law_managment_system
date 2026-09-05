@@ -192,7 +192,7 @@ class LitigationController extends Controller
             'matter_id' => ['required', 'exists:matters,id'],
             'court_id' => ['nullable', 'exists:courts,id'],
             'assigned_to' => ['nullable', 'exists:users,id'],
-            'court_name' => ['nullable', 'string', 'max:255'],
+            'court_name' => ['required_without:court_id', 'nullable', 'string', 'max:255'],
             'case_number' => ['nullable', 'string', 'max:255'],
             'judicial_officer' => ['nullable', 'string', 'max:255'],
             'event_type' => ['required', 'in:'.implode(',', array_keys(CourtEvent::EVENT_TYPES))],

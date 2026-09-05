@@ -16,6 +16,16 @@ class Invoice extends Model
         'due_date' => 'date',
     ];
 
+    public function getBalanceAttribute(): float
+    {
+        return max((float) $this->total - (float) $this->paid_amount, 0);
+    }
+
+    public function statusLabel(): string
+    {
+        return str($this->status)->headline()->toString();
+    }
+
     public function client()
     {
         return $this->belongsTo(Client::class);

@@ -62,6 +62,8 @@ class RecoveryAccountsImport implements ToCollection, WithHeadingRow
                 $this->assigned++;
             }
 
+            $data['opening_recovered_amount'] = $data['amount_recovered'] ?? 0;
+
             RecoveryAccount::create($data);
 
             $this->imported++;

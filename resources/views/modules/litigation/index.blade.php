@@ -33,14 +33,18 @@
                         <button type="submit"><i class="mdi mdi-upload"></i> Import</button>
                     </form>
                 @endcan
-                <a class="kfms-link-btn kfms-link-btn-info" href="{{ route('calendar.index') }}">
-                    <i class="mdi mdi-calendar-month"></i>
-                    Calendar
-                </a>
-                <a class="kfms-btn" href="{{ route('litigation.create') }}">
-                    <i class="mdi mdi-plus"></i>
-                    Schedule Event
-                </a>
+                @can('calendar.index')
+                    <a class="kfms-link-btn kfms-link-btn-info" href="{{ route('calendar.index') }}">
+                        <i class="mdi mdi-calendar-month"></i>
+                        Calendar
+                    </a>
+                @endcan
+                @can('litigation.create')
+                    <a class="kfms-btn" href="{{ route('litigation.create') }}">
+                        <i class="mdi mdi-plus"></i>
+                        Schedule Event
+                    </a>
+                @endcan
             </div>
         </div>
 

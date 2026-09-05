@@ -45,15 +45,33 @@ class CompanySetting extends Model
 
     public function getLogoUrlAttribute(): ?string
     {
+        $logoPath = $this->resolvedLogoPath();
+
+        if ($logoPath) {
+            return asset($logoPath);
+        }
+
+        return null;
+    }
+
+    public function getLogoPublicPathAttribute(): ?string
+    {
+        $logoPath = $this->resolvedLogoPath();
+
+        return $logoPath ? public_path($logoPath) : null;
+    }
+
+    private function resolvedLogoPath(): ?string
+    {
         $logoPath = $this->logo_path ?: static::defaults()['logo_path'];
 
         if ($logoPath && file_exists(public_path($logoPath))) {
-            return asset($logoPath);
+            return $logoPath;
         }
 
         foreach (static::defaultLogoPaths() as $fallbackLogoPath) {
             if (file_exists(public_path($fallbackLogoPath))) {
-                return asset($fallbackLogoPath);
+                return $fallbackLogoPath;
             }
         }
 

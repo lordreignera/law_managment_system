@@ -27,6 +27,26 @@ class LoginResponse implements LoginResponseContract
             return redirect()->intended(route('client.dashboard'));
         }
 
-        return redirect()->intended(config('fortify.home'));
+        return redirect($this->staffHome($user));
+    }
+
+    private function staffHome($user): string
+    {
+        $roleDashboards = [
+            'Litigation Officer' => 'litigation.dashboard',
+            'Accountant' => 'finance.dashboard',
+            'HR Manager' => 'hr.dashboard',
+            'Recoveries Manager' => 'recoveries.dashboard',
+            'Recovery Officer' => 'recoveries.mine',
+            'Securities Manager' => 'land-titles.dashboard',
+        ];
+
+        foreach ($roleDashboards as $role => $route) {
+            if ($user?->hasRole($role) && $user->can($route)) {
+                return route($route, absolute: false);
+            }
+        }
+
+        return route('dashboard', absolute: false);
     }
 }

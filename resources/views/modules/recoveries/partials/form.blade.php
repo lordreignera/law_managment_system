@@ -1,4 +1,7 @@
-@php $account = $account ?? null; @endphp
+@php
+    $account = $account ?? null;
+    $includeAssignment = $includeAssignment ?? true;
+@endphp
 
 <div class="kfms-form-grid">
     <label>
@@ -136,6 +139,7 @@
         @error('cause_of_default') <small>{{ $message }}</small> @enderror
     </label>
 
+    @if ($includeAssignment)
     <label>
         <span>Assign to Recovery Officer</span>
         <select name="assigned_to">
@@ -157,4 +161,5 @@
         </select>
         @error('branch_id') <small>{{ $message }}</small> @enderror
     </label>
+    @endif
 </div>

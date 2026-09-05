@@ -19,9 +19,15 @@
         <form class="kfms-form" method="POST" action="{{ route('recoveries.update', $account) }}">
             @csrf
             @method('PUT')
-            @include('modules.recoveries.partials.form')
+            @include('modules.recoveries.partials.form', ['includeAssignment' => false])
 
             <div class="kfms-form-actions">
+                @can('recoveries.assignment.edit')
+                    <a class="kfms-link-btn" href="{{ route('recoveries.assignment.edit', $account) }}">
+                        <i class="mdi mdi-account-switch-outline"></i>
+                        Assign Officer
+                    </a>
+                @endcan
                 <button class="kfms-btn" type="submit">
                     <i class="mdi mdi-content-save"></i>
                     Update Recovery

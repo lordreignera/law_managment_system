@@ -161,7 +161,7 @@ class DatabaseSeeder extends Seeder
         // view their own assigned accounts and log demands/payments, but do not
         // register, edit, or reassign accounts (that is the manager's job).
         $recoveryOfficerSelfService = array_values(array_intersect(
-            ['recoveries.mine', 'recoveries.show', 'recoveries.activities.store'],
+            ['recoveries.mine', 'recoveries.mine.export', 'recoveries.show', 'recoveries.activities.store'],
             $allPermissions
         ));
 

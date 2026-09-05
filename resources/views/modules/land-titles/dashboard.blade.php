@@ -4,60 +4,54 @@
 @section('page-title', 'Securities Dashboard')
 
 @section('content')
-    <section class="kfms-hero-panel">
+    <section class="kfms-dashboard-hero kfms-securities-dashboard-hero">
         <div>
-            <span>Securities Control</span>
-            <h2>Track land titles and securities in custody.</h2>
+            <span>Securities control room</span>
+            <h2>Register, monitor, and track securities in custody.</h2>
             <p>Monitor documents received from financial institutions, movement to MZO/zonal offices, handling officers, and returns.</p>
         </div>
-        <div class="kfms-row-actions">
-            <a class="kfms-link-btn" href="{{ route('land-titles.index') }}">
-                <i class="mdi mdi-format-list-bulleted"></i>
-                Register
-            </a>
+        <div class="kfms-dashboard-hero-actions">
             @can('land-titles.import')
-                <a class="kfms-link-btn" href="{{ route('land-titles.import') }}">
+                <a class="kfms-btn" href="{{ route('land-titles.import') }}">
                     <i class="mdi mdi-upload"></i>
                     Import
                 </a>
             @endcan
-            <a class="kfms-btn" href="{{ route('land-titles.create') }}">
+            <a class="kfms-link-btn" href="{{ route('land-titles.index') }}">
+                <i class="mdi mdi-format-list-bulleted"></i>
+                Register
+            </a>
+            <a class="kfms-link-btn" href="{{ route('land-titles.create') }}">
                 <i class="mdi mdi-plus"></i>
                 Add Security
             </a>
         </div>
     </section>
 
-    <div class="kfms-stat-grid">
-        <section class="kfms-card">
-            <span class="kfms-card-icon"><i class="mdi mdi-file-document-outline"></i></span>
-            <span class="kfms-card-label">Total Securities</span>
-            <strong class="kfms-stat">{{ number_format($summary['total']) }}</strong>
+    <div class="kfms-stat-grid kfms-dashboard-kpis">
+        <section class="kfms-card kfms-stat-card">
+            <span class="kfms-stat-icon"><i class="mdi mdi-file-document-outline"></i></span>
+            <span class="kfms-stat-body"><span class="kfms-card-label">Total Securities</span><strong class="kfms-stat">{{ number_format($summary['total']) }}</strong></span>
         </section>
-        <section class="kfms-card">
-            <span class="kfms-card-icon"><i class="mdi mdi-lock-outline"></i></span>
-            <span class="kfms-card-label">In Custody</span>
-            <strong class="kfms-stat">{{ number_format($summary['in_custody']) }}</strong>
+        <section class="kfms-card kfms-stat-card">
+            <span class="kfms-stat-icon"><i class="mdi mdi-lock-outline"></i></span>
+            <span class="kfms-stat-body"><span class="kfms-card-label">In Custody</span><strong class="kfms-stat">{{ number_format($summary['in_custody']) }}</strong></span>
         </section>
-        <section class="kfms-card">
-            <span class="kfms-card-icon"><i class="mdi mdi-clock-outline"></i></span>
-            <span class="kfms-card-label">Pending</span>
-            <strong class="kfms-stat">{{ number_format($summary['pending']) }}</strong>
+        <section class="kfms-card kfms-stat-card">
+            <span class="kfms-stat-icon"><i class="mdi mdi-clock-outline"></i></span>
+            <span class="kfms-stat-body"><span class="kfms-card-label">Pending</span><strong class="kfms-stat">{{ number_format($summary['pending']) }}</strong></span>
         </section>
-        <section class="kfms-card">
-            <span class="kfms-card-icon"><i class="mdi mdi-truck-delivery"></i></span>
-            <span class="kfms-card-label">Dispatched</span>
-            <strong class="kfms-stat">{{ number_format($summary['dispatched']) }}</strong>
+        <section class="kfms-card kfms-stat-card">
+            <span class="kfms-stat-icon"><i class="mdi mdi-truck-delivery"></i></span>
+            <span class="kfms-stat-body"><span class="kfms-card-label">Dispatched</span><strong class="kfms-stat">{{ number_format($summary['dispatched']) }}</strong></span>
         </section>
-        <section class="kfms-card">
-            <span class="kfms-card-icon"><i class="mdi mdi-check-circle-outline"></i></span>
-            <span class="kfms-card-label">Returned</span>
-            <strong class="kfms-stat">{{ number_format($summary['returned']) }}</strong>
+        <section class="kfms-card kfms-stat-card">
+            <span class="kfms-stat-icon"><i class="mdi mdi-check-circle-outline"></i></span>
+            <span class="kfms-stat-body"><span class="kfms-card-label">Returned</span><strong class="kfms-stat">{{ number_format($summary['returned']) }}</strong></span>
         </section>
-        <section class="kfms-card">
-            <span class="kfms-card-icon"><i class="mdi mdi-calendar-month-outline"></i></span>
-            <span class="kfms-card-label">Received This Month</span>
-            <strong class="kfms-stat">{{ number_format($summary['received_this_month']) }}</strong>
+        <section class="kfms-card kfms-stat-card">
+            <span class="kfms-stat-icon"><i class="mdi mdi-calendar-month-outline"></i></span>
+            <span class="kfms-stat-body"><span class="kfms-card-label">Received This Month</span><strong class="kfms-stat">{{ number_format($summary['received_this_month']) }}</strong></span>
         </section>
     </div>
 

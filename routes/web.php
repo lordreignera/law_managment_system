@@ -16,6 +16,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\FinanceController;
 use App\Http\Controllers\HrController;
+use App\Http\Controllers\InvoiceDocumentController;
 use App\Http\Controllers\LandTitleController;
 use App\Http\Controllers\LegalLetterController;
 use App\Http\Controllers\LeaveController;
@@ -190,6 +191,7 @@ Route::middleware([
         Route::get('/recoveries/dashboard', [RecoveryController::class, 'dashboard'])->name('recoveries.dashboard');
         Route::get('/recoveries', [RecoveryController::class, 'index'])->name('recoveries.index');
         Route::get('/recoveries/mine', [RecoveryController::class, 'mine'])->name('recoveries.mine');
+        Route::get('/recoveries/mine/export', [RecoveryController::class, 'exportMineReport'])->name('recoveries.mine.export');
         Route::get('/recoveries/import', [RecoveryController::class, 'importForm'])->name('recoveries.import');
         Route::post('/recoveries/import', [RecoveryController::class, 'importStore'])->name('recoveries.import.store');
         Route::post('/recoveries/clients', [RecoveryController::class, 'storeClient'])->name('recoveries.clients.store');
@@ -203,6 +205,8 @@ Route::middleware([
         Route::get('/recoveries/{recovery}', [RecoveryController::class, 'show'])->name('recoveries.show');
         Route::get('/recoveries/{recovery}/edit', [RecoveryController::class, 'edit'])->name('recoveries.edit');
         Route::put('/recoveries/{recovery}', [RecoveryController::class, 'update'])->name('recoveries.update');
+        Route::get('/recoveries/{recovery}/assignment', [RecoveryController::class, 'editAssignment'])->name('recoveries.assignment.edit');
+        Route::patch('/recoveries/{recovery}/assignment', [RecoveryController::class, 'updateAssignment'])->name('recoveries.assignment.update');
         Route::delete('/recoveries/{recovery}', [RecoveryController::class, 'destroy'])->name('recoveries.destroy');
         Route::post('/recoveries/{recovery}/activities', [RecoveryActivityController::class, 'store'])->name('recoveries.activities.store');
         Route::get('/land-titles/dashboard', [LandTitleController::class, 'dashboard'])->name('land-titles.dashboard');
@@ -220,6 +224,12 @@ Route::middleware([
         Route::patch('/land-titles/{landTitle}/return', [LandTitleController::class, 'returnSecurity'])->name('land-titles.return');
         Route::delete('/land-titles/{landTitle}', [LandTitleController::class, 'destroy'])->name('land-titles.destroy');
         Route::get('/finance/dashboard', [FinanceController::class, 'dashboard'])->name('finance.dashboard');
+        Route::get('/finance/invoices/{invoice}/documents/{type}', [InvoiceDocumentController::class, 'show'])
+            ->whereIn('type', ['invoice', 'fee-note'])
+            ->name('finance.invoices.documents.show');
+        Route::get('/finance/invoices/{invoice}/documents/{type}/pdf', [InvoiceDocumentController::class, 'pdf'])
+            ->whereIn('type', ['invoice', 'fee-note'])
+            ->name('finance.invoices.documents.pdf');
         Route::get('/finance/chart-accounts/export', [ChartAccountController::class, 'export'])->name('finance.chart-accounts.export');
         Route::get('/finance/chart-accounts', [ChartAccountController::class, 'index'])->name('finance.chart-accounts.index');
         Route::get('/finance/chart-accounts/create', [ChartAccountController::class, 'create'])->name('finance.chart-accounts.create');
@@ -271,7 +281,10 @@ Route::middleware([
 
         // Access control
         Route::prefix('access-control')->name('access.')->group(function () {
+            Route::get('/users/create', [StaffController::class, 'create'])->name('users.create');
+            Route::post('/users', [StaffController::class, 'store'])->name('users.store');
             Route::get('/users', [AccessControlController::class, 'users'])->name('users.index');
+            Route::get('/users/{user}/edit', [AccessControlController::class, 'editUser'])->name('users.edit');
             Route::put('/users/{user}', [AccessControlController::class, 'updateUser'])->name('users.update');
             Route::patch('/users/{user}/approve', [AccessControlController::class, 'approveUser'])->name('users.approve');
             Route::delete('/users/{user}', [AccessControlController::class, 'destroyUser'])->name('users.destroy');

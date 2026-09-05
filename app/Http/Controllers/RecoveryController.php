@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Exports\RecoveryAccountsExport;
+use App\Exports\RecoveryReportExport;
 use App\Imports\RecoveryAccountsImport;
 use App\Models\Branch;
 use App\Models\RecoveryAccount;
@@ -11,8 +12,10 @@ use App\Models\RecoveryClient;
 use App\Models\RecoveryImportBatch;
 use App\Models\User;
 use App\Support\Recoveries\RecoveryPortfolioMapper;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -39,7 +42,8 @@ class RecoveryController extends Controller
             'summary' => [
                 'active' => (clone $base)->where('status', 'active')->count(),
                 'unassigned' => (clone $base)->whereNull('assigned_to')->count(),
-                'outstanding' => (clone $base)->sum('outstanding_amount'),
+                'original_outstanding' => (clone $base)->sum('outstanding_amount'),
+                'outstanding' => max((clone $base)->sum('outstanding_amount') - (clone $base)->sum('amount_recovered'), 0),
                 'recovered' => (clone $base)->sum('amount_recovered'),
             ],
             'recentBatches' => RecoveryImportBatch::with(['client', 'uploader'])->latest()->take(6)->get(),
@@ -92,15 +96,65 @@ class RecoveryController extends Controller
         $summary = [
             'total' => (clone $base)->count(),
             'active' => (clone $base)->where('status', 'active')->count(),
-            'outstanding' => (clone $base)->sum('outstanding_amount'),
+            'original_outstanding' => (clone $base)->sum('outstanding_amount'),
+            'outstanding' => max((clone $base)->sum('outstanding_amount') - (clone $base)->sum('amount_recovered'), 0),
             'recovered' => (clone $base)->sum('amount_recovered'),
         ];
+
+        $reportFilters = $this->mineReportFilters($request);
+        $collectionReports = $this->mineCollectionSummary($user);
+        $filteredCollections = $this->mineCollectionQuery($user, $reportFilters)
+            ->with(['account.client'])
+            ->latest('activity_at')
+            ->get();
 
         return view('modules.recoveries.mine', [
             'accounts' => $accounts,
             'summary' => $summary,
+            'collectionReports' => $collectionReports,
+            'filteredCollections' => $filteredCollections,
+            'collectionChart' => $this->mineCollectionChart($filteredCollections, $reportFilters['grain']),
+            'bankChart' => $this->mineBankChart($filteredCollections),
+            'reportFilters' => $reportFilters,
+            'clients' => RecoveryClient::where('is_active', true)->orderBy('name')->get(['id', 'name']),
             'filters' => $request->only(['search', 'status']),
+            'activityTypes' => RecoveryActivity::TYPES,
         ]);
+    }
+
+    public function exportMineReport(Request $request)
+    {
+        $filters = $this->mineReportFilters($request);
+        $collections = $this->mineCollectionQuery($request->user(), $filters)
+            ->with(['account.client'])
+            ->orderByDesc('activity_at')
+            ->get();
+
+        $headings = ['Date', 'Debtor', 'Bank / Client', 'Account', 'Amount Paid', 'Balance After', 'Response Notes'];
+        $rows = $collections->map(fn (RecoveryActivity $activity) => [
+            $activity->activity_at?->format('d M Y, H:i'),
+            $activity->account?->debtor_name ?: '-',
+            $activity->account?->client?->name ?: '-',
+            $activity->account?->account_number ?: '-',
+            number_format((float) $activity->amount_paid, 2),
+            $activity->outstanding_balance_after !== null ? number_format((float) $activity->outstanding_balance_after, 2) : '-',
+            $activity->notes,
+        ])->all();
+
+        $title = 'My Recovery Collections';
+        $filename = 'my-recovery-collections-'.$filters['date_from'].'-'.$filters['date_to'];
+
+        if ($request->string('format')->toString() === 'pdf') {
+            return Pdf::loadView('modules.recoveries.exports.pdf', [
+                'title' => $title,
+                'headings' => $headings,
+                'rows' => $rows,
+                'year' => now()->year,
+                'generatedAt' => now(),
+            ])->setPaper('a4', 'landscape')->download($filename.'.pdf');
+        }
+
+        return Excel::download(new RecoveryReportExport($headings, $rows, $title), $filename.'.xlsx');
     }
 
     public function create(Request $request)
@@ -230,7 +284,6 @@ class RecoveryController extends Controller
         $data = $this->validateAccount($request);
 
         $data = $this->applyAssignment($data, $request);
-        $data['amount_recovered'] = 0;
 
         $account = RecoveryAccount::create($data);
 
@@ -242,7 +295,7 @@ class RecoveryController extends Controller
     public function show(Request $request, RecoveryAccount $recovery)
     {
         return view('modules.recoveries.show', [
-            'account' => $recovery->load(['client', 'branch', 'assignee', 'assigner', 'importBatch', 'activities.user']),
+            'account' => $recovery->load(['client', 'branch', 'assignee', 'assigner', 'importBatch', 'activities.user', 'activities.attachments']),
             'activityTypes' => RecoveryActivity::TYPES,
             'canManage' => $request->user()->can('recoveries.update'),
         ]);
@@ -259,9 +312,32 @@ class RecoveryController extends Controller
         ]);
     }
 
+    public function editAssignment(RecoveryAccount $recovery)
+    {
+        return view('modules.recoveries.assignment', [
+            'account' => $recovery->load(['client', 'branch', 'assignee', 'assigner']),
+            'branches' => Branch::where('is_active', true)->orderBy('name')->get(['id', 'name']),
+            'officers' => $this->recoveryOfficers(),
+        ]);
+    }
+
     public function update(Request $request, RecoveryAccount $recovery)
     {
-        $data = $this->validateAccount($request, true);
+        $data = $this->validateAccount($request, false);
+
+        $recovery->update($data);
+
+        return redirect()
+            ->route('recoveries.show', $recovery)
+            ->with('status', 'Recovery account updated.');
+    }
+
+    public function updateAssignment(Request $request, RecoveryAccount $recovery)
+    {
+        $data = $request->validate([
+            'assigned_to' => ['nullable', 'exists:users,id'],
+            'branch_id' => ['nullable', 'exists:branches,id'],
+        ]);
 
         $data = $this->applyAssignment($data, $request, $recovery);
 
@@ -269,7 +345,7 @@ class RecoveryController extends Controller
 
         return redirect()
             ->route('recoveries.show', $recovery)
-            ->with('status', 'Recovery account updated.');
+            ->with('status', 'Recovery assignment updated.');
     }
 
     public function destroy(RecoveryAccount $recovery)
@@ -290,6 +366,144 @@ class RecoveryController extends Controller
             ->with('branch')
             ->orderBy('name')
             ->get(['id', 'name', 'branch_id']);
+    }
+
+    private function mineReportFilters(Request $request): array
+    {
+        $grain = in_array($request->string('report_grain')->toString(), ['daily', 'weekly', 'monthly'], true)
+            ? $request->string('report_grain')->toString()
+            : 'daily';
+
+        $dateFrom = $request->filled('report_date_from')
+            ? Carbon::parse($request->string('report_date_from')->toString())->startOfDay()
+            : now()->startOfMonth()->startOfDay();
+        $dateTo = $request->filled('report_date_to')
+            ? Carbon::parse($request->string('report_date_to')->toString())->endOfDay()
+            : now()->endOfDay();
+
+        if ($dateFrom->gt($dateTo)) {
+            [$dateFrom, $dateTo] = [$dateTo->copy()->startOfDay(), $dateFrom->copy()->endOfDay()];
+        }
+
+        return [
+            'grain' => $grain,
+            'date_from' => $dateFrom->toDateString(),
+            'date_to' => $dateTo->toDateString(),
+            'client' => $request->filled('report_client') ? $request->integer('report_client') : null,
+        ];
+    }
+
+    private function mineCollectionQuery(User $user, array $filters): Builder
+    {
+        $dateFrom = Carbon::parse($filters['date_from'])->startOfDay();
+        $dateTo = Carbon::parse($filters['date_to'])->endOfDay();
+
+        return RecoveryActivity::query()
+            ->where('user_id', $user->id)
+            ->where('amount_paid', '>', 0)
+            ->whereBetween('activity_at', [$dateFrom, $dateTo])
+            ->whereHas('account', function (Builder $query) use ($filters) {
+                if ($filters['client']) {
+                    $query->where('recovery_client_id', $filters['client']);
+                }
+            });
+    }
+
+    private function mineCollectionSummary(User $user): array
+    {
+        $base = RecoveryActivity::query()
+            ->where('user_id', $user->id)
+            ->where('amount_paid', '>', 0);
+        $now = now();
+
+        return [
+            $this->collectionSummaryRow($base, 'Today', $now->format('d M Y'), $now->copy()->startOfDay(), $now->copy()->endOfDay()),
+            $this->collectionSummaryRow($base, 'This Week', $now->copy()->startOfWeek()->format('d M').' - '.$now->copy()->endOfWeek()->format('d M Y'), $now->copy()->startOfWeek(), $now->copy()->endOfWeek()),
+            $this->collectionSummaryRow($base, 'This Month', $now->format('F Y'), $now->copy()->startOfMonth(), $now->copy()->endOfMonth()),
+        ];
+    }
+
+    private function collectionSummaryRow(Builder $base, string $label, string $period, Carbon $dateFrom, Carbon $dateTo): array
+    {
+        $query = (clone $base)->whereBetween('activity_at', [$dateFrom, $dateTo]);
+
+        return [
+            'label' => $label,
+            'period' => $period,
+            'amount' => (float) (clone $query)->sum('amount_paid'),
+            'payments' => (clone $query)->count(),
+        ];
+    }
+
+    private function mineCollectionChart($collections, string $grain): array
+    {
+        $rows = $collections
+            ->groupBy(function (RecoveryActivity $activity) use ($grain) {
+                $periodStart = match ($grain) {
+                    'monthly' => $activity->activity_at->copy()->startOfMonth(),
+                    'weekly' => $activity->activity_at->copy()->startOfWeek(),
+                    default => $activity->activity_at->copy()->startOfDay(),
+                };
+
+                return $periodStart->toDateString();
+            })
+            ->map(function ($group, string $date) use ($grain) {
+                $periodStart = Carbon::parse($date);
+
+                return [
+                    'label' => match ($grain) {
+                        'monthly' => $periodStart->format('M Y'),
+                        'weekly' => $periodStart->format('d M').' - '.$periodStart->copy()->endOfWeek()->format('d M'),
+                        default => $periodStart->format('d M'),
+                    },
+                    'amount' => (float) $group->sum('amount_paid'),
+                    'payments' => $group->count(),
+                    'sort_key' => $periodStart->timestamp,
+                ];
+            })
+            ->sortBy('sort_key')
+            ->values();
+
+        $max = max((float) $rows->max('amount'), 1);
+
+        return [
+            'rows' => $rows->map(fn (array $row) => $row + ['percent' => max(4, round(($row['amount'] / $max) * 100))])->all(),
+            'max' => $max,
+        ];
+    }
+
+    private function mineBankChart($collections): array
+    {
+        $colors = ['#071426', '#0f766e', '#b45309', '#2563eb', '#7c3aed', '#be123c'];
+        $rows = $collections
+            ->groupBy(fn (RecoveryActivity $activity) => $activity->account?->client?->name ?: 'Unknown')
+            ->map(fn ($group, string $client) => [
+                'client' => $client,
+                'amount' => (float) $group->sum('amount_paid'),
+                'payments' => $group->count(),
+            ])
+            ->sortByDesc('amount')
+            ->values();
+        $total = max((float) $rows->sum('amount'), 0);
+        $cursor = 0.0;
+        $segments = [];
+
+        foreach ($rows as $index => $row) {
+            $share = $total > 0 ? ($row['amount'] / $total) * 100 : 0;
+            $start = $cursor;
+            $cursor += $share;
+            $segments[] = $colors[$index % count($colors)].' '.$start.'% '.$cursor.'%';
+            $rows[$index] = $row + [
+                'color' => $colors[$index % count($colors)],
+                'share' => $share,
+            ];
+        }
+
+        return [
+            'rows' => $rows->all(),
+            'total' => $total,
+            'gradient' => $segments ? implode(', ', $segments) : '#eef2f7 0% 100%',
+        ];
     }
 
     /**
@@ -313,9 +527,9 @@ class RecoveryController extends Controller
         return $data;
     }
 
-    private function validateAccount(Request $request, bool $isUpdate = false): array
+    private function validateAccount(Request $request, bool $includeAssignment = true): array
     {
-        return $request->validate([
+        $rules = [
             'recovery_client_id' => ['required', 'exists:recovery_clients,id'],
             'debtor_name' => ['required', 'string', 'max:191'],
             'account_number' => ['nullable', 'string', 'max:100'],
@@ -338,9 +552,14 @@ class RecoveryController extends Controller
             'collateral_held' => ['nullable', 'string', 'max:2000'],
             'cause_of_default' => ['nullable', 'string', 'max:2000'],
             'status' => ['required', 'in:'.implode(',', array_keys(RecoveryAccount::STATUSES))],
-            'assigned_to' => ['nullable', 'exists:users,id'],
-            'branch_id' => ['nullable', 'exists:branches,id'],
-        ]);
+        ];
+
+        if ($includeAssignment) {
+            $rules['assigned_to'] = ['nullable', 'exists:users,id'];
+            $rules['branch_id'] = ['nullable', 'exists:branches,id'];
+        }
+
+        return $request->validate($rules);
     }
 
     private function filteredAccountsQuery(Request $request): Builder

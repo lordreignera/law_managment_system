@@ -12,17 +12,21 @@
         <section class="kfms-panel">
             <div class="kfms-panel-header">
                 <div>
-                    <h2>{{ $event->matter?->reference_no }} — {{ $event->eventTypeLabel() }}</h2>
+                    <h2>{{ $event->matter?->reference_no }} - {{ $event->eventTypeLabel() }}</h2>
                     <span><span class="kfms-status kfms-status-{{ $event->status }}">{{ $event->statusLabel() }}</span></span>
                 </div>
                 <div class="kfms-toolbar-actions">
-                    <a class="kfms-link-btn" href="{{ route('litigation.edit', $event) }}"><i class="mdi mdi-pencil"></i> Edit</a>
-                    <a class="kfms-link-btn" href="{{ route('litigation.index') }}"><i class="mdi mdi-arrow-left"></i> Back</a>
+                    @can('litigation.edit')
+                        <a class="kfms-link-btn" href="{{ route('litigation.edit', $event) }}"><i class="mdi mdi-pencil"></i> Edit</a>
+                    @endcan
+                    @can('litigation.index')
+                        <a class="kfms-link-btn" href="{{ route('litigation.index') }}"><i class="mdi mdi-arrow-left"></i> Back</a>
+                    @endcan
                 </div>
             </div>
 
             <dl class="kfms-detail-list">
-                <div><dt>Matter</dt><dd>{{ $event->matter ? $event->matter->reference_no.' — '.$event->matter->title : '-' }}</dd></div>
+                <div><dt>Matter</dt><dd>{{ $event->matter ? $event->matter->reference_no.' - '.$event->matter->title : '-' }}</dd></div>
                 <div><dt>Court</dt><dd>{{ $event->court?->name ?: $event->court_name ?: '-' }}</dd></div>
                 <div><dt>Case Number</dt><dd>{{ $event->case_number ?: '-' }}</dd></div>
                 <div><dt>Judicial Officer</dt><dd>{{ $event->judicial_officer ?: '-' }}</dd></div>

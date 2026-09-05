@@ -26,7 +26,18 @@ class DashboardRenderTest extends TestCase
     public function test_main_and_finance_dashboards_render(): void
     {
         $role = Role::findOrCreate('Dashboard Viewer');
-        foreach (['dashboard', 'finance.dashboard', 'messages.index'] as $permissionName) {
+        foreach ([
+            'dashboard',
+            'finance.dashboard',
+            'finance.index',
+            'finance.chart-accounts.index',
+            'messages.index',
+            'requisitions.index',
+            'requisitions.create',
+            'expenses.index',
+            'expenses.create',
+            'petty-cash.index',
+        ] as $permissionName) {
             $role->givePermissionTo(Permission::findOrCreate($permissionName));
         }
 
@@ -53,6 +64,14 @@ class DashboardRenderTest extends TestCase
             ->assertSee('Operations Snapshot')
             ->assertSee('Dashboard Message Preview');
 
-        $this->actingAs($user)->get(route('finance.dashboard'))->assertOk();
+        $this->actingAs($user)->get(route('finance.dashboard'))
+            ->assertOk()
+            ->assertSee('Finance control room')
+            ->assertSee('Track spending, invoices, collections, and ledger movement.')
+            ->assertSee('href="'.route('requisitions.index', ['status' => 'submitted']).'"', false)
+            ->assertSee('New Requisition')
+            ->assertSee('Recent Invoices')
+            ->assertSee('Requisitions Awaiting Approval')
+            ->assertSee('Expenses Recorded');
     }
 }

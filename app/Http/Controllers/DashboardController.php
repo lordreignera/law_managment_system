@@ -35,6 +35,10 @@ class DashboardController extends Controller
             return redirect()->route('recoveries.dashboard');
         }
 
+        if ($user->hasRole('Recovery Officer') && $user->can('recoveries.mine')) {
+            return redirect()->route('recoveries.mine');
+        }
+
         if ($user->hasRole('Securities Manager') && $user->can('land-titles.dashboard')) {
             return redirect()->route('land-titles.dashboard');
         }

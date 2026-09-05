@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Notifications\StaffAccountApproved;
 use App\Support\RoutePermissionRegistry;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -43,8 +44,19 @@ class AccessControlController extends Controller
         return view('modules.access-control.users', [
             'users' => $users,
             'roles' => Role::orderBy('name')->get(),
-            'permissionGroups' => $this->permissionGroups(),
             'filters' => $request->only(['search', 'status', 'role']),
+        ]);
+    }
+
+    public function editUser(User $user)
+    {
+        $this->ensureCanManageAccessControl();
+
+        return view('modules.access-control.user-edit', [
+            'user' => $user->load(['branch', 'department', 'roles', 'permissions', 'staffProfile']),
+            'roles' => Role::orderBy('name')->get(),
+            'permissionGroups' => $this->permissionGroups(),
+            'statuses' => ['pending', 'active', 'inactive', 'suspended'],
         ]);
     }
 
@@ -140,6 +152,9 @@ class AccessControlController extends Controller
         $this->ensureCanManageAccessControl();
 
         $data = $request->validate([
+            'name' => ['required', 'string', 'max:191'],
+            'email' => ['required', 'email', 'max:191', Rule::unique('users', 'email')->ignore($user->id)],
+            'password' => ['nullable', 'string', 'min:8', 'confirmed'],
             'roles' => ['nullable', 'array'],
             'roles.*' => ['exists:roles,name'],
             'direct_permissions' => ['nullable', 'array'],
@@ -165,6 +180,16 @@ class AccessControlController extends Controller
             'You cannot remove your own access-control permission or deactivate your account.'
         );
 
+        $userData = [
+            'name' => $data['name'],
+            'email' => $data['email'],
+        ];
+
+        if (filled($data['password'] ?? null)) {
+            $userData['password'] = Hash::make($data['password']);
+        }
+
+        $user->update($userData);
         $user->syncRoles($roles);
         $user->syncPermissions($directPermissions);
         $user->staffProfile()->updateOrCreate(
@@ -172,7 +197,9 @@ class AccessControlController extends Controller
             ['employment_status' => $data['employment_status'], 'branch_id' => $user->branch_id, 'department_id' => $user->department_id]
         );
 
-        return back()->with('status', $user->name.' updated.');
+        return redirect()
+            ->route('access.users.edit', $user)
+            ->with('status', $user->name.' updated.');
     }
 
     public function destroyUser(Request $request, User $user)

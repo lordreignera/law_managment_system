@@ -8,6 +8,7 @@ use App\Models\StaffProfile;
 use App\Models\User;
 use App\Notifications\StaffAccountApproved;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -114,5 +115,135 @@ class AccessControlFlowTest extends TestCase
         $this->assertSame($department->id, $user->fresh()->department_id);
 
         Notification::assertSentTo($user, StaffAccountApproved::class);
+    }
+
+    public function test_access_manager_can_add_approved_user_through_staff_flow(): void
+    {
+        $accessRole = Role::findOrCreate('Access Manager');
+        $accessRole->givePermissionTo(Permission::findOrCreate('access.users.index'));
+        $accessRole->givePermissionTo(Permission::findOrCreate('access.users.create'));
+        $accessRole->givePermissionTo(Permission::findOrCreate('access.users.store'));
+        $newUserRole = Role::findOrCreate('Accountant');
+        $branch = Branch::create(['name' => 'Kampala', 'code' => 'KLA']);
+        $department = Department::create(['name' => 'Finance', 'code' => 'FIN', 'branch_id' => $branch->id]);
+
+        $admin = User::factory()->create();
+        $admin->assignRole($accessRole);
+        StaffProfile::create([
+            'user_id' => $admin->id,
+            'employment_status' => 'active',
+        ]);
+
+        $this
+            ->actingAs($admin)
+            ->get(route('access.users.index'))
+            ->assertOk()
+            ->assertSee('Add User')
+            ->assertSee(route('access.users.create', absolute: false), false);
+
+        $this
+            ->actingAs($admin)
+            ->get(route('access.users.create'))
+            ->assertOk()
+            ->assertSee('Add User')
+            ->assertSee(route('access.users.store', absolute: false), false)
+            ->assertSee('Approved Access')
+            ->assertSee('data-password-toggle', false);
+
+        $response = $this
+            ->actingAs($admin)
+            ->post(route('access.users.store'), [
+                'name' => 'Finance User',
+                'email' => 'finance-user@example.com',
+                'password' => 'temporary123',
+                'password_confirmation' => 'temporary123',
+                'staff_no' => 'AC-001',
+                'phone' => '+256 700 555666',
+                'job_title' => 'Accountant',
+                'branch_id' => $branch->id,
+                'department_id' => $department->id,
+                'joined_on' => now()->toDateString(),
+                'role' => $newUserRole->name,
+            ]);
+
+        $response->assertRedirect(route('access.users.index', absolute: false));
+        $response->assertSessionHas('status', 'Finance User registered and approved.');
+
+        $created = User::where('email', 'finance-user@example.com')->firstOrFail();
+
+        $this->assertTrue(Hash::check('temporary123', $created->password));
+        $this->assertNotNull($created->email_verified_at);
+        $this->assertTrue($created->hasRole($newUserRole->name));
+        $this->assertSame($branch->id, $created->branch_id);
+        $this->assertSame($department->id, $created->department_id);
+        $this->assertSame('active', $created->staffProfile?->employment_status);
+        $this->assertSame($newUserRole->name, $created->staffProfile?->requested_role);
+    }
+
+    public function test_access_manager_can_edit_user_identity_password_roles_and_direct_permissions(): void
+    {
+        $accessRole = Role::findOrCreate('Access Manager');
+        $accessRole->givePermissionTo(Permission::findOrCreate('access.users.index'));
+        $accessRole->givePermissionTo(Permission::findOrCreate('access.users.edit'));
+        $accessRole->givePermissionTo(Permission::findOrCreate('access.users.update'));
+        $accountantRole = Role::findOrCreate('Accountant');
+        $recoveriesRole = Role::findOrCreate('Recoveries Manager');
+        $directPermissionA = Permission::findOrCreate('recoveries.dashboard');
+        $directPermissionB = Permission::findOrCreate('finance.dashboard');
+
+        $admin = User::factory()->create();
+        $admin->assignRole($accessRole);
+        StaffProfile::create([
+            'user_id' => $admin->id,
+            'employment_status' => 'active',
+        ]);
+
+        $user = User::factory()->create([
+            'name' => 'Old User',
+            'email' => 'old-user@example.com',
+            'password' => Hash::make('old-password123'),
+        ]);
+        StaffProfile::create([
+            'user_id' => $user->id,
+            'employment_status' => 'active',
+            'requested_role' => $accountantRole->name,
+        ]);
+        $user->assignRole($accountantRole);
+
+        $this
+            ->actingAs($admin)
+            ->get(route('access.users.edit', $user))
+            ->assertOk()
+            ->assertSee('Edit User Access')
+            ->assertSee('data-selection-group="roles"', false)
+            ->assertSee('data-selection-group="direct_permissions"', false)
+            ->assertSee('kfms-tick-option', false)
+            ->assertSee('data-permission-select="all"', false)
+            ->assertSee('New Password');
+
+        $response = $this
+            ->actingAs($admin)
+            ->put(route('access.users.update', $user), [
+                'name' => 'Updated User',
+                'email' => 'updated-user@example.com',
+                'password' => 'new-password123',
+                'password_confirmation' => 'new-password123',
+                'employment_status' => 'active',
+                'roles' => [$accountantRole->name, $recoveriesRole->name],
+                'direct_permissions' => [$directPermissionA->name, $directPermissionB->name],
+            ]);
+
+        $response->assertRedirect(route('access.users.edit', $user, absolute: false));
+        $response->assertSessionHas('status', 'Updated User updated.');
+
+        $updated = $user->fresh();
+
+        $this->assertSame('Updated User', $updated->name);
+        $this->assertSame('updated-user@example.com', $updated->email);
+        $this->assertTrue(Hash::check('new-password123', $updated->password));
+        $this->assertTrue($updated->hasAllRoles([$accountantRole->name, $recoveriesRole->name]));
+        $this->assertTrue($updated->hasDirectPermission($directPermissionA->name));
+        $this->assertTrue($updated->hasDirectPermission($directPermissionB->name));
+        $this->assertSame('active', $updated->staffProfile?->employment_status);
     }
 }

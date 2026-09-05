@@ -195,6 +195,7 @@
                             <th>Total</th>
                             <th>Paid</th>
                             <th>Status</th>
+                            <th>Documents</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -205,10 +206,16 @@
                                 <td>{{ number_format($invoice->total, 2) }}</td>
                                 <td>{{ number_format($invoice->paid_amount, 2) }}</td>
                                 <td>{{ str($invoice->status)->headline() }}</td>
+                                <td>
+                                    <div class="kfms-table-actions">
+                                        <a href="{{ route('finance.invoices.documents.show', [$invoice, 'invoice']) }}">Invoice</a>
+                                        <a href="{{ route('finance.invoices.documents.show', [$invoice, 'fee-note']) }}">Fee Note</a>
+                                    </div>
+                                </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="kfms-empty">No invoices recorded for this matter.</td>
+                                <td colspan="6" class="kfms-empty">No invoices recorded for this matter.</td>
                             </tr>
                         @endforelse
                     </tbody>

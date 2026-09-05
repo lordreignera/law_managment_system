@@ -20,8 +20,9 @@ class LitigationImport implements ToCollection, WithHeadingRow
         foreach ($rows as $row) {
             $matterRef = $this->str($row['matter_ref'] ?? null);
             $startsAt = $this->dateTime($row['starts_at'] ?? null);
+            $courtName = $this->str($row['court_name'] ?? null);
 
-            if (! $matterRef || ! $startsAt) {
+            if (! $matterRef || ! $startsAt || ! $courtName) {
                 $this->skipped++;
 
                 continue;
@@ -51,7 +52,7 @@ class LitigationImport implements ToCollection, WithHeadingRow
             CourtEvent::create([
                 'matter_id' => $matter->id,
                 'assigned_to' => $assignedTo,
-                'court_name' => $this->str($row['court_name'] ?? null),
+                'court_name' => $courtName,
                 'case_number' => $this->str($row['case_number'] ?? null),
                 'judicial_officer' => $this->str($row['judicial_officer'] ?? null),
                 'event_type' => $this->str($row['event_type'] ?? null) ?: 'mention',

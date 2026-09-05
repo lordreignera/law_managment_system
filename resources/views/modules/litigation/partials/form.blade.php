@@ -42,6 +42,7 @@
     <label>
         <span>Court Name (if not listed)</span>
         <input type="text" name="court_name" value="{{ old('court_name', $event?->court_name) }}" maxlength="255">
+        <small>Required when the court is not selected above.</small>
         @error('court_name') <small>{{ $message }}</small> @enderror
     </label>
 

@@ -7,9 +7,10 @@
     $currency = $account->currency ?: 'UGX';
     $principal = (float) $account->principal_amount;
     $interest = (float) $account->interest_amount;
-    $outstanding = (float) $account->outstanding_amount;
+    $originalOutstanding = (float) $account->outstanding_amount;
     $recovered = (float) $account->amount_recovered;
-    $totalDue = max($outstanding + $recovered, 1);
+    $netOutstanding = (float) $account->net_outstanding_balance;
+    $totalDue = max($originalOutstanding, 1);
     $recoveryRate = min(100, round(($recovered / $totalDue) * 100));
 @endphp
 
@@ -33,9 +34,21 @@
             <div class="kfms-toolbar-actions">
                 @can('recoveries.update')
                     <a class="kfms-link-btn" href="{{ route('recoveries.edit', $account) }}">
-                        <i class="mdi mdi-account-switch-outline"></i>
-                        Edit / Assign
+                        <i class="mdi mdi-pencil-outline"></i>
+                        Edit Account
                     </a>
+                @endcan
+                @can('recoveries.assignment.edit')
+                    <a class="kfms-link-btn" href="{{ route('recoveries.assignment.edit', $account) }}">
+                        <i class="mdi mdi-account-switch-outline"></i>
+                        Assign Officer
+                    </a>
+                @endcan
+                @can('recoveries.activities.store')
+                    <button class="kfms-btn" type="button" data-bs-toggle="modal" data-bs-target="#recovery-activity-modal-{{ $account->id }}">
+                        <i class="mdi mdi-clipboard-text-clock-outline"></i>
+                        Report Activity
+                    </button>
                 @endcan
                 @can('letters.create')
                     <a class="kfms-link-btn" href="{{ route('letters.create', ['recovery_account_id' => $account->id, 'letter_type' => 'demand_notice']) }}">
@@ -73,16 +86,16 @@
 
             <div class="kfms-recovery-money-grid">
                 <div>
-                    <span>Outstanding</span>
-                    <strong>{{ $currency }} {{ number_format($outstanding, 2) }}</strong>
+                    <span>Net Outstanding</span>
+                    <strong>{{ $currency }} {{ number_format($netOutstanding, 2) }}</strong>
                 </div>
                 <div>
                     <span>Recovered</span>
                     <strong>{{ $currency }} {{ number_format($recovered, 2) }}</strong>
                 </div>
                 <div>
-                    <span>Principal</span>
-                    <strong>{{ $currency }} {{ number_format($principal, 2) }}</strong>
+                    <span>Original Outstanding</span>
+                    <strong>{{ $currency }} {{ number_format($originalOutstanding, 2) }}</strong>
                 </div>
                 <div>
                     <span>Interest</span>
@@ -92,7 +105,7 @@
         </div>
     </section>
 
-    <div class="kfms-recovery-layout">
+    <div class="kfms-recovery-layout kfms-recovery-layout-single">
         <section class="kfms-panel">
             <div class="kfms-panel-header">
                 <div>
@@ -147,60 +160,6 @@
             </div>
         </section>
 
-        <section class="kfms-panel">
-            <div class="kfms-panel-header">
-                <div>
-                    <h2>Log Follow-up</h2>
-                    <span>Record a demand, call, visit, promise, or payment</span>
-                </div>
-            </div>
-
-            <form class="kfms-form" method="POST" action="{{ route('recoveries.activities.store', $account) }}">
-                @csrf
-                <div class="kfms-form-grid">
-                    <label>
-                        <span>Activity Type</span>
-                        <select name="activity_type" required>
-                            @foreach ($activityTypes as $value => $label)
-                                <option value="{{ $value }}" @selected(old('activity_type', 'call') === $value)>{{ $label }}</option>
-                            @endforeach
-                        </select>
-                        @error('activity_type') <small>{{ $message }}</small> @enderror
-                    </label>
-                    <label>
-                        <span>Date &amp; Time</span>
-                        <input type="datetime-local" name="activity_at" value="{{ old('activity_at', now()->format('Y-m-d\TH:i')) }}" required>
-                        @error('activity_at') <small>{{ $message }}</small> @enderror
-                    </label>
-                    <label>
-                        <span>Amount Paid</span>
-                        <input type="number" step="0.01" min="0" name="amount_paid" value="{{ old('amount_paid') }}" placeholder="0.00">
-                        @error('amount_paid') <small>{{ $message }}</small> @enderror
-                    </label>
-                    <label>
-                        <span>Promised Amount</span>
-                        <input type="number" step="0.01" min="0" name="promised_amount" value="{{ old('promised_amount') }}" placeholder="0.00">
-                        @error('promised_amount') <small>{{ $message }}</small> @enderror
-                    </label>
-                    <label class="kfms-span-2">
-                        <span>Promised On</span>
-                        <input type="date" name="promised_on" value="{{ old('promised_on') }}">
-                        @error('promised_on') <small>{{ $message }}</small> @enderror
-                    </label>
-                    <label class="kfms-span-2">
-                        <span>Notes</span>
-                        <textarea name="notes" rows="4" maxlength="2000" required>{{ old('notes') }}</textarea>
-                        @error('notes') <small>{{ $message }}</small> @enderror
-                    </label>
-                </div>
-                <div class="kfms-form-actions">
-                    <button class="kfms-btn" type="submit">
-                        <i class="mdi mdi-content-save"></i>
-                        Save Follow-up
-                    </button>
-                </div>
-            </form>
-        </section>
     </div>
 
     <section class="kfms-panel">
@@ -217,7 +176,10 @@
                     <tr>
                         <th>When</th>
                         <th>Type</th>
+                        <th>Response</th>
                         <th>Paid</th>
+                        <th>Balance After</th>
+                        <th>Receipt</th>
                         <th>Promised</th>
                         <th>By</th>
                         <th>Notes</th>
@@ -228,18 +190,33 @@
                         <tr>
                             <td>{{ $activity->activity_at?->format('d M Y, H:i') }}</td>
                             <td>{{ $activity->typeLabel() }}</td>
+                            <td>{{ $activity->outcomeLabel() }}</td>
                             <td>{{ $activity->amount_paid ? $currency.' '.number_format($activity->amount_paid, 2) : '-' }}</td>
+                            <td>{{ $activity->outstanding_balance_after !== null ? $currency.' '.number_format($activity->outstanding_balance_after, 2) : '-' }}</td>
+                            <td>
+                                @forelse ($activity->attachments as $receipt)
+                                    <a href="{{ route('attachments.download', $receipt) }}">{{ $receipt->original_name }}</a>
+                                @empty
+                                    -
+                                @endforelse
+                            </td>
                             <td>{{ $activity->promised_amount ? $currency.' '.number_format($activity->promised_amount, 2).($activity->promised_on ? ' by '.$activity->promised_on->format('d M') : '') : '-' }}</td>
                             <td>{{ $activity->user?->name ?: '-' }}</td>
                             <td>{{ $activity->notes }}</td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="kfms-empty">No follow-ups logged yet.</td>
+                            <td colspan="9" class="kfms-empty">No follow-ups logged yet.</td>
                         </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
     </section>
+
+    @can('recoveries.activities.store')
+        @push('modals')
+            @include('modules.recoveries.partials.activity-modal', ['account' => $account, 'activityTypes' => $activityTypes])
+        @endpush
+    @endcan
 @endsection

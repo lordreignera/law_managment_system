@@ -30,6 +30,7 @@ class RecoveryAccount extends Model
         'arrears_amount' => 'decimal:2',
         'outstanding_amount' => 'decimal:2',
         'amount_recovered' => 'decimal:2',
+        'opening_recovered_amount' => 'decimal:2',
     ];
 
     public function client()
@@ -62,12 +63,34 @@ class RecoveryAccount extends Model
         return $this->hasMany(RecoveryActivity::class)->latest('activity_at');
     }
 
+    public function getNetOutstandingBalanceAttribute(): float
+    {
+        return max(((float) $this->outstanding_amount) - ((float) $this->amount_recovered), 0);
+    }
+
     /**
-     * Recompute the recovered total from logged activity payments.
+     * Recompute recovered totals and each activity's running balance.
      */
     public function recomputeRecovered(): void
     {
-        $this->amount_recovered = (float) $this->activities()->sum('amount_paid');
+        $runningRecovered = (float) $this->opening_recovered_amount;
+        $openingOutstanding = (float) $this->outstanding_amount;
+
+        RecoveryActivity::query()
+            ->where('recovery_account_id', $this->id)
+            ->orderBy('activity_at')
+            ->orderBy('id')
+            ->get()
+            ->each(function (RecoveryActivity $activity) use (&$runningRecovered, $openingOutstanding) {
+                $runningRecovered += (float) $activity->amount_paid;
+                $balanceAfter = max($openingOutstanding - $runningRecovered, 0);
+
+                if ((float) $activity->outstanding_balance_after !== $balanceAfter) {
+                    $activity->forceFill(['outstanding_balance_after' => $balanceAfter])->save();
+                }
+            });
+
+        $this->amount_recovered = $runningRecovered;
         $this->save();
     }
 

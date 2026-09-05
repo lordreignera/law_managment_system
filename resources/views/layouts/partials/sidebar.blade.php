@@ -88,7 +88,7 @@
         [
             'label' => 'Finance',
             'icon' => 'mdi-cash-multiple',
-            'route' => 'finance.index',
+            'route' => 'finance.dashboard',
             'active' => ['finance.*', 'expenses.*', 'petty-cash.*', 'ledger.*'],
             'children' => [
                 ['label' => 'Dashboard', 'route' => 'finance.dashboard', 'active' => 'finance.dashboard', 'permission' => 'finance.dashboard'],

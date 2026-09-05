@@ -78,6 +78,24 @@ class LitigationFlowTest extends TestCase
         ]);
     }
 
+    public function test_court_event_requires_a_court_selection_or_name(): void
+    {
+        $matter = $this->matter();
+        $advocate = $this->activeUser(['litigation.store'], 'Advocate');
+
+        $this->actingAs($advocate)->post(route('litigation.store'), [
+            'matter_id' => $matter->id,
+            'event_type' => 'hearing',
+            'status' => 'scheduled',
+            'starts_at' => now()->addDays(3)->format('Y-m-d\TH:i'),
+        ])->assertSessionHasErrors('court_name');
+
+        $this->assertDatabaseMissing('court_events', [
+            'matter_id' => $matter->id,
+            'event_type' => 'hearing',
+        ]);
+    }
+
     public function test_outcome_recording_updates_status_and_next_step(): void
     {
         $matter = $this->matter();

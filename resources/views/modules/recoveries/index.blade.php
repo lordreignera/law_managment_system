@@ -89,7 +89,7 @@
                         <th>Account</th>
                         <th>Officer</th>
                         <th>Portfolio</th>
-                        <th>Outstanding</th>
+                        <th>Net Outstanding</th>
                         <th>Recovered</th>
                         <th>Status</th>
                         <th>Actions</th>
@@ -103,7 +103,7 @@
                             <td>{{ $account->account_number ?: '-' }}</td>
                             <td>{{ $account->assignee?->name ?: 'Unassigned' }}</td>
                             <td>{{ $account->portfolio_type ?: $account->bucket ?: '-' }}</td>
-                            <td>{{ number_format($account->outstanding_amount) }}</td>
+                            <td>{{ number_format($account->net_outstanding_balance) }}</td>
                             <td>{{ number_format($account->amount_recovered) }}</td>
                             <td><span class="kfms-status kfms-status-{{ $account->status }}">{{ $account->statusLabel() }}</span></td>
                             <td>
@@ -117,8 +117,15 @@
 
                                     @can('recoveries.update')
                                         <a href="{{ route('recoveries.edit', $account) }}">
+                                            <i class="mdi mdi-pencil-outline"></i>
+                                            Edit
+                                        </a>
+                                    @endcan
+
+                                    @can('recoveries.assignment.edit')
+                                        <a href="{{ route('recoveries.assignment.edit', $account) }}">
                                             <i class="mdi mdi-account-switch-outline"></i>
-                                            Edit / Assign
+                                            Assign
                                         </a>
                                     @endcan
 

@@ -109,6 +109,8 @@ class LandTitleCrudTest extends TestCase
             ->assertSee('Add Security')
             ->assertSee($user->name)
             ->assertDontSee('Portal Client Handler')
+            ->assertDontSee('Dispatched')
+            ->assertDontSee('Date &amp; Time Dispatched', false)
             ->assertDontSee('Returned To')
             ->assertDontSee('Date &amp; Time Returned', false);
 
@@ -124,6 +126,18 @@ class LandTitleCrudTest extends TestCase
             ])
             ->assertRedirect(route('land-titles.create', absolute: false))
             ->assertSessionHasErrors('bank_branch_id');
+
+        $this->actingAs($user)
+            ->post(route('land-titles.store'), [
+                'bank_id' => $bank->id,
+                'bank_branch_id' => $bankBranch->id,
+                'zonal_office_id' => $zonalOffice->id,
+                'handled_by' => $user->id,
+                'borrower_name' => 'Jane Borrower',
+                'status' => 'dispatched',
+            ])
+            ->assertRedirect(route('land-titles.create', absolute: false))
+            ->assertSessionHasErrors('status');
 
         $this->actingAs($user)
             ->post(route('land-titles.store'), [
@@ -208,6 +222,8 @@ class LandTitleCrudTest extends TestCase
             ->get(route('land-titles.dashboard'))
             ->assertOk()
             ->assertSee('Securities Dashboard')
+            ->assertSee('Securities control room')
+            ->assertSee('Register, monitor, and track securities in custody.')
             ->assertSee('Total Securities')
             ->assertSee('Jane Borrower Updated')
             ->assertSee('Test Bank')

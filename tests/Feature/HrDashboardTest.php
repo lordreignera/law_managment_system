@@ -7,6 +7,7 @@ use App\Models\Department;
 use App\Models\StaffProfile;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
@@ -84,7 +85,9 @@ class HrDashboardTest extends TestCase
         $this->actingAs($hr)
             ->get(route('staff.edit', $staff))
             ->assertOk()
-            ->assertSee('Edit Staff Profile');
+            ->assertSee('Edit Staff Profile')
+            ->assertSee('New Password')
+            ->assertSee('data-password-toggle', false);
 
         $this->actingAs($hr)
             ->put(route('staff.update', $staff), [
@@ -128,6 +131,9 @@ class HrDashboardTest extends TestCase
             ->get(route('staff.create'))
             ->assertOk()
             ->assertSee('New Staff Member');
+        $this->actingAs($hr)
+            ->get(route('staff.create'))
+            ->assertSee('data-password-toggle', false);
 
         $response = $this->actingAs($hr)
             ->post(route('staff.store'), [
@@ -142,13 +148,14 @@ class HrDashboardTest extends TestCase
                 'branch_id' => $branch->id,
                 'department_id' => $department->id,
                 'joined_on' => '2026-07-09',
-                'employment_status' => 'active',
+                'employment_status' => 'pending',
             ]);
 
         $staff = User::where('email', 'advocate@example.test')->firstOrFail();
 
         $response->assertRedirect(route('staff.show', $staff, absolute: false));
         $this->assertTrue($staff->hasRole('Advocate'));
+        $this->assertNotNull($staff->email_verified_at);
         $this->assertDatabaseHas('staff_profiles', [
             'user_id' => $staff->id,
             'staff_no' => 'KCA-002',
@@ -157,5 +164,85 @@ class HrDashboardTest extends TestCase
             'employment_status' => 'active',
             'requested_role' => 'Advocate',
         ]);
+    }
+
+    public function test_hr_can_reset_staff_password_and_role_from_edit_screen(): void
+    {
+        $branch = Branch::create(['name' => 'Kampala']);
+        $department = Department::create(['name' => 'Finance', 'branch_id' => $branch->id]);
+        Role::findOrCreate('Advocate');
+        Role::findOrCreate('Accountant');
+
+        $hr = $this->activeUser(['staff.show', 'staff.edit', 'staff.update']);
+        $staff = User::factory()->create([
+            'password' => Hash::make('old-password'),
+        ]);
+        $staff->assignRole('Advocate');
+        StaffProfile::create([
+            'user_id' => $staff->id,
+            'employment_status' => 'active',
+        ]);
+
+        $this->actingAs($hr)
+            ->put(route('staff.update', $staff), [
+                'name' => $staff->name,
+                'email' => $staff->email,
+                'staff_no' => 'KCA-003',
+                'phone' => '+256700000004',
+                'job_title' => 'Accountant',
+                'branch_id' => $branch->id,
+                'department_id' => $department->id,
+                'employment_status' => 'active',
+                'role' => 'Accountant',
+                'password' => 'new-password123',
+                'password_confirmation' => 'new-password123',
+            ])
+            ->assertRedirect(route('staff.show', $staff, absolute: false));
+
+        $staff->refresh();
+
+        $this->assertTrue(Hash::check('new-password123', $staff->password));
+        $this->assertTrue($staff->hasRole('Accountant'));
+        $this->assertFalse($staff->hasRole('Advocate'));
+    }
+
+    public function test_dashboard_created_staff_can_login_to_role_dashboard(): void
+    {
+        $branch = Branch::create(['name' => 'Kampala']);
+        $department = Department::create(['name' => 'Finance', 'branch_id' => $branch->id]);
+
+        $accountantRole = Role::findOrCreate('Accountant');
+        $accountantRole->givePermissionTo(Permission::findOrCreate('finance.dashboard'));
+
+        $hr = $this->activeUser(['staff.create', 'staff.store', 'staff.show']);
+
+        $this->actingAs($hr)
+            ->post(route('staff.store'), [
+                'name' => 'Finance User',
+                'email' => 'finance-user@example.test',
+                'password' => 'password123',
+                'password_confirmation' => 'password123',
+                'phone' => '+256700000003',
+                'job_title' => 'Accountant',
+                'role' => 'Accountant',
+                'branch_id' => $branch->id,
+                'department_id' => $department->id,
+            ])
+            ->assertSessionHasNoErrors();
+
+        $staff = User::where('email', 'finance-user@example.test')->firstOrFail();
+
+        $this->assertTrue($staff->hasRole('Accountant'));
+        $this->assertTrue($staff->can('finance.dashboard'));
+
+        $this->post('/logout');
+        $this->assertGuest();
+
+        $this->post('/login', [
+            'email' => 'finance-user@example.test',
+            'password' => 'password123',
+        ])->assertRedirect(route('finance.dashboard', absolute: false));
+
+        $this->assertAuthenticated();
     }
 }
