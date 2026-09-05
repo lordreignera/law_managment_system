@@ -6,6 +6,7 @@ use App\Models\Branch;
 use App\Models\Department;
 use App\Models\StaffProfile;
 use App\Models\User;
+use App\Notifications\StaffAccountApproved;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
@@ -122,6 +123,8 @@ class StaffController extends Controller
             'employment_status' => 'active',
             'requested_role' => $data['role'],
         ]);
+
+        $staff->notify(new StaffAccountApproved($data['role'], $data['password'], true));
 
         $redirectRoute = $request->routeIs('access.users.store') ? 'access.users.index' : 'staff.show';
 

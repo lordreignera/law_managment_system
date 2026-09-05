@@ -119,6 +119,8 @@ class AccessControlFlowTest extends TestCase
 
     public function test_access_manager_can_add_approved_user_through_staff_flow(): void
     {
+        Notification::fake();
+
         $accessRole = Role::findOrCreate('Access Manager');
         $accessRole->givePermissionTo(Permission::findOrCreate('access.users.index'));
         $accessRole->givePermissionTo(Permission::findOrCreate('access.users.create'));
@@ -178,6 +180,14 @@ class AccessControlFlowTest extends TestCase
         $this->assertSame($department->id, $created->department_id);
         $this->assertSame('active', $created->staffProfile?->employment_status);
         $this->assertSame($newUserRole->name, $created->staffProfile?->requested_role);
+
+        Notification::assertSentTo($created, StaffAccountApproved::class, function (StaffAccountApproved $notification) use ($created) {
+            $mail = $notification->toMail($created)->toArray();
+
+            $this->assertContains('Temporary password: temporary123', $mail['introLines']);
+
+            return true;
+        });
     }
 
     public function test_access_manager_can_edit_user_identity_password_roles_and_direct_permissions(): void

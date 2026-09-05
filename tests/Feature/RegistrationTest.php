@@ -5,7 +5,9 @@ namespace Tests\Feature;
 use App\Models\Branch;
 use App\Models\Department;
 use App\Models\User;
+use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
 use Laravel\Fortify\Features;
 use Laravel\Jetstream\Jetstream;
 use Spatie\Permission\Models\Role;
@@ -47,6 +49,8 @@ class RegistrationTest extends TestCase
         $department = Department::create(['name' => 'Litigation', 'code' => 'LIT', 'branch_id' => $branch->id]);
         $role = Role::create(['name' => 'Advocate']);
 
+        Notification::fake();
+
         $response = $this->post('/register', [
             'name' => 'Test User',
             'email' => 'new-user@example.com',
@@ -69,5 +73,7 @@ class RegistrationTest extends TestCase
         $this->assertFalse($user->hasRole($role->name));
         $this->assertSame('pending', $user->staffProfile->employment_status);
         $this->assertSame($role->name, $user->staffProfile->requested_role);
+
+        Notification::assertSentTo($user, VerifyEmail::class);
     }
 }

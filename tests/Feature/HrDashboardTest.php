@@ -6,8 +6,10 @@ use App\Models\Branch;
 use App\Models\Department;
 use App\Models\StaffProfile;
 use App\Models\User;
+use App\Notifications\StaffAccountApproved;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Notification;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
@@ -121,6 +123,8 @@ class HrDashboardTest extends TestCase
 
     public function test_hr_can_register_new_staff(): void
     {
+        Notification::fake();
+
         $branch = Branch::create(['name' => 'Kampala']);
         $department = Department::create(['name' => 'Human Resources', 'branch_id' => $branch->id]);
         Role::findOrCreate('Advocate');
@@ -164,6 +168,13 @@ class HrDashboardTest extends TestCase
             'employment_status' => 'active',
             'requested_role' => 'Advocate',
         ]);
+        Notification::assertSentTo($staff, StaffAccountApproved::class, function (StaffAccountApproved $notification) use ($staff) {
+            $mail = $notification->toMail($staff)->toArray();
+
+            $this->assertContains('Temporary password: password123', $mail['introLines']);
+
+            return true;
+        });
     }
 
     public function test_hr_can_reset_staff_password_and_role_from_edit_screen(): void
@@ -208,6 +219,8 @@ class HrDashboardTest extends TestCase
 
     public function test_dashboard_created_staff_can_login_to_role_dashboard(): void
     {
+        Notification::fake();
+
         $branch = Branch::create(['name' => 'Kampala']);
         $department = Department::create(['name' => 'Finance', 'branch_id' => $branch->id]);
 
@@ -234,6 +247,13 @@ class HrDashboardTest extends TestCase
 
         $this->assertTrue($staff->hasRole('Accountant'));
         $this->assertTrue($staff->can('finance.dashboard'));
+        Notification::assertSentTo($staff, StaffAccountApproved::class, function (StaffAccountApproved $notification) use ($staff) {
+            $mail = $notification->toMail($staff)->toArray();
+
+            $this->assertContains('Temporary password: password123', $mail['introLines']);
+
+            return true;
+        });
 
         $this->post('/logout');
         $this->assertGuest();
