@@ -91,6 +91,9 @@ Route::middleware([
         Route::get('/user-guide', UserGuideController::class)
             ->middleware('active.staff')
             ->name('help.user-guide');
+        Route::get('/user-guide/download', [UserGuideController::class, 'download'])
+            ->middleware('active.staff')
+            ->name('help.user-guide.download');
 
     // `php artisan kfms:sync-route-permissions` to create a matching
     // permission record.

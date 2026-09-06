@@ -2,17 +2,36 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CompanySetting;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 
 class UserGuideController extends Controller
 {
     public function __invoke()
     {
+        return view('help.user-guide', $this->guideData());
+    }
+
+    public function download()
+    {
+        $data = $this->guideData();
+        $data['company'] = CompanySetting::current();
+        $data['logoSource'] = $data['company']->logo_public_path;
+        $data['generatedAt'] = now();
+
+        return Pdf::loadView('help.user-guide-pdf', $data)
+            ->setPaper('a4')
+            ->download($this->downloadFilename($data['guideTitle']));
+    }
+
+    private function guideData(): array
+    {
         $isAdministrator = auth()->user()?->hasAnyRole(['Super Admin', 'Administrator']) ?? false;
         $modules = $this->modulesForUser();
-        $sections = $this->sectionsFor($modules);
 
-        return view('help.user-guide', [
+        return [
             'guideTitle' => $isAdministrator
                 ? 'System User Guide'
                 : ($modules->count() > 1 ? 'Your User Guide' : ($modules->first()['title'] ?? 'User Guide')),
@@ -20,9 +39,9 @@ class UserGuideController extends Controller
                 ? 'Quick operating guide for the workspaces available to your account.'
                 : ($modules->first()['subtitle'] ?? 'Quick operating guide for your workspace.'),
             'guideModules' => $modules,
-            'guideSections' => $sections,
+            'guideSections' => $this->sectionsFor($modules),
             'dashboardUrl' => $this->dashboardUrlFor($modules),
-        ]);
+        ];
     }
 
     private function modulesForUser(): Collection
@@ -195,7 +214,13 @@ class UserGuideController extends Controller
             'description' => $description,
             'stats' => $stats,
             'image' => 'admin/assets/images/guides/'.$image,
+            'image_path' => public_path('admin/assets/images/guides/'.$image),
         ];
+    }
+
+    private function downloadFilename(string $title): string
+    {
+        return Str::slug($title ?: 'user-guide').'-'.now()->format('Y-m-d').'.pdf';
     }
 
     private function firstStepsSection(): array

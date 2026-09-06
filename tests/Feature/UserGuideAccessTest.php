@@ -72,6 +72,8 @@ class UserGuideAccessTest extends TestCase
             ->assertSee('Human Resources Flow')
             ->assertSee('Dashboard Screenshots')
             ->assertSee('admin/assets/images/guides/hr-dashboard.svg')
+            ->assertSee('Download PDF')
+            ->assertSee('href="'.e(route('help.user-guide.download')).'"', false)
             ->assertSee('href="'.e(route('hr.dashboard')).'"', false)
             ->assertSee('Use New Staff to create approved staff accounts from the dashboard.')
             ->assertDontSee('Finance Flow')
@@ -111,6 +113,16 @@ class UserGuideAccessTest extends TestCase
             ->assertSee('Pipeline, active files, responsible teams, and recent matters.')
             ->assertSee('href="'.e(route('matters.dashboard')).'"', false)
             ->assertDontSee('Finance Flow');
+    }
+
+    public function test_role_specific_guide_can_be_downloaded_as_pdf(): void
+    {
+        $user = $this->staffUserWithPermissions(['hr.dashboard', 'staff.index'], 'HR Manager');
+
+        $this->actingAs($user)
+            ->get(route('help.user-guide.download'))
+            ->assertOk()
+            ->assertHeader('content-type', 'application/pdf');
     }
 
     public function test_administrator_can_still_see_full_system_guide(): void

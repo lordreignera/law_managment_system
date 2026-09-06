@@ -10,10 +10,16 @@
                 <h2>{{ $guideTitle }}</h2>
                 <span>{{ $guideSubtitle }}</span>
             </div>
-            <a class="kfms-link-btn" href="{{ $dashboardUrl }}">
-                <i class="mdi mdi-view-dashboard-outline"></i>
-                My Dashboard
-            </a>
+            <div class="kfms-button-row">
+                <a class="kfms-link-btn" href="{{ route('help.user-guide.download') }}">
+                    <i class="mdi mdi-download"></i>
+                    Download PDF
+                </a>
+                <a class="kfms-link-btn" href="{{ $dashboardUrl }}">
+                    <i class="mdi mdi-view-dashboard-outline"></i>
+                    My Dashboard
+                </a>
+            </div>
         </div>
 
         <div class="kfms-guide-grid">
