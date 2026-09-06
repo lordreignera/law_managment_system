@@ -16,10 +16,11 @@
         [
             'label' => 'Matter Management',
             'icon' => 'mdi-briefcase',
-            'route' => 'matters.index',
+            'route' => 'matters.dashboard',
             'active' => 'matters.*',
             'children' => [
-                ['label' => 'Matter Register', 'route' => 'matters.index', 'active' => 'matters.*'],
+                ['label' => 'Matter Dashboard', 'route' => 'matters.dashboard', 'active' => 'matters.dashboard', 'permission' => 'matters.dashboard'],
+                ['label' => 'Matter Register', 'route' => 'matters.index', 'active' => 'matters.index'],
                 ['label' => 'File Pending', 'route' => 'matters.index', 'query' => ['status' => 'file_pending']],
                 ['label' => 'Open Matters', 'route' => 'matters.index', 'query' => ['status' => 'open']],
                 ['label' => 'Planning', 'route' => 'matters.index', 'query' => ['status' => 'planning']],
@@ -28,7 +29,7 @@
                 ['label' => 'Under Review', 'route' => 'matters.index', 'query' => ['status' => 'under_review']],
                 ['label' => 'Closed / Archived', 'route' => 'matters.index', 'query' => ['status' => 'closed']],
             ],
-            'permission' => 'matters.index',
+            'permission_any' => ['matters.dashboard', 'matters.index'],
         ],
         [
             'label' => 'Litigation',

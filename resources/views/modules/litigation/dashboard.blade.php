@@ -4,11 +4,51 @@
 @section('page-title', 'Litigation Dashboard')
 
 @section('content')
-    <div class="kfms-stat-grid">
+    <section class="kfms-dashboard-hero kfms-litigation-dashboard-hero">
+        <div>
+            <span>Litigation control room</span>
+            <h2>Track court work, deadlines, outcomes, and next steps.</h2>
+            <p>Advocates monitor cause lists, active court events, overdue dates, lifecycle stages, rulings, taxation, and execution follow-up.</p>
+        </div>
+        <div class="kfms-dashboard-hero-actions">
+            @can('litigation.create')
+                <a class="kfms-btn" href="{{ route('litigation.create') }}">
+                    <i class="mdi mdi-calendar-plus"></i>
+                    Schedule Event
+                </a>
+            @endcan
+            @can('litigation.index')
+                <a class="kfms-link-btn" href="{{ route('litigation.index') }}">
+                    <i class="mdi mdi-format-list-bulleted"></i>
+                    Cause List
+                </a>
+            @endcan
+            @can('litigation.export')
+                <a class="kfms-link-btn" href="{{ route('litigation.export') }}">
+                    <i class="mdi mdi-download"></i>
+                    Export
+                </a>
+            @endcan
+        </div>
+    </section>
+
+    @php
+        $statIcons = [
+            'My Open Events' => 'mdi-calendar-account-outline',
+            'Today' => 'mdi-calendar-today-outline',
+            'This Week' => 'mdi-calendar-week-outline',
+            'Overdue' => 'mdi-calendar-alert-outline',
+        ];
+    @endphp
+
+    <div class="kfms-stat-grid kfms-dashboard-kpis">
         @foreach ($stats as $label => $value)
-            <section class="kfms-card">
-                <span class="kfms-card-label">{{ $label }}</span>
-                <strong class="kfms-stat">{{ number_format($value) }}</strong>
+            <section class="kfms-card kfms-stat-card">
+                <span class="kfms-stat-icon"><i class="mdi {{ $statIcons[$label] ?? 'mdi-calendar-outline' }}"></i></span>
+                <span class="kfms-stat-body">
+                    <span class="kfms-card-label">{{ $label }}</span>
+                    <strong class="kfms-stat">{{ number_format($value) }}</strong>
+                </span>
             </section>
         @endforeach
     </div>
@@ -18,14 +58,6 @@
             <div>
                 <h2>Litigation Lifecycle</h2>
                 <span>From retained-client instructions to judgment, taxation, execution, and closure</span>
-            </div>
-            <div class="kfms-toolbar-actions">
-                @can('litigation.create')
-                    <a class="kfms-btn" href="{{ route('litigation.create') }}">
-                        <i class="mdi mdi-calendar-plus"></i>
-                        Schedule Event
-                    </a>
-                @endcan
             </div>
         </div>
 

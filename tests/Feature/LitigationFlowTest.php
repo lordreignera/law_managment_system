@@ -213,6 +213,24 @@ class LitigationFlowTest extends TestCase
             ->assertDontSee('Portal Client User');
     }
 
+    public function test_litigation_dashboard_uses_module_hero_design(): void
+    {
+        $advocate = $this->activeUser([
+            'litigation.dashboard',
+            'litigation.index',
+            'litigation.create',
+            'litigation.export',
+        ], 'Litigation Officer');
+
+        $this->actingAs($advocate)
+            ->get(route('litigation.dashboard'))
+            ->assertOk()
+            ->assertSee('Litigation control room')
+            ->assertSee('Track court work, deadlines, outcomes, and next steps.')
+            ->assertSee('Schedule Event')
+            ->assertSee('Litigation Lifecycle');
+    }
+
     public function test_court_reminder_command_runs(): void
     {
         $matter = $this->matter();

@@ -20,6 +20,97 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class MatterController extends Controller
 {
+    public function dashboard(Request $request)
+    {
+        $user = $request->user();
+        $baseQuery = Matter::query()->forBranchOf($user);
+        $activeStatuses = ['open', 'planning', 'active', 'waiting_for_client', 'waiting_for_third_party_or_court', 'billing_pending', 'under_review'];
+
+        $stats = [
+            [
+                'label' => 'Total Matters',
+                'value' => (clone $baseQuery)->count(),
+                'icon' => 'mdi-briefcase-outline',
+                'route' => route('matters.index'),
+            ],
+            [
+                'label' => 'Open Matters',
+                'value' => (clone $baseQuery)->whereIn('status', $activeStatuses)->count(),
+                'icon' => 'mdi-folder-open-outline',
+                'route' => route('matters.index', ['status' => 'open']),
+            ],
+            [
+                'label' => 'File Pending',
+                'value' => (clone $baseQuery)->where('status', 'file_pending')->count(),
+                'icon' => 'mdi-folder-clock-outline',
+                'route' => route('matters.index', ['status' => 'file_pending']),
+            ],
+            [
+                'label' => 'Active Work',
+                'value' => (clone $baseQuery)->where('status', 'active')->count(),
+                'icon' => 'mdi-briefcase-check-outline',
+                'route' => route('matters.index', ['status' => 'active']),
+            ],
+            [
+                'label' => 'Billing Pending',
+                'value' => (clone $baseQuery)->where('status', 'billing_pending')->count(),
+                'icon' => 'mdi-receipt-clock-outline',
+                'route' => route('matters.index', ['status' => 'billing_pending']),
+            ],
+            [
+                'label' => 'Under Review',
+                'value' => (clone $baseQuery)->where('status', 'under_review')->count(),
+                'icon' => 'mdi-clipboard-search-outline',
+                'route' => route('matters.index', ['status' => 'under_review']),
+            ],
+        ];
+
+        $statusRows = collect(Matter::STATUSES)->map(function (string $label, string $status) use ($baseQuery) {
+            return [
+                'label' => $label,
+                'status' => $status,
+                'count' => (clone $baseQuery)->where('status', $status)->count(),
+                'route' => route('matters.index', ['status' => $status]),
+            ];
+        });
+
+        $practiceAreaRows = PracticeArea::query()
+            ->withCount([
+                'matters as active_matters_count' => fn ($query) => $query
+                    ->forBranchOf($user)
+                    ->whereNotIn('status', ['closed', 'archived']),
+            ])
+            ->orderByDesc('active_matters_count')
+            ->orderBy('name')
+            ->limit(8)
+            ->get();
+
+        $myMatters = Matter::with(['client', 'practiceArea'])
+            ->forBranchOf($user)
+            ->where(function ($query) use ($user) {
+                $query
+                    ->where('opened_by', $user->id)
+                    ->orWhereHas('assignments', fn ($query) => $query->where('user_id', $user->id));
+            })
+            ->latest()
+            ->limit(8)
+            ->get();
+
+        $recentMatters = Matter::with(['client', 'practiceArea'])
+            ->forBranchOf($user)
+            ->latest()
+            ->limit(8)
+            ->get();
+
+        return view('modules.matters.dashboard', [
+            'stats' => $stats,
+            'statusRows' => $statusRows,
+            'practiceAreaRows' => $practiceAreaRows,
+            'myMatters' => $myMatters,
+            'recentMatters' => $recentMatters,
+        ]);
+    }
+
     public function index(Request $request)
     {
         $matters = Matter::with(['client', 'practiceArea'])

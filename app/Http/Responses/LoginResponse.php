@@ -59,6 +59,9 @@ class LoginResponse implements LoginResponseContract
     {
         $roleDashboards = [
             'Litigation Officer' => 'litigation.dashboard',
+            'Senior Partner' => 'matters.dashboard',
+            'Advocate' => 'matters.dashboard',
+            'Paralegal' => 'matters.dashboard',
             'Accountant' => 'finance.dashboard',
             'HR Manager' => 'hr.dashboard',
             'Recoveries Manager' => 'recoveries.dashboard',

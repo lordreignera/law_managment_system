@@ -141,6 +141,19 @@ class LegalLetterFlowTest extends TestCase
             ->assertSee('RE: Contract Review');
     }
 
+    public function test_letters_dashboard_uses_module_hero_design(): void
+    {
+        $staff = $this->staffUser();
+
+        $this->actingAs($staff)
+            ->get(route('letters.dashboard'))
+            ->assertOk()
+            ->assertSee('Letters & opinions control room', false)
+            ->assertSee('Draft, review, approve, and dispatch firm correspondence.')
+            ->assertSee('Create Letter')
+            ->assertSee('Document Workspace');
+    }
+
     private function staffUser(): User
     {
         $role = Role::findOrCreate('Advocate', 'web');

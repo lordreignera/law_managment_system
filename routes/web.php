@@ -36,6 +36,7 @@ use App\Http\Controllers\RecoveryReportController;
 use App\Http\Controllers\RequisitionController;
 use App\Http\Controllers\StaffController;
 use App\Http\Controllers\SystemSettingController;
+use App\Http\Controllers\UserGuideController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -87,7 +88,7 @@ Route::middleware([
             ->middleware('active.staff')
             ->name('attachments.view');
 
-        Route::view('/user-guide', 'help.user-guide')
+        Route::get('/user-guide', UserGuideController::class)
             ->middleware('active.staff')
             ->name('help.user-guide');
 
@@ -130,6 +131,7 @@ Route::middleware([
         Route::patch('/intakes/{intake}/review', [ClientIntakeController::class, 'review'])->name('intakes.review');
 
         // Matters
+        Route::get('/matters/dashboard', [MatterController::class, 'dashboard'])->name('matters.dashboard');
         Route::get('/matters', [MatterController::class, 'index'])->name('matters.index');
         Route::get('/matters/create', [MatterController::class, 'create'])->name('matters.create');
         Route::post('/matters', [MatterController::class, 'store'])->name('matters.store');

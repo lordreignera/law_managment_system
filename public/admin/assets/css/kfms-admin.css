@@ -3317,6 +3317,72 @@ body.kfms-template {
     margin: 0;
 }
 
+.kfms-guide-preview-grid {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.kfms-guide-preview-card {
+    background: #f8fbff;
+    border: 1px solid #dce6f2;
+    border-radius: 8px;
+    display: grid;
+    gap: 12px;
+    padding: 14px;
+}
+
+.kfms-guide-preview-image {
+    background: #ffffff;
+    border: 1px solid #dce6f2;
+    border-radius: 8px;
+    box-shadow: 0 12px 24px rgba(6, 26, 50, 0.08);
+    margin: 0;
+    overflow: hidden;
+}
+
+.kfms-guide-preview-image img {
+    aspect-ratio: 16 / 9;
+    display: block;
+    object-fit: cover;
+    width: 100%;
+}
+
+.kfms-guide-preview-card h3 {
+    color: #061a32;
+    font-size: 16px;
+    font-weight: 900;
+    margin: 0 0 4px;
+}
+
+.kfms-guide-preview-card p {
+    color: #5c6b7f;
+    font-size: 13px;
+    line-height: 1.5;
+    margin: 0;
+}
+
+.kfms-guide-preview-kpis {
+    display: grid;
+    gap: 8px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.kfms-guide-preview-kpis span {
+    background: #fff;
+    border: 1px solid #dce6f2;
+    border-radius: 8px;
+    color: #283a52;
+    font-size: 12px;
+    font-weight: 800;
+    min-height: 44px;
+    padding: 10px;
+}
+
+.kfms-guide-preview-card .kfms-link-btn {
+    justify-self: start;
+}
+
 @media (max-width: 1199px) {
     .kfms-letter-builder {
         grid-template-columns: 1fr;
@@ -5457,6 +5523,15 @@ a.kfms-calendar-date:hover {
     display: grid;
     gap: 12px;
     grid-template-columns: minmax(130px, 180px) minmax(0, 1fr) 48px;
+}
+
+a.kfms-bar-row {
+    color: inherit;
+    text-decoration: none;
+}
+
+a.kfms-bar-row:hover > span {
+    color: #071426;
 }
 
 .kfms-bar-label {

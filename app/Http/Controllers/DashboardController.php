@@ -23,6 +23,10 @@ class DashboardController extends Controller
             return redirect()->route('litigation.dashboard');
         }
 
+        if ($user->hasAnyRole(['Senior Partner', 'Advocate', 'Paralegal']) && $user->can('matters.dashboard')) {
+            return redirect()->route('matters.dashboard');
+        }
+
         if ($user->hasRole('Accountant') && $user->can('finance.dashboard')) {
             return redirect()->route('finance.dashboard');
         }

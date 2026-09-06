@@ -4,14 +4,42 @@
 @section('page-title', 'HR Dashboard')
 
 @section('content')
-    <div class="kfms-stat-grid">
+    <section class="kfms-dashboard-hero kfms-hr-dashboard-hero">
+        <div>
+            <span>Human resources control room</span>
+            <h2>Manage staff access, leave, and team records.</h2>
+            <p>HR users track active staff, pending access, department coverage, branch headcount, and leave requests from one place.</p>
+        </div>
+        <div class="kfms-dashboard-hero-actions">
+            @can('staff.create')
+                <a class="kfms-btn" href="{{ route('staff.create') }}">
+                    <i class="mdi mdi-account-plus-outline"></i>
+                    New Staff
+                </a>
+            @endcan
+            @can('staff.index')
+                <a class="kfms-link-btn" href="{{ route('staff.index') }}">
+                    <i class="mdi mdi-account-group-outline"></i>
+                    Staff Register
+                </a>
+            @endcan
+            @can('leave.index')
+                <a class="kfms-link-btn" href="{{ route('leave.index') }}">
+                    <i class="mdi mdi-calendar-account-outline"></i>
+                    Leave Management
+                </a>
+            @endcan
+        </div>
+    </section>
+
+    <div class="kfms-stat-grid kfms-dashboard-kpis">
         @foreach ($stats as $stat)
-            <section class="kfms-card">
-                <span class="kfms-card-label">
-                    <i class="mdi {{ $stat['icon'] }}"></i>
-                    {{ $stat['label'] }}
+            <section class="kfms-card kfms-stat-card">
+                <span class="kfms-stat-icon"><i class="mdi {{ $stat['icon'] }}"></i></span>
+                <span class="kfms-stat-body">
+                    <span class="kfms-card-label">{{ $stat['label'] }}</span>
+                    <strong class="kfms-stat">{{ number_format($stat['value']) }}</strong>
                 </span>
-                <strong class="kfms-stat">{{ number_format($stat['value']) }}</strong>
             </section>
         @endforeach
     </div>
@@ -19,28 +47,8 @@
     <section class="kfms-panel">
         <div class="kfms-panel-header">
             <div>
-                <h2>HR Workspace</h2>
-                <span>Staff records, leave review, and access follow-up</span>
-            </div>
-            <div class="kfms-toolbar-actions">
-                @can('staff.create')
-                    <a class="kfms-link-btn" href="{{ route('staff.create') }}">
-                        <i class="mdi mdi-account-plus-outline"></i>
-                        New Staff
-                    </a>
-                @endcan
-                @can('staff.index')
-                    <a class="kfms-link-btn" href="{{ route('staff.index') }}">
-                        <i class="mdi mdi-account-group-outline"></i>
-                        Staff Register
-                    </a>
-                @endcan
-                @can('leave.index')
-                    <a class="kfms-btn" href="{{ route('leave.index') }}">
-                        <i class="mdi mdi-calendar-account-outline"></i>
-                        Leave Management
-                    </a>
-                @endcan
+                <h2>Headcount Coverage</h2>
+                <span>Staff distribution by department and branch</span>
             </div>
         </div>
 

@@ -55,7 +55,8 @@ class HrDashboardTest extends TestCase
         $this->actingAs($hr)
             ->get(route('hr.dashboard'))
             ->assertOk()
-            ->assertSee('HR Workspace')
+            ->assertSee('Human resources control room')
+            ->assertSee('Manage staff access, leave, and team records.')
             ->assertSee('Active Staff');
     }
 
