@@ -95,7 +95,7 @@
                         <tr>
                             <td>
                                 <strong>{{ $user->name }}</strong><br>
-                                <span>{{ $user->staffProfile?->staff_no ?: 'No staff no' }}</span>
+                                <span>{{ $user->staffProfile?->staff_no ?: 'Pending staff number' }}</span>
                             </td>
                             <td>
                                 {{ $user->email }}<br>

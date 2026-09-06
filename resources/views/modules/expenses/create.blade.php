@@ -4,20 +4,25 @@
 @section('page-title', 'Record Expense')
 
 @section('content')
+    @php($fromDashboard = request('from') === 'finance-dashboard')
+
     <section class="kfms-panel">
         <div class="kfms-panel-header">
             <div>
                 <h2>Record Expenditure</h2>
                 <span>Capture a firm expense or disbursement.</span>
             </div>
-            <a class="kfms-link-btn" href="{{ route('expenses.index') }}">
+            <a class="kfms-link-btn" href="{{ $fromDashboard ? route('finance.dashboard') : route('expenses.index') }}">
                 <i class="mdi mdi-arrow-left"></i>
-                Back to Expenses
+                {{ $fromDashboard ? 'Back to Finance Dashboard' : 'Back to Expenses' }}
             </a>
         </div>
 
         <form class="kfms-form" method="POST" action="{{ route('expenses.store') }}" enctype="multipart/form-data">
             @csrf
+            @if ($fromDashboard)
+                <input type="hidden" name="from" value="finance-dashboard">
+            @endif
 
             <div class="kfms-form-grid">
                 <label>

@@ -44,6 +44,7 @@ class CreateNewUser implements CreatesNewUsers
             'department_id' => $input['department_id'],
             'password' => Hash::make($input['password']),
         ]);
+        $user->markEmailAsVerified();
 
         StaffProfile::create([
             'user_id' => $user->id,

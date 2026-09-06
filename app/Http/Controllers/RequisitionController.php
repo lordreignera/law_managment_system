@@ -74,6 +74,7 @@ class RequisitionController extends Controller
             'amount' => ['required', 'numeric', 'min:0'],
             'notes' => ['nullable', 'string', 'max:2000'],
             'attachment' => ['nullable', 'file', 'max:5120'],
+            'from' => ['nullable', 'string'],
         ]);
 
         $requisition = DB::transaction(function () use ($data, $request, $approvals) {
@@ -97,8 +98,11 @@ class RequisitionController extends Controller
             return $requisition;
         });
 
-        return redirect()
-            ->route('requisitions.show', $requisition)
+        $route = $request->input('from') === 'finance-dashboard'
+            ? route('finance.dashboard')
+            : route('requisitions.show', $requisition);
+
+        return redirect($route)
             ->with('status', 'Requisition '.$requisition->reference_no.' submitted for approval.');
     }
 

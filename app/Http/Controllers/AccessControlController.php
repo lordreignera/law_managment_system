@@ -126,6 +126,10 @@ class AccessControlController extends Controller
             'department_id' => $data['department_id'],
         ])->save();
 
+        if (! $user->hasVerifiedEmail()) {
+            $user->markEmailAsVerified();
+        }
+
         $user->syncRoles([$requestedRole]);
 
         $user->staffProfile()->updateOrCreate(

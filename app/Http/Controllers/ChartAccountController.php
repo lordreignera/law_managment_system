@@ -58,9 +58,11 @@ class ChartAccountController extends Controller
 
         $account = ChartAccount::create($data);
 
-        return redirect()
-            ->route('finance.chart-accounts.show', $account)
-            ->with('status', 'Chart account created.');
+        $route = $request->input('from') === 'finance-dashboard'
+            ? route('finance.dashboard')
+            : route('finance.chart-accounts.show', $account);
+
+        return redirect($route)->with('status', 'Chart account created.');
     }
 
     public function show(ChartAccount $chartAccount)

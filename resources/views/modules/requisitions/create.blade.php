@@ -4,20 +4,25 @@
 @section('page-title', 'New Requisition')
 
 @section('content')
+    @php($fromDashboard = request('from') === 'finance-dashboard')
+
     <section class="kfms-panel">
         <div class="kfms-panel-header">
             <div>
                 <h2>Raise Requisition</h2>
                 <span>Submit a funding or purchase requisition for approval.</span>
             </div>
-            <a class="kfms-link-btn" href="{{ route('requisitions.index') }}">
+            <a class="kfms-link-btn" href="{{ $fromDashboard ? route('finance.dashboard') : route('requisitions.index') }}">
                 <i class="mdi mdi-arrow-left"></i>
-                Back to Requisitions
+                {{ $fromDashboard ? 'Back to Finance Dashboard' : 'Back to Requisitions' }}
             </a>
         </div>
 
         <form class="kfms-form" method="POST" action="{{ route('requisitions.store') }}" enctype="multipart/form-data">
             @csrf
+            @if ($fromDashboard)
+                <input type="hidden" name="from" value="finance-dashboard">
+            @endif
 
             <div class="kfms-form-grid">
                 <label>

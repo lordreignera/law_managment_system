@@ -113,6 +113,7 @@ class AccessControlFlowTest extends TestCase
         $this->assertSame($correctedRole->name, $profile->requested_role);
         $this->assertSame($branch->id, $user->fresh()->branch_id);
         $this->assertSame($department->id, $user->fresh()->department_id);
+        $this->assertNotNull($user->fresh()->email_verified_at);
 
         Notification::assertSentTo($user, StaffAccountApproved::class);
     }
@@ -159,7 +160,6 @@ class AccessControlFlowTest extends TestCase
                 'email' => 'finance-user@example.com',
                 'password' => 'temporary123',
                 'password_confirmation' => 'temporary123',
-                'staff_no' => 'AC-001',
                 'phone' => '+256 700 555666',
                 'job_title' => 'Accountant',
                 'branch_id' => $branch->id,
@@ -180,6 +180,7 @@ class AccessControlFlowTest extends TestCase
         $this->assertSame($department->id, $created->department_id);
         $this->assertSame('active', $created->staffProfile?->employment_status);
         $this->assertSame($newUserRole->name, $created->staffProfile?->requested_role);
+        $this->assertMatchesRegularExpression('/^ST-KA-\d{5}$/', $created->staffProfile?->staff_no);
 
         Notification::assertSentTo($created, StaffAccountApproved::class, function (StaffAccountApproved $notification) use ($created) {
             $mail = $notification->toMail($created)->toArray();

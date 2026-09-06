@@ -30,6 +30,8 @@ class DashboardRenderTest extends TestCase
             'dashboard',
             'finance.dashboard',
             'finance.index',
+            'finance.invoices.create',
+            'finance.payments.create',
             'finance.chart-accounts.index',
             'messages.index',
             'requisitions.index',
@@ -68,7 +70,9 @@ class DashboardRenderTest extends TestCase
             ->assertOk()
             ->assertSee('Finance control room')
             ->assertSee('Track spending, invoices, collections, and ledger movement.')
-            ->assertSee('href="'.route('requisitions.index', ['status' => 'submitted']).'"', false)
+            ->assertSee('href="'.e(route('requisitions.index', ['status' => 'submitted', 'from' => 'finance-dashboard'])).'"', false)
+            ->assertSee('Add Invoice')
+            ->assertSee('Record Payment')
             ->assertSee('New Requisition')
             ->assertSee('Recent Invoices')
             ->assertSee('Requisitions Awaiting Approval')

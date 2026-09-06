@@ -4,20 +4,25 @@
 @section('page-title', 'New Petty Cash Transaction')
 
 @section('content')
+    @php($fromDashboard = request('from') === 'finance-dashboard')
+
     <section class="kfms-panel">
         <div class="kfms-panel-header">
             <div>
                 <h2>Petty Cash Transaction</h2>
                 <span>Current balance: {{ number_format($balance, 2) }}</span>
             </div>
-            <a class="kfms-link-btn" href="{{ route('petty-cash.index') }}">
+            <a class="kfms-link-btn" href="{{ $fromDashboard ? route('finance.dashboard') : route('petty-cash.index') }}">
                 <i class="mdi mdi-arrow-left"></i>
-                Back to Petty Cash
+                {{ $fromDashboard ? 'Back to Finance Dashboard' : 'Back to Petty Cash' }}
             </a>
         </div>
 
         <form class="kfms-form" method="POST" action="{{ route('petty-cash.store') }}">
             @csrf
+            @if ($fromDashboard)
+                <input type="hidden" name="from" value="finance-dashboard">
+            @endif
 
             <div class="kfms-form-grid">
                 <label>

@@ -70,6 +70,7 @@ class ExpenseController extends Controller
             'spent_on' => ['required', 'date'],
             'notes' => ['nullable', 'string', 'max:2000'],
             'attachment' => ['nullable', 'file', 'max:5120'],
+            'from' => ['nullable', 'string'],
         ]);
 
         $expense = DB::transaction(function () use ($data, $request) {
@@ -95,8 +96,11 @@ class ExpenseController extends Controller
             return $expense;
         });
 
-        return redirect()
-            ->route('expenses.show', $expense)
+        $route = $request->input('from') === 'finance-dashboard'
+            ? route('finance.dashboard')
+            : route('expenses.show', $expense);
+
+        return redirect($route)
             ->with('status', 'Expense '.$expense->reference_no.' recorded.');
     }
 

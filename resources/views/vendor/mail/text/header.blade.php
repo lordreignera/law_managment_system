@@ -1,0 +1,1 @@
+{{ \App\Support\Branding::companyName() }}

@@ -35,4 +35,9 @@ class Invoice extends Model
     {
         return $this->belongsTo(Matter::class);
     }
+
+    public function payments()
+    {
+        return $this->hasMany(InvoicePayment::class)->latest('paid_on');
+    }
 }

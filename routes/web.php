@@ -224,6 +224,10 @@ Route::middleware([
         Route::patch('/land-titles/{landTitle}/return', [LandTitleController::class, 'returnSecurity'])->name('land-titles.return');
         Route::delete('/land-titles/{landTitle}', [LandTitleController::class, 'destroy'])->name('land-titles.destroy');
         Route::get('/finance/dashboard', [FinanceController::class, 'dashboard'])->name('finance.dashboard');
+        Route::get('/finance/invoices/create', [FinanceController::class, 'createInvoice'])->name('finance.invoices.create');
+        Route::post('/finance/invoices', [FinanceController::class, 'storeInvoice'])->name('finance.invoices.store');
+        Route::get('/finance/payments/create', [FinanceController::class, 'createPayment'])->name('finance.payments.create');
+        Route::post('/finance/payments', [FinanceController::class, 'storePayment'])->name('finance.payments.store');
         Route::get('/finance/invoices/{invoice}/documents/{type}', [InvoiceDocumentController::class, 'show'])
             ->whereIn('type', ['invoice', 'fee-note'])
             ->name('finance.invoices.documents.show');

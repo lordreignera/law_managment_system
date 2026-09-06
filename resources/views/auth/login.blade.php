@@ -24,7 +24,9 @@
                     @endif
 
                     @session('status')
-                        <div class="kca-alert">{{ $value }}</div>
+                        @unless (session('approval_pending'))
+                            <div class="kca-alert">{{ $value }}</div>
+                        @endunless
                     @endsession
 
                     <form method="POST" action="{{ route('login') }}">
@@ -91,4 +93,22 @@
             </section>
         </section>
     </main>
+
+    @if (session('approval_pending'))
+        <div class="kca-auth-modal" data-auth-modal role="dialog" aria-modal="true" aria-labelledby="pending-approval-title">
+            <section class="kca-auth-modal-card">
+                <button class="kca-auth-modal-close" type="button" data-auth-modal-close aria-label="Close">
+                    <i class="mdi mdi-close"></i>
+                </button>
+                <span class="kca-auth-modal-icon">
+                    <i class="mdi mdi-clock-check-outline"></i>
+                </span>
+                <h2 id="pending-approval-title">Access Approval Pending</h2>
+                <p>{{ session('status') }}</p>
+                <button class="kca-primary-button" type="button" data-auth-modal-close>
+                    I Understand
+                </button>
+            </section>
+        </div>
+    @endif
 </x-guest-layout>

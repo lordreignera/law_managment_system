@@ -4,6 +4,8 @@
 @section('page-title', 'Requisitions')
 
 @section('content')
+    @php($fromDashboard = request('from') === 'finance-dashboard')
+
     <div class="kfms-stat-grid">
         @foreach ($summary as $label => $value)
             <section class="kfms-card">
@@ -19,10 +21,18 @@
                 <h2>{{ $canApprove ? 'Requisitions (Finance Review)' : 'My Requisitions' }}</h2>
                 <span>{{ $requisitions->total() }} records</span>
             </div>
-            <a class="kfms-btn" href="{{ route('requisitions.create') }}">
-                <i class="mdi mdi-plus"></i>
-                New Requisition
-            </a>
+            <div class="kfms-toolbar-actions">
+                @if ($fromDashboard)
+                    <a class="kfms-link-btn" href="{{ route('finance.dashboard') }}">
+                        <i class="mdi mdi-arrow-left"></i>
+                        Back to Finance Dashboard
+                    </a>
+                @endif
+                <a class="kfms-btn" href="{{ route('requisitions.create', ['from' => $fromDashboard ? 'finance-dashboard' : null]) }}">
+                    <i class="mdi mdi-plus"></i>
+                    New Requisition
+                </a>
+            </div>
         </div>
 
         @if (session('status'))
@@ -30,6 +40,9 @@
         @endif
 
         <form class="kfms-table-toolbar" method="GET" action="{{ route('requisitions.index') }}">
+            @if ($fromDashboard)
+                <input type="hidden" name="from" value="finance-dashboard">
+            @endif
             <label class="kfms-search-box">
                 <i class="mdi mdi-magnify"></i>
                 <input type="search" name="search" value="{{ $filters['search'] ?? '' }}" placeholder="Search reference, purpose or staff">
@@ -54,7 +67,7 @@
             </label>
             <div class="kfms-toolbar-actions">
                 <button class="kfms-link-btn" type="submit">Apply Filters</button>
-                <a class="kfms-link-btn" href="{{ route('requisitions.index') }}">Reset</a>
+                <a class="kfms-link-btn" href="{{ route('requisitions.index', ['from' => $fromDashboard ? 'finance-dashboard' : null]) }}">Reset</a>
             </div>
         </form>
 

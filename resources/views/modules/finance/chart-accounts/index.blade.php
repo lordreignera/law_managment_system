@@ -4,6 +4,8 @@
 @section('page-title', 'Chart of Accounts')
 
 @section('content')
+    @php($fromDashboard = request('from') === 'finance-dashboard')
+
     <div class="kfms-stat-grid">
         @foreach ($summary as $label => $value)
             <section class="kfms-card">
@@ -20,14 +22,20 @@
                 <span>{{ $accounts->total() }} accounts from the finance register</span>
             </div>
             <div class="kfms-toolbar-actions">
+                @if ($fromDashboard)
+                    <a class="kfms-link-btn" href="{{ route('finance.dashboard') }}">
+                        <i class="mdi mdi-arrow-left"></i>
+                        Back to Finance Dashboard
+                    </a>
+                @endif
                 @can('finance.chart-accounts.export')
-                    <a class="kfms-link-btn kfms-link-btn-success" href="{{ route('finance.chart-accounts.export', $filters) }}">
+                    <a class="kfms-link-btn kfms-link-btn-success" href="{{ route('finance.chart-accounts.export', $filters + ['from' => $fromDashboard ? 'finance-dashboard' : null]) }}">
                         <i class="mdi mdi-microsoft-excel"></i>
                         Export
                     </a>
                 @endcan
                 @can('finance.chart-accounts.create')
-                    <a class="kfms-btn" href="{{ route('finance.chart-accounts.create') }}">
+                    <a class="kfms-btn" href="{{ route('finance.chart-accounts.create', ['from' => $fromDashboard ? 'finance-dashboard' : null]) }}">
                         <i class="mdi mdi-plus"></i>
                         Add Account
                     </a>
@@ -44,6 +52,9 @@
         @endif
 
         <form class="kfms-table-toolbar" method="GET" action="{{ route('finance.chart-accounts.index') }}">
+            @if ($fromDashboard)
+                <input type="hidden" name="from" value="finance-dashboard">
+            @endif
             <label class="kfms-search-box">
                 <i class="mdi mdi-magnify"></i>
                 <input type="search" name="search" value="{{ $filters['search'] ?? '' }}" placeholder="Search account no, name, class or parent">
@@ -84,7 +95,7 @@
             </label>
             <div class="kfms-toolbar-actions">
                 <button class="kfms-link-btn" type="submit">Apply Filters</button>
-                <a class="kfms-link-btn" href="{{ route('finance.chart-accounts.index') }}">Reset</a>
+                <a class="kfms-link-btn" href="{{ route('finance.chart-accounts.index', ['from' => $fromDashboard ? 'finance-dashboard' : null]) }}">Reset</a>
             </div>
         </form>
 

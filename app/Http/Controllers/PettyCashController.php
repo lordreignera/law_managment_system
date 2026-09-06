@@ -60,6 +60,7 @@ class PettyCashController extends Controller
             'amount' => ['required', 'numeric', 'min:0.01'],
             'transacted_on' => ['required', 'date'],
             'notes' => ['nullable', 'string', 'max:2000'],
+            'from' => ['nullable', 'string'],
         ]);
 
         if ($data['type'] === 'disbursement' && $data['amount'] > PettyCashTransaction::balance()) {
@@ -81,7 +82,7 @@ class PettyCashController extends Controller
         ]);
 
         return redirect()
-            ->route('petty-cash.index')
+            ->route($request->input('from') === 'finance-dashboard' ? 'finance.dashboard' : 'petty-cash.index')
             ->with('status', 'Petty cash '.$transaction->typeLabel().' '.$transaction->reference_no.' recorded.');
     }
 }

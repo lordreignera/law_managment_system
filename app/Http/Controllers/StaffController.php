@@ -68,6 +68,7 @@ class StaffController extends Controller
             'departments' => Department::orderBy('name')->get(),
             'roles' => $this->assignableRoles(),
             'statuses' => $this->statuses(),
+            'nextStaffNo' => StaffProfile::nextStaffNumber(),
             'formContext' => [
                 'title' => $isAccessControlFlow ? 'Add User' : 'Register Staff',
                 'heading' => $isAccessControlFlow ? 'Add User' : 'New Staff Member',
@@ -88,7 +89,6 @@ class StaffController extends Controller
             'name' => ['required', 'string', 'max:191'],
             'email' => ['required', 'email', 'max:191', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
-            'staff_no' => ['nullable', 'string', 'max:60', 'unique:staff_profiles,staff_no'],
             'phone' => ['required', 'string', 'max:60'],
             'job_title' => ['required', 'string', 'max:191'],
             'branch_id' => ['required', 'exists:branches,id'],
@@ -114,7 +114,6 @@ class StaffController extends Controller
 
         StaffProfile::create([
             'user_id' => $staff->id,
-            'staff_no' => $data['staff_no'] ?? null,
             'phone' => $data['phone'],
             'job_title' => $data['job_title'],
             'branch_id' => $data['branch_id'],
@@ -156,6 +155,7 @@ class StaffController extends Controller
             'departments' => Department::orderBy('name')->get(),
             'roles' => $this->assignableRoles(),
             'statuses' => $this->statuses(),
+            'nextStaffNo' => $staff->staffProfile?->staff_no ?: StaffProfile::nextStaffNumber(),
         ]);
     }
 
@@ -166,7 +166,6 @@ class StaffController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:191'],
             'email' => ['required', 'email', 'max:191', Rule::unique('users', 'email')->ignore($staff->id)],
-            'staff_no' => ['nullable', 'string', 'max:60', Rule::unique('staff_profiles', 'staff_no')->ignore($profile->id)],
             'phone' => ['nullable', 'string', 'max:60'],
             'job_title' => ['nullable', 'string', 'max:191'],
             'branch_id' => ['nullable', 'exists:branches,id'],
@@ -207,7 +206,7 @@ class StaffController extends Controller
         StaffProfile::updateOrCreate(
             ['user_id' => $staff->id],
             [
-                'staff_no' => $data['staff_no'] ?? null,
+                'staff_no' => $profile->staff_no ?: StaffProfile::nextStaffNumber(),
                 'phone' => $data['phone'] ?? null,
                 'job_title' => $data['job_title'] ?? null,
                 'branch_id' => $data['branch_id'] ?? null,

@@ -18,7 +18,7 @@ class CompanySetting extends Model
             'short_name' => 'KFMS',
             'initials' => 'K',
             'logo_path' => 'admin/assets/images/Kali Logo 2.png',
-            'tagline' => 'Firm Management System',
+            'tagline' => 'Translating Visions into Reality',
             'login_heading' => '',
             'login_subheading' => 'Manage matters, recoveries, securities, finance, staff, and approvals from one workspace.',
             'primary_color' => '#050505',

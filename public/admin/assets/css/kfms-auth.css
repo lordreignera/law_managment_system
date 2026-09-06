@@ -676,6 +676,78 @@ body.kfms-auth-body {
     padding: 11px 13px;
 }
 
+.kca-auth-modal {
+    align-items: center;
+    background: rgba(7, 20, 38, 0.45);
+    display: flex;
+    inset: 0;
+    justify-content: center;
+    padding: 20px;
+    position: fixed;
+    z-index: 60;
+}
+
+.kca-auth-modal.is-hidden {
+    display: none;
+}
+
+.kca-auth-modal-card {
+    background: #fff;
+    border: 1px solid #dbe6f1;
+    border-radius: 8px;
+    box-shadow: 0 24px 60px rgba(7, 20, 38, 0.22);
+    color: #071426;
+    max-width: 430px;
+    padding: 26px;
+    position: relative;
+    text-align: center;
+    width: 100%;
+}
+
+.kca-auth-modal-close {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    color: #66758a;
+    cursor: pointer;
+    display: inline-flex;
+    font-size: 20px;
+    height: 34px;
+    justify-content: center;
+    position: absolute;
+    right: 12px;
+    top: 12px;
+    width: 34px;
+}
+
+.kca-auth-modal-icon {
+    align-items: center;
+    background: #fff7e6;
+    border: 1px solid #f2d49a;
+    border-radius: 50%;
+    color: #b77908;
+    display: inline-flex;
+    font-size: 26px;
+    height: 54px;
+    justify-content: center;
+    margin-bottom: 14px;
+    width: 54px;
+}
+
+.kca-auth-modal h2 {
+    color: #071426;
+    font-size: 20px;
+    font-weight: 900;
+    margin: 0 0 8px;
+}
+
+.kca-auth-modal p {
+    color: #56667d;
+    font-size: 14px;
+    line-height: 1.5;
+    margin: 0 0 18px;
+}
+
 .kca-login-support {
     align-items: center;
     border-top: 1px solid #e8edf4;

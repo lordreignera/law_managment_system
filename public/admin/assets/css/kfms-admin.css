@@ -5332,24 +5332,29 @@ a.kfms-calendar-date:hover {
 }
 
 .kfms-finance-workflow-buttons {
+    align-items: stretch;
     display: grid;
-    gap: 8px;
-    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 10px;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
 }
 
 .kfms-finance-workflow-button {
     align-items: center;
-    background: #fff;
+    background: #f8fbff;
     border: 1px solid #dbe7f3;
     border-radius: 8px;
     color: #071426;
+    cursor: pointer;
     display: grid;
-    gap: 10px;
+    font: inherit;
+    gap: 9px;
     grid-template-columns: auto minmax(0, 1fr) auto;
-    min-height: 62px;
-    padding: 10px 12px;
+    min-height: 48px;
+    padding: 8px 10px;
+    text-align: left;
     text-decoration: none;
     transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+    width: 100%;
 }
 
 .kfms-finance-workflow-button:hover {
@@ -5371,12 +5376,12 @@ a.kfms-calendar-date:hover {
     border-radius: 7px;
     color: #fff;
     display: inline-flex;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 850;
     gap: 6px;
-    height: 36px;
+    height: 32px;
     justify-content: center;
-    width: 44px;
+    width: 42px;
 }
 
 .kfms-finance-workflow-button > span i {
@@ -5385,31 +5390,56 @@ a.kfms-calendar-date:hover {
 
 .kfms-finance-workflow-button strong {
     display: block;
-    font-size: 13px;
+    font-size: 12.5px;
     font-weight: 850;
     line-height: 1.25;
-}
-
-.kfms-finance-workflow-button p {
-    color: #5f6f85;
-    font-size: 11.5px;
-    line-height: 1.35;
-    margin: 3px 0 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .kfms-finance-workflow-button em {
     align-items: center;
-    background: #f8fbff;
+    background: #fff;
     border: 1px solid #dbe7f3;
     border-radius: 7px;
     color: #071426;
     display: inline-flex;
-    font-size: 18px;
+    font-size: 15px;
     font-style: normal;
     font-weight: 900;
     justify-content: center;
-    min-width: 40px;
-    padding: 7px;
+    min-width: 36px;
+    padding: 6px;
+}
+
+.kfms-finance-overview-panel,
+.kfms-finance-form-panel {
+    margin-bottom: 18px;
+}
+
+.kfms-form-summary {
+    background: #f8fbff;
+    border: 1px solid #dbe7f3;
+    border-radius: 8px;
+    display: grid;
+    gap: 8px 16px;
+    grid-template-columns: minmax(160px, 1fr) auto;
+    padding: 12px 14px;
+}
+
+.kfms-form-summary span {
+    color: #607087;
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.kfms-form-summary strong {
+    color: #071426;
+    font-size: 16px;
+    font-weight: 900;
+    text-align: right;
 }
 
 .kfms-dashboard-chart-panel,
@@ -5638,6 +5668,14 @@ a.kfms-calendar-date:hover {
     .kfms-finance-workflow-button em {
         grid-column: 2;
         justify-self: start;
+    }
+
+    .kfms-form-summary {
+        grid-template-columns: 1fr;
+    }
+
+    .kfms-form-summary strong {
+        text-align: left;
     }
 
     .kfms-bar-row,

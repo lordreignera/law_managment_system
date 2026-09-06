@@ -73,8 +73,8 @@
                 <div class="kfms-form-grid">
                     <label>
                         <span>Staff Number</span>
-                        <input type="text" name="staff_no" value="{{ old('staff_no', $staff->staffProfile?->staff_no) }}">
-                        @error('staff_no')<small>{{ $message }}</small>@enderror
+                        <input type="text" value="{{ $nextStaffNo }}" readonly disabled>
+                        <small>{{ $staff->staffProfile?->staff_no ? 'Staff numbers are assigned by the system.' : 'A staff number will be assigned when you save.' }}</small>
                     </label>
 
                     <label>

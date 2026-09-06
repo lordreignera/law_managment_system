@@ -21,3 +21,17 @@ document.addEventListener('click', function (event) {
         icon.classList.toggle('mdi-eye-off-outline', ! passwordIsVisible);
     }
 });
+
+document.addEventListener('click', function (event) {
+    const close = event.target.closest('[data-auth-modal-close]');
+
+    if (! close) {
+        return;
+    }
+
+    const modal = close.closest('[data-auth-modal]');
+
+    if (modal) {
+        modal.classList.add('is-hidden');
+    }
+});

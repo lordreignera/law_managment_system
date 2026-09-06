@@ -95,7 +95,6 @@ class HrDashboardTest extends TestCase
             ->put(route('staff.update', $staff), [
                 'name' => 'Norah Nakamatte',
                 'email' => 'norah@example.test',
-                'staff_no' => 'KCA-001',
                 'phone' => '+256700000001',
                 'job_title' => 'HR Officer',
                 'branch_id' => $branch->id,
@@ -113,9 +112,12 @@ class HrDashboardTest extends TestCase
             'department_id' => $department->id,
         ]);
 
+        $staff->refresh();
+
+        $this->assertMatchesRegularExpression('/^ST-KA-\d{5}$/', $staff->staffProfile?->staff_no);
         $this->assertDatabaseHas('staff_profiles', [
             'user_id' => $staff->id,
-            'staff_no' => 'KCA-001',
+            'staff_no' => $staff->staffProfile?->staff_no,
             'job_title' => 'HR Officer',
             'employment_status' => 'active',
         ]);
@@ -145,7 +147,6 @@ class HrDashboardTest extends TestCase
                 'email' => 'advocate@example.test',
                 'password' => 'password123',
                 'password_confirmation' => 'password123',
-                'staff_no' => 'KCA-002',
                 'phone' => '+256700000002',
                 'job_title' => 'Advocate',
                 'role' => 'Advocate',
@@ -160,9 +161,10 @@ class HrDashboardTest extends TestCase
         $response->assertRedirect(route('staff.show', $staff, absolute: false));
         $this->assertTrue($staff->hasRole('Advocate'));
         $this->assertNotNull($staff->email_verified_at);
+        $this->assertMatchesRegularExpression('/^ST-KA-\d{5}$/', $staff->staffProfile?->staff_no);
         $this->assertDatabaseHas('staff_profiles', [
             'user_id' => $staff->id,
-            'staff_no' => 'KCA-002',
+            'staff_no' => $staff->staffProfile?->staff_no,
             'phone' => '+256700000002',
             'job_title' => 'Advocate',
             'employment_status' => 'active',
@@ -198,7 +200,6 @@ class HrDashboardTest extends TestCase
             ->put(route('staff.update', $staff), [
                 'name' => $staff->name,
                 'email' => $staff->email,
-                'staff_no' => 'KCA-003',
                 'phone' => '+256700000004',
                 'job_title' => 'Accountant',
                 'branch_id' => $branch->id,

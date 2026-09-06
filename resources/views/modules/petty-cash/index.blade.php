@@ -4,6 +4,8 @@
 @section('page-title', 'Petty Cash')
 
 @section('content')
+    @php($fromDashboard = request('from') === 'finance-dashboard')
+
     <div class="kfms-stat-grid">
         @foreach ($summary as $label => $value)
             <section class="kfms-card">
@@ -19,10 +21,18 @@
                 <h2>Petty Cash Book</h2>
                 <span>{{ $transactions->total() }} transactions</span>
             </div>
-            <a class="kfms-btn" href="{{ route('petty-cash.create') }}">
-                <i class="mdi mdi-plus"></i>
-                New Transaction
-            </a>
+            <div class="kfms-toolbar-actions">
+                @if ($fromDashboard)
+                    <a class="kfms-link-btn" href="{{ route('finance.dashboard') }}">
+                        <i class="mdi mdi-arrow-left"></i>
+                        Back to Finance Dashboard
+                    </a>
+                @endif
+                <a class="kfms-btn" href="{{ route('petty-cash.create', ['from' => $fromDashboard ? 'finance-dashboard' : null]) }}">
+                    <i class="mdi mdi-plus"></i>
+                    New Transaction
+                </a>
+            </div>
         </div>
 
         @if (session('status'))
@@ -30,6 +40,9 @@
         @endif
 
         <form class="kfms-table-toolbar" method="GET" action="{{ route('petty-cash.index') }}">
+            @if ($fromDashboard)
+                <input type="hidden" name="from" value="finance-dashboard">
+            @endif
             <label class="kfms-search-box">
                 <i class="mdi mdi-magnify"></i>
                 <input type="search" name="search" value="{{ $filters['search'] ?? '' }}" placeholder="Search reference, description or payee">
@@ -45,7 +58,7 @@
             </label>
             <div class="kfms-toolbar-actions">
                 <button class="kfms-link-btn" type="submit">Apply Filters</button>
-                <a class="kfms-link-btn" href="{{ route('petty-cash.index') }}">Reset</a>
+                <a class="kfms-link-btn" href="{{ route('petty-cash.index', ['from' => $fromDashboard ? 'finance-dashboard' : null]) }}">Reset</a>
             </div>
         </form>
 

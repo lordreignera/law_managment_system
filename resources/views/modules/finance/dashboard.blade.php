@@ -11,28 +11,34 @@
             <p>Finance teams monitor requisitions, expenses, petty cash, invoice balances, and chart-of-account activity from one place.</p>
         </div>
         <div class="kfms-dashboard-hero-actions">
+            @can('finance.invoices.create')
+                <a class="kfms-btn" href="{{ route('finance.invoices.create', ['from' => 'finance-dashboard']) }}">
+                    <i class="mdi mdi-file-document-plus-outline"></i>
+                    Add Invoice
+                </a>
+            @endcan
+            @can('finance.payments.create')
+                <button class="kfms-link-btn" type="button" data-bs-toggle="modal" data-bs-target="#finance-payment-modal">
+                    <i class="mdi mdi-cash-check"></i>
+                    Record Payment
+                </button>
+            @endcan
             @can('finance.index')
-                <a class="kfms-btn" href="{{ route('finance.index') }}">
+                <a class="kfms-link-btn" href="{{ route('finance.index', ['from' => 'finance-dashboard']) }}">
                     <i class="mdi mdi-file-document-outline"></i>
                     Finance Overview
                 </a>
             @endcan
             @can('requisitions.create')
-                <a class="kfms-link-btn" href="{{ route('requisitions.create') }}">
+                <a class="kfms-link-btn" href="{{ route('requisitions.create', ['from' => 'finance-dashboard']) }}">
                     <i class="mdi mdi-clipboard-plus-outline"></i>
                     New Requisition
                 </a>
             @endcan
             @can('expenses.create')
-                <a class="kfms-link-btn" href="{{ route('expenses.create') }}">
+                <a class="kfms-link-btn" href="{{ route('expenses.create', ['from' => 'finance-dashboard']) }}">
                     <i class="mdi mdi-cash-minus"></i>
                     Record Expense
-                </a>
-            @endcan
-            @can('petty-cash.index')
-                <a class="kfms-link-btn" href="{{ route('petty-cash.index') }}">
-                    <i class="mdi mdi-wallet-outline"></i>
-                    Petty Cash
                 </a>
             @endcan
         </div>
@@ -68,14 +74,20 @@
                 <span>From spending requests to invoicing and collection</span>
             </div>
             <div class="kfms-toolbar-actions">
+                @can('petty-cash.index')
+                    <a class="kfms-link-btn" href="{{ route('petty-cash.index', ['from' => 'finance-dashboard']) }}">
+                        <i class="mdi mdi-wallet-outline"></i>
+                        Petty Cash
+                    </a>
+                @endcan
                 @can('finance.chart-accounts.index')
-                    <a class="kfms-link-btn kfms-link-btn-info" href="{{ route('finance.chart-accounts.index') }}">
+                    <a class="kfms-link-btn kfms-link-btn-info" href="{{ route('finance.chart-accounts.index', ['from' => 'finance-dashboard']) }}">
                         <i class="mdi mdi-format-list-numbered"></i>
                         Chart of Accounts
                     </a>
                 @endcan
                 @can('finance.index')
-                    <a class="kfms-btn" href="{{ route('finance.index') }}">
+                    <a class="kfms-link-btn" href="{{ route('finance.index', ['from' => 'finance-dashboard']) }}">
                         <i class="mdi mdi-file-document-outline"></i>
                         Finance Overview
                     </a>
@@ -87,20 +99,28 @@
             @foreach ($flow as $item)
                 @php($canOpen = $item['route'] && (! $item['permission'] || auth()->user()?->can($item['permission'])))
                 @if ($canOpen)
-                    <a class="kfms-finance-workflow-button" href="{{ $item['route'] }}">
-                        <span><i class="mdi {{ $item['icon'] }}"></i>{{ $loop->iteration }}</span>
-                        <div>
-                            <strong>{{ $item['stage'] }}</strong>
-                            <p>{{ $item['description'] }}</p>
-                        </div>
-                        <em>{{ number_format($item['count']) }}</em>
-                    </a>
+                    @if (! empty($item['modal']))
+                        <button class="kfms-finance-workflow-button" type="button" data-bs-toggle="modal" data-bs-target="#{{ $item['modal'] }}" title="{{ $item['description'] }}">
+                            <span><i class="mdi {{ $item['icon'] }}"></i>{{ $loop->iteration }}</span>
+                            <div>
+                                <strong>{{ $item['stage'] }}</strong>
+                            </div>
+                            <em>{{ number_format($item['count']) }}</em>
+                        </button>
+                    @else
+                        <a class="kfms-finance-workflow-button" href="{{ $item['route'] }}" title="{{ $item['description'] }}">
+                            <span><i class="mdi {{ $item['icon'] }}"></i>{{ $loop->iteration }}</span>
+                            <div>
+                                <strong>{{ $item['stage'] }}</strong>
+                            </div>
+                            <em>{{ number_format($item['count']) }}</em>
+                        </a>
+                    @endif
                 @else
-                    <section class="kfms-finance-workflow-button is-disabled">
+                    <section class="kfms-finance-workflow-button is-disabled" title="{{ $item['description'] }}">
                         <span><i class="mdi {{ $item['icon'] }}"></i>{{ $loop->iteration }}</span>
                         <div>
                             <strong>{{ $item['stage'] }}</strong>
-                            <p>{{ $item['description'] }}</p>
                         </div>
                         <em>{{ number_format($item['count']) }}</em>
                     </section>
@@ -117,7 +137,7 @@
                     <span>Latest billing activity</span>
                 </div>
                 @can('finance.index')
-                    <a class="kfms-link-btn" href="{{ route('finance.index') }}">View all <i class="mdi mdi-arrow-right"></i></a>
+                    <a class="kfms-link-btn" href="{{ route('finance.index', ['from' => 'finance-dashboard']) }}">View all <i class="mdi mdi-arrow-right"></i></a>
                 @endcan
             </div>
             <div class="kfms-table-wrap">
@@ -155,7 +175,7 @@
                     <span>Spending requests pending a finance decision</span>
                 </div>
                 @can('requisitions.index')
-                    <a class="kfms-link-btn" href="{{ route('requisitions.index', ['status' => 'submitted']) }}">View all <i class="mdi mdi-arrow-right"></i></a>
+                    <a class="kfms-link-btn" href="{{ route('requisitions.index', ['status' => 'submitted', 'from' => 'finance-dashboard']) }}">View all <i class="mdi mdi-arrow-right"></i></a>
                 @endcan
             </div>
             <div class="kfms-table-wrap">
@@ -187,7 +207,7 @@
                 <span>Latest recorded spending</span>
             </div>
             @can('expenses.index')
-                <a class="kfms-link-btn" href="{{ route('expenses.index') }}">View all <i class="mdi mdi-arrow-right"></i></a>
+                <a class="kfms-link-btn" href="{{ route('expenses.index', ['from' => 'finance-dashboard']) }}">View all <i class="mdi mdi-arrow-right"></i></a>
             @endcan
         </div>
         <div class="kfms-table-wrap">
@@ -210,4 +230,30 @@
             </table>
         </div>
     </section>
+
+    @can('finance.payments.create')
+        @push('modals')
+            @include('modules.finance.payments.partials.modal', [
+                'modalId' => 'finance-payment-modal',
+                'openInvoices' => $openInvoices,
+                'paymentAccounts' => $paymentAccounts,
+                'selectedInvoice' => $selectedPaymentInvoice,
+                'redirectFrom' => 'finance-dashboard',
+            ])
+        @endpush
+
+        @if (request('payment_modal'))
+            @push('scripts')
+                <script>
+                    document.addEventListener('DOMContentLoaded', () => {
+                        const modal = document.getElementById('finance-payment-modal');
+
+                        if (modal && window.bootstrap?.Modal) {
+                            window.bootstrap.Modal.getOrCreateInstance(modal).show();
+                        }
+                    });
+                </script>
+            @endpush
+        @endif
+    @endcan
 @endsection
