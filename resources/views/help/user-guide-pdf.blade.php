@@ -102,6 +102,19 @@
             padding: 8px;
         }
 
+        .workspace-list {
+            margin-bottom: 18px;
+        }
+
+        .workspace-list span {
+            border: 1px solid #d8e2ef;
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 800;
+            margin: 0 6px 7px 0;
+            padding: 7px 9px;
+        }
+
         ol {
             margin: 0;
             padding-left: 20px;
@@ -142,28 +155,26 @@
     <p>{{ $guideSubtitle }}</p>
 
     <h2>Available Workspaces</h2>
-    @foreach ($guideModules as $module)
-        <section class="module">
-            <h3>{{ $module['title'] }}</h3>
-            <p>{{ $module['subtitle'] }}</p>
+    <div class="workspace-list">
+        @foreach ($guideModules as $module)
+            <span>{{ $module['title'] }}</span>
+        @endforeach
+    </div>
 
-            @if (! empty($module['screen']) && file_exists($module['screen']['image_path']))
-                <img src="{{ $module['screen']['image_path'] }}" alt="{{ $module['screen']['title'] }} screenshot">
-                <p>{{ $module['screen']['description'] }}</p>
-                <div class="stats">
-                    @foreach ($module['screen']['stats'] as $stat)
-                        <span>{{ $stat }}</span>
-                    @endforeach
-                </div>
-            @endif
-        </section>
-    @endforeach
-
-    <h2>Guideline Steps</h2>
+    <h2>How It Works</h2>
     @foreach ($guideSections as $section)
         <section class="module">
             <h3>{{ $section['title'] }}</h3>
             <p>{{ $section['subtitle'] }}</p>
+            @if (! empty($section['screen']) && file_exists($section['screen']['image_path']))
+                <img src="{{ $section['screen']['image_path'] }}" alt="{{ $section['screen']['title'] }} screenshot">
+                <p>{{ $section['screen']['description'] }}</p>
+                <div class="stats">
+                    @foreach ($section['screen']['stats'] as $stat)
+                        <span>{{ $stat }}</span>
+                    @endforeach
+                </div>
+            @endif
             <ol>
                 @foreach ($section['steps'] as $step)
                     <li>{{ $step }}</li>

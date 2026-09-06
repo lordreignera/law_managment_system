@@ -70,8 +70,12 @@ class UserGuideAccessTest extends TestCase
             ->assertOk()
             ->assertSee('Human Resources Guide')
             ->assertSee('Human Resources Flow')
-            ->assertSee('Dashboard Screenshots')
             ->assertSee('admin/assets/images/guides/hr-dashboard.svg')
+            ->assertSeeInOrder([
+                'Human Resources Flow',
+                'admin/assets/images/guides/hr-dashboard.svg',
+                'Use New Staff to create approved staff accounts from the dashboard.',
+            ])
             ->assertSee('Download PDF')
             ->assertSee('href="'.e(route('help.user-guide.download')).'"', false)
             ->assertSee('href="'.e(route('hr.dashboard')).'"', false)
@@ -107,9 +111,13 @@ class UserGuideAccessTest extends TestCase
             ->get(route('help.user-guide'))
             ->assertOk()
             ->assertSee('Matter Guide')
-            ->assertSee('Dashboard Screenshots')
             ->assertSee('Matter Dashboard')
             ->assertSee('admin/assets/images/guides/matter-dashboard.svg')
+            ->assertSeeInOrder([
+                'Matter Flow',
+                'admin/assets/images/guides/matter-dashboard.svg',
+                'Create a matter from the approved client or Matter Management.',
+            ])
             ->assertSee('Pipeline, active files, responsible teams, and recent matters.')
             ->assertSee('href="'.e(route('matters.dashboard')).'"', false)
             ->assertDontSee('Finance Flow');

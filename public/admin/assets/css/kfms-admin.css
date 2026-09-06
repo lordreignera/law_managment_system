@@ -3332,6 +3332,16 @@ body.kfms-template {
     padding: 14px;
 }
 
+.kfms-guide-section-shot {
+    background: #f8fbff;
+    border: 1px solid #dce6f2;
+    border-radius: 8px;
+    display: grid;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding: 14px;
+}
+
 .kfms-guide-preview-image {
     background: #ffffff;
     border: 1px solid #dce6f2;
@@ -3355,7 +3365,21 @@ body.kfms-template {
     margin: 0 0 4px;
 }
 
+.kfms-guide-section-shot h3 {
+    color: #061a32;
+    font-size: 16px;
+    font-weight: 900;
+    margin: 0 0 4px;
+}
+
 .kfms-guide-preview-card p {
+    color: #5c6b7f;
+    font-size: 13px;
+    line-height: 1.5;
+    margin: 0;
+}
+
+.kfms-guide-section-shot p {
     color: #5c6b7f;
     font-size: 13px;
     line-height: 1.5;

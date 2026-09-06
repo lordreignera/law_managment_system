@@ -33,46 +33,6 @@
         </div>
     </section>
 
-    @if ($guideModules->contains(fn (array $module) => ! empty($module['screen'])))
-        <section class="kfms-panel">
-            <div class="kfms-panel-header">
-                <div>
-                    <h2>Dashboard Screenshots</h2>
-                    <span>Visual reference for the workspace linked to your role.</span>
-                </div>
-            </div>
-            <div class="kfms-guide-preview-grid">
-                @foreach ($guideModules as $module)
-                    @continue(empty($module['screen']))
-                    <article class="kfms-guide-preview-card">
-                        <figure class="kfms-guide-preview-image">
-                            <img
-                                src="{{ asset($module['screen']['image']) }}"
-                                alt="{{ $module['screen']['title'] }} screenshot"
-                                loading="lazy"
-                            >
-                        </figure>
-                        <div>
-                            <h3>{{ $module['screen']['title'] }}</h3>
-                            <p>{{ $module['screen']['description'] }}</p>
-                        </div>
-                        <div class="kfms-guide-preview-kpis">
-                            @foreach ($module['screen']['stats'] as $stat)
-                                <span>{{ $stat }}</span>
-                            @endforeach
-                        </div>
-                        @if (isset($module['route']) && auth()->user()?->can($module['route_permission'] ?? $module['route']))
-                            <a class="kfms-link-btn" href="{{ route($module['route']) }}">
-                                Open {{ $module['screen']['title'] }}
-                                <i class="mdi mdi-arrow-right"></i>
-                            </a>
-                        @endif
-                    </article>
-                @endforeach
-            </div>
-        </section>
-    @endif
-
     @foreach ($guideSections as $section)
         <section class="kfms-panel" id="{{ $section['id'] }}">
             <div class="kfms-panel-header">
@@ -81,6 +41,32 @@
                     <span>{{ $section['subtitle'] }}</span>
                 </div>
             </div>
+            @if (! empty($section['screen']))
+                <div class="kfms-guide-section-shot">
+                    <figure class="kfms-guide-preview-image">
+                        <img
+                            src="{{ asset($section['screen']['image']) }}"
+                            alt="{{ $section['screen']['title'] }} screenshot"
+                            loading="lazy"
+                        >
+                    </figure>
+                    <div>
+                        <h3>{{ $section['screen']['title'] }}</h3>
+                        <p>{{ $section['screen']['description'] }}</p>
+                    </div>
+                    <div class="kfms-guide-preview-kpis">
+                        @foreach ($section['screen']['stats'] as $stat)
+                            <span>{{ $stat }}</span>
+                        @endforeach
+                    </div>
+                    @if (isset($section['route']) && auth()->user()?->can($section['route_permission'] ?? $section['route']))
+                        <a class="kfms-link-btn" href="{{ route($section['route']) }}">
+                            Open {{ $section['screen']['title'] }}
+                            <i class="mdi mdi-arrow-right"></i>
+                        </a>
+                    @endif
+                </div>
+            @endif
             <ol class="kfms-guide-list">
                 @foreach ($section['steps'] as $step)
                     <li>{{ $step }}</li>

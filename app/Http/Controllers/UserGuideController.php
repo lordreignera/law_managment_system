@@ -61,8 +61,14 @@ class UserGuideController extends Controller
     private function sectionsFor(Collection $modules): Collection
     {
         return $modules
-            ->pluck('sections')
-            ->flatten(1)
+            ->flatMap(function (array $module) {
+                return collect($module['sections'] ?? [])
+                    ->map(fn (array $section) => $section + [
+                        'screen' => $module['screen'] ?? null,
+                        'route' => $module['route'] ?? null,
+                        'route_permission' => $module['route_permission'] ?? null,
+                    ]);
+            })
             ->prepend($this->firstStepsSection())
             ->unique('id')
             ->values();
