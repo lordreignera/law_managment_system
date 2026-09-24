@@ -132,6 +132,25 @@
             </div>
 
             <div class="kfms-staff-form-section">
+                <div class="kfms-form-section-title">Leave Approval Routing</div>
+                <div class="kfms-form-grid">
+                    <label>
+                        <span>Department Supervisor</span>
+                        <select name="manager_id">
+                            <option value="">No supervisor assigned</option>
+                            @foreach ($managers as $manager)
+                                <option value="{{ $manager->id }}" @selected((string) old('manager_id', $user->manager_id) === (string) $manager->id)>
+                                    {{ $manager->name }}{{ $manager->department?->name ? ' - '.$manager->department->name : '' }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <small>Leave requests begin with this active department supervisor.</small>
+                        @error('manager_id')<small>{{ $message }}</small>@enderror
+                    </label>
+                </div>
+            </div>
+
+            <div class="kfms-staff-form-section">
                 <div class="kfms-form-section-title">Direct Permissions</div>
                 <div class="kfms-access-permission-grid" data-selection-group="direct_permissions">
                     @foreach ($permissionGroups as $label => $groupPermissions)

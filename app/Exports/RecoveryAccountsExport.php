@@ -12,9 +12,7 @@ use Maatwebsite\Excel\Concerns\WithTitle;
 
 class RecoveryAccountsExport implements FromQuery, WithHeadings, WithMapping, WithTitle
 {
-    public function __construct(private User $user, private array $filters = [])
-    {
-    }
+    public function __construct(private User $user, private array $filters = []) {}
 
     public function query()
     {
@@ -45,7 +43,7 @@ class RecoveryAccountsExport implements FromQuery, WithHeadings, WithMapping, Wi
             'Debtor',
             'Account Number',
             'Customer Number',
-            'Phone',
+            'Debtor Phone',
             'Email',
             'Employer',
             'Branch Name',

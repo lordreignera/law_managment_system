@@ -4,12 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Models\LeaveRequest;
 use App\Models\LeaveType;
+use App\Models\User;
+use App\Notifications\LeaveApprovalRequested;
+use App\Notifications\LeaveRequestStatusChanged;
 use App\Services\ApprovalService;
 use App\Support\MonthlyReferenceNumber;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class LeaveController extends Controller
 {
@@ -45,6 +48,18 @@ class LeaveController extends Controller
             'Cancelled' => (clone $scope)->where('status', 'cancelled')->count(),
         ];
 
+        $annualLeavePlan = null;
+
+        if (! $canApprove) {
+            $scheduledDays = LeaveRequest::annualScheduledDaysFor($request->user(), now()->year);
+            $annualLeavePlan = [
+                'year' => now()->year,
+                'scheduled_days' => $scheduledDays,
+                'required_days' => LeaveRequest::ANNUAL_LEAVE_DAYS,
+                'remaining_days' => max(0, LeaveRequest::ANNUAL_LEAVE_DAYS - $scheduledDays),
+            ];
+        }
+
         return view('modules.leave.index', [
             'leave' => $leave,
             'filters' => $request->only(['search', 'status', 'leave_type_id']),
@@ -52,6 +67,7 @@ class LeaveController extends Controller
             'leaveTypes' => LeaveType::orderBy('name')->get(),
             'canApprove' => $canApprove,
             'summary' => $summary,
+            'annualLeavePlan' => $annualLeavePlan,
         ]);
     }
 
@@ -73,9 +89,10 @@ class LeaveController extends Controller
             'attachment' => ['nullable', 'file', 'max:5120'],
         ]);
 
+        $approverIds = $this->approvalChain($request->user());
         $days = Carbon::parse($data['start_date'])->diffInDays(Carbon::parse($data['end_date'])) + 1;
 
-        $leave = DB::transaction(function () use ($data, $days, $request, $approvals) {
+        $leave = DB::transaction(function () use ($data, $days, $request, $approvals, $approverIds) {
             $leave = LeaveRequest::create([
                 'leave_no' => MonthlyReferenceNumber::make(LeaveRequest::class, 'leave_no', 'LV'),
                 'user_id' => $request->user()->id,
@@ -91,14 +108,16 @@ class LeaveController extends Controller
                 $leave->addAttachment($request->file('attachment'), ['category' => 'leave-support']);
             }
 
-            $approvals->submit($leave, $request->user());
+            $approvals->submit($leave, $request->user(), $approverIds);
 
             return $leave;
         });
 
+        $this->notifyCurrentApprover($leave->fresh(['approvals.approver', 'user', 'leaveType']));
+
         return redirect()
             ->route('leave.show', $leave)
-            ->with('status', 'Leave request '.$leave->leave_no.' submitted for approval.');
+            ->with('status', 'Leave request '.$leave->leave_no.' submitted to the department manager.');
     }
 
     public function show(Request $request, LeaveRequest $leave)
@@ -108,24 +127,85 @@ class LeaveController extends Controller
             403
         );
 
+        $leave->load(['user', 'leaveType', 'reviewer', 'attachments', 'approvals.approver']);
+
         return view('modules.leave.show', [
-            'leave' => $leave->load(['user', 'leaveType', 'reviewer', 'attachments', 'approvals.approver']),
-            'canApprove' => $request->user()->can('leave.approve'),
+            'leave' => $leave,
+            'canApprove' => $this->canActOnCurrentApproval($request->user(), $leave),
+            'currentApproval' => $leave->currentApproval(),
         ]);
+    }
+
+    public function rescheduleEdit(Request $request, LeaveRequest $leave)
+    {
+        abort_unless($leave->user_id === $request->user()->id, 403);
+        abort_unless($leave->status === 'rejected', 422, 'Only rejected requests can be rescheduled.');
+
+        return view('modules.leave.reschedule', [
+            'leave' => $leave->load('leaveType'),
+            'leaveTypes' => LeaveType::orderBy('name')->get(),
+        ]);
+    }
+
+    public function reschedule(Request $request, LeaveRequest $leave, ApprovalService $approvals)
+    {
+        abort_unless($leave->user_id === $request->user()->id, 403);
+        abort_unless($leave->status === 'rejected', 422, 'Only rejected requests can be rescheduled.');
+
+        $data = $request->validate([
+            'leave_type_id' => ['required', 'exists:leave_types,id'],
+            'start_date' => ['required', 'date'],
+            'end_date' => ['required', 'date', 'after_or_equal:start_date'],
+            'reason' => ['nullable', 'string', 'max:2000'],
+            'attachment' => ['nullable', 'file', 'max:5120'],
+        ]);
+
+        $approverIds = $this->approvalChain($request->user());
+        $days = Carbon::parse($data['start_date'])->diffInDays(Carbon::parse($data['end_date'])) + 1;
+
+        $leave = DB::transaction(function () use ($data, $days, $request, $leave, $approvals, $approverIds) {
+            $leave->update([
+                'leave_type_id' => $data['leave_type_id'],
+                'start_date' => $data['start_date'],
+                'end_date' => $data['end_date'],
+                'days' => $days,
+                'reason' => $data['reason'] ?? null,
+                'status' => 'submitted',
+                'resubmission_count' => $leave->resubmission_count + 1,
+                'resubmitted_at' => now(),
+                'reviewed_by' => null,
+                'reviewed_at' => null,
+                'review_notes' => null,
+            ]);
+
+            if ($request->hasFile('attachment')) {
+                $leave->addAttachment($request->file('attachment'), ['category' => 'leave-support']);
+            }
+
+            $approvals->submit($leave, $request->user(), $approverIds);
+
+            return $leave;
+        });
+
+        $this->notifyCurrentApprover($leave->fresh(['approvals.approver', 'user', 'leaveType']));
+
+        return redirect()
+            ->route('leave.show', $leave)
+            ->with('status', 'Leave request rescheduled and sent back to the department manager.');
     }
 
     public function approve(Request $request, LeaveRequest $leave, ApprovalService $approvals)
     {
         $this->decide($request, $leave, $approvals, 'approved');
 
-        return back()->with('status', 'Leave request approved.');
+        return back()->with('status', 'Leave approval recorded.');
     }
 
     public function reject(Request $request, LeaveRequest $leave, ApprovalService $approvals)
     {
         $this->decide($request, $leave, $approvals, 'rejected');
 
-        return back()->with('status', 'Leave request rejected.');
+        return back()->with('status', 'Leave request rejected. The employee can reschedule it.');
     }
 
     public function cancel(Request $request, LeaveRequest $leave)
@@ -148,18 +228,169 @@ class LeaveController extends Controller
         ]);
 
         $approval = $leave->currentApproval();
+        abort_unless($approval, 422, 'This request has no pending approval stage.');
+        abort_unless(
+            $approval->approver_id === null || $approval->approver_id === $request->user()->id,
+            403,
+            'This request is waiting for another reviewer.'
+        );
 
-        if ($approval) {
-            $decision === 'approved'
-                ? $approvals->approve($approval, $request->user(), $data['review_notes'] ?? null)
-                : $approvals->reject($approval, $request->user(), $data['review_notes'] ?? null);
+        $decision === 'approved'
+            ? $approvals->approve($approval, $request->user(), $data['review_notes'] ?? null)
+            : $approvals->reject($approval, $request->user(), $data['review_notes'] ?? null);
+
+        $leave->refresh();
+        $nextApproval = $leave->currentApproval();
+        $finalStatus = $decision === 'rejected'
+            ? 'rejected'
+            : ($nextApproval ? 'submitted' : 'approved');
+
+        $updates = ['status' => $finalStatus];
+
+        if ($decision === 'rejected' || ! $nextApproval) {
+            $updates += [
+                'reviewed_by' => $request->user()->id,
+                'reviewed_at' => now(),
+                'review_notes' => $data['review_notes'] ?? null,
+            ];
         }
 
-        $leave->update([
-            'status' => $decision,
-            'reviewed_by' => $request->user()->id,
-            'reviewed_at' => now(),
-            'review_notes' => $data['review_notes'] ?? null,
-        ]);
+        $leave->update($updates);
+        $leave->load(['user', 'leaveType']);
+
+        $leave->user?->notify(new LeaveRequestStatusChanged(
+            $leave,
+            $decision,
+            $nextApproval ? LeaveRequest::approvalStageLabel($nextApproval->level) : null,
+            $request->user()->name,
+        ));
+
+        if ($nextApproval?->approver) {
+            $nextApproval->approver->notify(new LeaveApprovalRequested(
+                $leave,
+                LeaveRequest::approvalStageLabel($nextApproval->level),
+            ));
+        }
+    }
+
+    protected function canActOnCurrentApproval(User $user, LeaveRequest $leave): bool
+    {
+        $approval = $leave->currentApproval();
+
+        return $user->can('leave.approve')
+            && $approval
+            && ($approval->approver_id === null || $approval->approver_id === $user->id);
+    }
+
+    protected function notifyCurrentApprover(LeaveRequest $leave): void
+    {
+        $approval = $leave->currentApproval();
+
+        if ($approval?->approver) {
+            $approval->approver->notify(new LeaveApprovalRequested(
+                $leave,
+                LeaveRequest::approvalStageLabel($approval->level),
+            ));
+        }
+    }
+
+    /**
+     * Resolve three distinct, active reviewers so every new request follows
+     * the same approval policy regardless of who happens to open it first.
+     *
+     * @return array<int, int>
+     */
+    protected function approvalChain(User $employee): array
+    {
+        $employee->loadMissing(['manager.staffProfile', 'staffProfile']);
+        $departmentId = $employee->department_id ?: $employee->staffProfile?->department_id;
+
+        $manager = $employee->manager;
+
+        if (! $manager && $departmentId) {
+            $manager = User::query()
+                ->with('staffProfile')
+                ->whereKeyNot($employee->id)
+                ->whereHas('staffProfile', fn ($query) => $query->where('employment_status', 'active'))
+                ->where(function ($query) use ($departmentId) {
+                    $query->where('department_id', $departmentId)
+                        ->orWhereHas('staffProfile', fn ($profile) => $profile->where('department_id', $departmentId));
+                })
+                ->where(function ($query) {
+                    $query
+                        ->whereHas('roles', fn ($role) => $role->whereIn('name', ['Department Manager', 'Managing Partner', 'Senior Partner']))
+                        ->orWhereHas('staffProfile', fn ($profile) => $profile->where(function ($title) {
+                            $title->where('job_title', 'like', '%Department Manager%')
+                                ->orWhere('job_title', 'like', '%Head of%');
+                        }));
+                })
+                ->orderBy('name')
+                ->first();
+        }
+
+        $usedApproverIds = $manager ? [$manager->id] : [];
+        $hrApprover = $this->activeRoleUser($employee, ['HR Manager', 'Administrator'], $usedApproverIds);
+
+        if (! $hrApprover) {
+            $hrApprover = $this->activeRoleUser($employee, ['Super Admin'], $usedApproverIds);
+        }
+
+        if ($hrApprover) {
+            $usedApproverIds[] = $hrApprover->id;
+        }
+
+        $finalApprover = $this->activeRoleUser($employee, ['Super Admin', 'CEO'], $usedApproverIds);
+
+        if (! $finalApprover) {
+            $finalApprover = $this->activeRoleUser($employee, ['Administrator', 'Managing Partner'], $usedApproverIds);
+        }
+
+        if (! $finalApprover) {
+            $finalApprover = User::query()
+                ->with('staffProfile')
+                ->whereKeyNot($employee->id)
+                ->when($usedApproverIds !== [], fn ($query) => $query->whereNotIn('id', $usedApproverIds))
+                ->whereHas('staffProfile', fn ($query) => $query->where('employment_status', 'active'))
+                ->whereHas('staffProfile', fn ($query) => $query->where('job_title', 'like', '%Chief Executive%')->orWhere('job_title', 'like', '%CEO%'))
+                ->orderBy('name')
+                ->first();
+        }
+
+        $stages = [
+            'Department Manager' => $manager,
+            'HR / Administrator' => $hrApprover,
+            'Super Admin / CEO' => $finalApprover,
+        ];
+        $approverIds = [];
+        $missing = [];
+
+        foreach ($stages as $label => $approver) {
+            if (! $approver || $approver->staffProfile?->employment_status !== 'active' || in_array($approver->id, $approverIds, true)) {
+                $missing[] = $label;
+                continue;
+            }
+
+            $approverIds[] = $approver->id;
+        }
+
+        if ($missing !== []) {
+            throw ValidationException::withMessages([
+                'leave' => 'Leave approval is not fully configured. Please assign active reviewers for: '.implode(', ', $missing).'.',
+            ]);
+        }
+
+        return $approverIds;
+    }
+
+    protected function activeRoleUser(User $employee, array $roles, array $excludeIds = []): ?User
+    {
+        return User::query()
+            ->with('staffProfile')
+            ->whereKeyNot($employee->id)
+            ->when($excludeIds !== [], fn ($query) => $query->whereNotIn('id', $excludeIds))
+            ->whereHas('staffProfile', fn ($query) => $query->where('employment_status', 'active'))
+            ->whereHas('roles', fn ($query) => $query->whereIn('name', $roles))
+            ->orderBy('name')
+            ->first();
     }
 }

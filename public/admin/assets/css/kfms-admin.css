@@ -2711,6 +2711,82 @@ body.kfms-template {
     margin-bottom: 16px;
 }
 
+.kfms-recovery-dashboard-stack,
+.kfms-recovery-reports-stack {
+    display: grid;
+    gap: 24px;
+}
+
+.kfms-recovery-dashboard-stack > .kfms-panel,
+.kfms-recovery-reports-stack > .kfms-panel {
+    margin: 0;
+    padding: 28px;
+}
+
+.kfms-recovery-report-filter-form {
+    margin-top: 4px;
+}
+
+.kfms-recovery-monthly-chart {
+    background: #f8fbff;
+    border: 1px solid #dfe7ef;
+    border-radius: 8px;
+    margin-bottom: 24px;
+    padding: 20px;
+}
+
+.kfms-recovery-chart-heading {
+    align-items: center;
+    border-bottom: 1px solid #dfe7ef;
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 18px;
+    padding-bottom: 12px;
+}
+
+.kfms-recovery-chart-heading span,
+.kfms-recovery-chart-heading strong {
+    color: #071426;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.kfms-recovery-monthly-chart .kfms-bar-chart {
+    gap: 14px;
+}
+
+.kfms-recovery-monthly-chart .kfms-bar-row > span {
+    display: grid;
+    gap: 3px;
+}
+
+.kfms-recovery-monthly-chart .kfms-bar-row small {
+    color: #667085;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.kfms-recovery-monthly-chart .kfms-bar-row > div {
+    height: 16px;
+}
+
+@media (max-width: 767px) {
+    .kfms-recovery-dashboard-stack > .kfms-panel,
+    .kfms-recovery-reports-stack > .kfms-panel {
+        padding: 20px 16px;
+    }
+
+    .kfms-recovery-monthly-chart {
+        padding: 16px;
+    }
+
+    .kfms-recovery-chart-heading {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 6px;
+    }
+}
+
 .kfms-recovery-chart-panel {
     border: 1px solid #dfe7ef;
     border-radius: 8px;
@@ -3072,6 +3148,65 @@ body.kfms-template {
     display: grid;
     gap: 18px;
 }
+
+.kfms-calendar-branches,
+.kfms-calendar-assignees { min-width: 0; }
+.kfms-branch-select { position: relative; }
+.kfms-branch-select summary {
+    align-items: center;
+    background: #fff;
+    border: 1px solid #cbd8e6;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    gap: 12px;
+    justify-content: space-between;
+    min-height: 48px;
+    padding: 10px 14px;
+    list-style: none;
+}
+.kfms-branch-select summary::-webkit-details-marker { display: none; }
+.kfms-branch-select summary > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kfms-branch-select summary > i { flex: 0 0 auto; }
+.kfms-branch-select summary:focus-visible { outline: 2px solid #25816f; outline-offset: 2px; }
+.kfms-branch-select[open] summary > i { transform: rotate(180deg); }
+.kfms-branch-options {
+    position: absolute;
+    z-index: 20;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    max-height: 240px;
+    overflow-y: auto;
+    background: #fff;
+    border: 1px solid #cbd8e6;
+    border-radius: 6px;
+    box-shadow: 0 6px 16px #1623331a;
+    padding: 5px;
+}
+.kfms-form .kfms-branch-option,
+.kfms-form .kfms-calendar-check { display: flex; align-items: center; gap: 9px; margin: 0; cursor: pointer; }
+.kfms-form .kfms-branch-option { min-height: 36px; padding: 7px 10px; }
+.kfms-form .kfms-branch-option:hover { background: #f0f5f5; }
+.kfms-form .kfms-branch-option span { margin: 0; font-size: 13px; font-weight: 500; overflow-wrap: anywhere; }
+.kfms-form .kfms-assignee-select-all { border-bottom: 1px solid #e4ebf2; font-weight: 700; }
+.kfms-form .kfms-branch-option small { color: #657582; font-size: 11px; font-weight: 400; }
+.kfms-assignee-list { display: grid; gap: 2px; }
+.kfms-assignee-list [data-assignee-option][hidden] { display: none; }
+.kfms-form .kfms-calendar-form input[type="checkbox"] {
+    appearance: auto;
+    flex: 0 0 14px;
+    width: 14px;
+    height: 14px;
+    min-height: 14px;
+    padding: 0;
+    margin: 0;
+    border-radius: 2px;
+    accent-color: #176e5e;
+}
+.kfms-form .kfms-calendar-check { align-self: end; min-height: 48px; }
+.kfms-form .kfms-calendar-check span { margin: 0; }
+.kfms-branch-empty { display: block; padding: 10px; color: #657582; font-size: 13px; }
 
 .kfms-letter-builder {
     align-items: start;
@@ -3446,52 +3581,24 @@ body.kfms-template {
     }
 }
 
-.kfms-workflow-actions {
+.kfms-letter-dashboard-stack {
     display: grid;
-    gap: 10px;
-    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 24px;
 }
 
-.kfms-workflow-actions a {
-    background: #fff;
-    border: 1px solid #dfe7ef;
-    border-radius: 8px;
-    color: #071426;
-    display: grid;
-    gap: 6px;
-    min-height: 88px;
-    padding: 10px;
-    text-decoration: none;
+.kfms-letter-dashboard-stack > .kfms-panel {
+    margin: 0;
+    padding: 28px;
 }
 
-.kfms-workflow-actions a:hover {
-    background: #f8fbff;
-    border-color: #9bd0f2;
-    color: #071426;
-    text-decoration: none;
+.kfms-letter-dashboard-stack .kfms-table-wrap {
+    margin-top: 4px;
 }
 
-.kfms-workflow-actions i {
-    align-items: center;
-    background: #eaf6ff;
-    border-radius: 8px;
-    color: #071426;
-    display: inline-flex;
-    font-size: .95rem;
-    height: 28px;
-    justify-content: center;
-    width: 28px;
-}
-
-.kfms-workflow-actions strong {
-    font-size: .84rem;
-    font-weight: 800;
-}
-
-.kfms-workflow-actions span {
-    color: #667085;
-    font-size: .74rem;
-    line-height: 1.35;
+@media (max-width: 767px) {
+    .kfms-letter-dashboard-stack > .kfms-panel {
+        padding: 20px 16px;
+    }
 }
 
 @media (max-width: 991px) {
@@ -3693,6 +3800,40 @@ body.kfms-template {
 .kfms-action-menu-list a:hover {
     background: #eaf6ff;
     color: #071426;
+}
+
+.kfms-action-menu-list .dropdown-item-form {
+    margin: 0;
+}
+
+.kfms-action-menu-list button.dropdown-item {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    border-radius: 6px;
+    color: #071426;
+    cursor: pointer;
+    display: flex;
+    font-size: 13px;
+    font-weight: 700;
+    gap: 10px;
+    min-height: 38px;
+    padding: 8px 10px;
+    text-align: left;
+    width: 100%;
+}
+
+.kfms-action-menu-list button.dropdown-item:hover {
+    background: #eaf6ff;
+}
+
+.kfms-action-menu-list button.dropdown-item.is-danger {
+    color: #8a0000;
+}
+
+.kfms-action-menu-list button.dropdown-item.is-danger:hover {
+    background: #fff1f0;
+    color: #8a0000;
 }
 
 .kfms-action-menu summary::after {

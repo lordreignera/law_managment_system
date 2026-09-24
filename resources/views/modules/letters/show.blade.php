@@ -4,6 +4,12 @@
 @section('page-title', 'Letter Details')
 
 @section('content')
+    <div @can('letters.pdf') data-letter-document @endcan
+        data-preview-url="{{ route('letters.pdf', ['letter' => $letter, 'inline' => 1]) }}"
+        data-email-url="{{ route('letters.email', $letter) }}"
+        data-reference="{{ $letter->reference_no }}">
+    <div class="kfms-alert kfms-alert-danger" data-letter-error role="alert" hidden></div>
+    <p data-save-status role="status"></p>
     @if (session('status'))
         <div class="kfms-alert">{{ session('status') }}</div>
     @endif
@@ -19,12 +25,7 @@
                 <span>{{ $letter->typeLabel() }} - {{ $letter->statusLabel() }}</span>
             </div>
             <div class="kfms-toolbar-actions">
-                @can('letters.pdf')
-                    <a class="kfms-link-btn kfms-link-btn-success" href="{{ route('letters.pdf', $letter) }}">
-                        <i class="mdi mdi-file-pdf-box"></i>
-                        Download PDF
-                    </a>
-                @endcan
+                @include('modules.letters.partials.document-actions')
                 @can('letters.edit')
                     @if (in_array($letter->status, ['draft', 'pending_review', 'approved'], true))
                         <a class="kfms-link-btn" href="{{ route('letters.edit', $letter) }}">
@@ -56,6 +57,9 @@
 
     <div class="kfms-grid-two">
         <section class="kfms-panel">
+            @can('letters.pdf')
+                @include('modules.letters.partials.document-preview', ['previewTitle' => 'Branded Preview'])
+            @else
             <div class="kfms-panel-header">
                 <div>
                     <h2>Branded Preview</h2>
@@ -64,6 +68,7 @@
             </div>
 
             @include('modules.letters.partials.preview', ['letter' => $letter])
+            @endcan
         </section>
 
         <section class="kfms-panel">
@@ -218,4 +223,10 @@
             </div>
         </div>
     </section>
+    </div>
+    @include('modules.letters.partials.email-dialog')
 @endsection
+
+@push('scripts')
+    @vite('resources/js/letter-workspace.js')
+@endpush

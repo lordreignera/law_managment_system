@@ -153,6 +153,7 @@
                     <tr>
                         <th>Date</th>
                         <th>Debtor</th>
+                        <th>Phone</th>
                         <th>Bank/Client</th>
                         <th>Amount Paid</th>
                         <th>Balance After</th>
@@ -163,12 +164,13 @@
                         <tr>
                             <td>{{ $collection->activity_at?->format('d M Y, H:i') }}</td>
                             <td>{{ $collection->account?->debtor_name ?: '-' }}</td>
+                            <td>{{ $collection->account?->phone ?: '-' }}</td>
                             <td>{{ $collection->account?->client?->name ?: '-' }}</td>
                             <td>{{ $collection->account?->currency ?: 'UGX' }} {{ number_format($collection->amount_paid, 2) }}</td>
                             <td>{{ $collection->outstanding_balance_after !== null ? ($collection->account?->currency ?: 'UGX').' '.number_format($collection->outstanding_balance_after, 2) : '-' }}</td>
                         </tr>
                     @empty
-                        <tr><td colspan="5" class="kfms-empty">No collections found for this report filter.</td></tr>
+                        <tr><td colspan="6" class="kfms-empty">No collections found for this report filter.</td></tr>
                     @endforelse
                 </tbody>
             </table>
@@ -208,6 +210,7 @@
                 <thead>
                     <tr>
                         <th>Debtor</th>
+                        <th>Phone</th>
                         <th>Bank/Client</th>
                         <th>Account</th>
                         <th>Original Outstanding</th>
@@ -221,6 +224,7 @@
                     @forelse ($accounts as $account)
                         <tr>
                             <td><a href="{{ route('recoveries.show', $account) }}">{{ $account->debtor_name }}</a></td>
+                            <td>{{ $account->phone ?: '-' }}</td>
                             <td>{{ $account->client?->name ?: '-' }}</td>
                             <td>{{ $account->account_number ?: '-' }}</td>
                             <td>{{ number_format($account->outstanding_amount) }}</td>
@@ -230,10 +234,12 @@
                             <td>
                                 <div class="kfms-table-actions">
                                     @can('recoveries.activities.store')
+                                        @if ($account->status === 'active' && ! $account->settled_externally_at)
                                         <button type="button" data-bs-toggle="modal" data-bs-target="#recovery-activity-modal-{{ $account->id }}">
                                             <i class="mdi mdi-clipboard-text-clock-outline"></i>
                                             Report Activity
                                         </button>
+                                        @endif
                                     @endcan
                                     @can('recoveries.show')
                                         <a href="{{ route('recoveries.show', $account) }}">View</a>
@@ -243,12 +249,14 @@
                         </tr>
 
                         @can('recoveries.activities.store')
+                            @if ($account->status === 'active' && ! $account->settled_externally_at)
                             @push('modals')
                                 @include('modules.recoveries.partials.activity-modal', ['account' => $account, 'activityTypes' => $activityTypes, 'redirectTo' => 'mine'])
                             @endpush
+                            @endif
                         @endcan
                     @empty
-                        <tr><td colspan="8" class="kfms-empty">Nothing assigned to you yet.</td></tr>
+                        <tr><td colspan="9" class="kfms-empty">Nothing assigned to you yet.</td></tr>
                     @endforelse
                 </tbody>
             </table>

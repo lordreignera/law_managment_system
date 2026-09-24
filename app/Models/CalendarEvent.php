@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Concerns\Auditable;
 use App\Models\Concerns\BranchScoped;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -43,6 +44,27 @@ class CalendarEvent extends Model
         return $this->belongsTo(Branch::class);
     }
 
+    public function branches()
+    {
+        return $this->belongsToMany(Branch::class, 'calendar_event_branch')->withTimestamps();
+    }
+
+    public function scopeForBranchOf(Builder $query, ?User $user): Builder
+    {
+        if (! $user || $user->canSeeAllBranches()) {
+            return $query;
+        }
+
+        return $query->where(function (Builder $query) use ($user) {
+            $query->whereNull($this->getTable().'.branch_id');
+
+            if ($user->branch_id) {
+                $query->orWhere($this->getTable().'.branch_id', $user->branch_id)
+                    ->orWhereHas('branches', fn (Builder $query) => $query->where('branches.id', $user->branch_id));
+            }
+        });
+    }
+
     public function matter()
     {
         return $this->belongsTo(Matter::class);
@@ -58,6 +80,11 @@ class CalendarEvent extends Model
         return $this->belongsTo(User::class, 'assigned_to');
     }
 
+    public function assignees()
+    {
+        return $this->belongsToMany(User::class, 'calendar_event_user')->withTimestamps();
+    }
+
     public function typeLabel(): string
     {
         return self::TYPES[$this->type] ?? str($this->type)->headline()->toString();
@@ -66,5 +93,14 @@ class CalendarEvent extends Model
     public function statusLabel(): string
     {
         return self::STATUSES[$this->status] ?? str($this->status)->headline()->toString();
+    }
+
+    public function branchLabel(): string
+    {
+        if ($this->relationLoaded('branches') && $this->branches->isNotEmpty()) {
+            return $this->branches->pluck('name')->join(', ');
+        }
+
+        return $this->branch?->name ?: 'Firm-wide';
     }
 }

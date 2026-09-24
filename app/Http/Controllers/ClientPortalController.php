@@ -9,9 +9,8 @@ use App\Models\LegalLetter;
 use App\Models\Matter;
 use App\Models\Message;
 use App\Models\User;
+use App\Support\LetterPdf;
 use App\Support\MessageBroadcaster;
-use App\Models\CompanySetting;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -205,10 +204,10 @@ class ClientPortalController extends Controller
             abort_unless((int) $letter->client_id === (int) $client->id, 403);
         }
 
-        return Pdf::loadView('modules.letters.pdf.letter', [
-            'letter' => $letter->load(['client', 'matter.client', 'recoveryAccount', 'creator', 'signer']),
-            'company' => CompanySetting::current(),
-        ])->download(str($letter->reference_no)->replace('/', '-')->lower().'.pdf');
+        $pdf = app(LetterPdf::class);
+
+        return $pdf->render($letter->load(['client', 'matter.client', 'recoveryAccount', 'creator', 'signer']))
+            ->download($pdf->filename($letter));
     }
 
     private function client(Request $request): Client

@@ -15,6 +15,7 @@ trait Approvable
     public function currentApproval(): ?Approval
     {
         return $this->approvals()
+            ->where('round', $this->latestApprovalRound())
             ->where('status', Approval::PENDING)
             ->orderBy('level')
             ->first();
@@ -27,6 +28,9 @@ trait Approvable
         if ($approvals->isEmpty()) {
             return null;
         }
+
+        $latestRound = (int) $approvals->max('round') ?: 1;
+        $approvals = $approvals->where('round', $latestRound)->values();
 
         if ($approvals->contains('status', Approval::REJECTED)) {
             return Approval::REJECTED;
@@ -41,6 +45,11 @@ trait Approvable
         }
 
         return Approval::PENDING;
+    }
+
+    protected function latestApprovalRound(): int
+    {
+        return (int) ($this->approvals()->max('round') ?: 1);
     }
 
     public function isApproved(): bool

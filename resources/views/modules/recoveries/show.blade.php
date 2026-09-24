@@ -41,14 +41,16 @@
                 @can('recoveries.assignment.edit')
                     <a class="kfms-link-btn" href="{{ route('recoveries.assignment.edit', $account) }}">
                         <i class="mdi mdi-account-switch-outline"></i>
-                        Assign Officer
+                        {{ $account->assigned_to ? 'Change Officer' : 'Assign Officer' }}
                     </a>
                 @endcan
                 @can('recoveries.activities.store')
+                    @if ($account->status === 'active' && ! $account->settled_externally_at)
                     <button class="kfms-btn" type="button" data-bs-toggle="modal" data-bs-target="#recovery-activity-modal-{{ $account->id }}">
                         <i class="mdi mdi-clipboard-text-clock-outline"></i>
                         Report Activity
                     </button>
+                    @endif
                 @endcan
                 @can('letters.create')
                     <a class="kfms-link-btn" href="{{ route('letters.create', ['recovery_account_id' => $account->id, 'letter_type' => 'demand_notice']) }}">
@@ -119,7 +121,7 @@
                 <dl class="kfms-detail-list kfms-detail-list-bordered">
                     <div><dt>Bank / Client</dt><dd>{{ $account->client?->name ?: '-' }}</dd></div>
                     <div><dt>Customer Number</dt><dd>{{ $account->customer_number ?: '-' }}</dd></div>
-                    <div><dt>Phone</dt><dd>{{ $account->phone ?: '-' }}</dd></div>
+                    <div><dt>Debtor Phone</dt><dd>{{ $account->phone ?: '-' }}</dd></div>
                     <div><dt>Email</dt><dd>{{ $account->email ?: '-' }}</dd></div>
                     <div><dt>Employer</dt><dd>{{ $account->employer ?: '-' }}</dd></div>
                     <div><dt>Branch Name</dt><dd>{{ $account->branch_name ?: '-' }}</dd></div>
@@ -147,6 +149,9 @@
                     <div><dt>Bucket</dt><dd>{{ $account->bucket ?: '-' }}</dd></div>
                     <div><dt>Imported From</dt><dd>{{ $account->importBatch?->source_file ?: 'Manual entry' }}</dd></div>
                     <div><dt>Original Collector</dt><dd>{{ $account->collector_name ?: '-' }}</dd></div>
+                    @if ($account->settled_externally_at)
+                        <div><dt>Settlement</dt><dd>Client reported full repayment before follow-up.</dd></div>
+                    @endif
                 </dl>
             </div>
 
@@ -215,8 +220,10 @@
     </section>
 
     @can('recoveries.activities.store')
+        @if ($account->status === 'active' && ! $account->settled_externally_at)
         @push('modals')
             @include('modules.recoveries.partials.activity-modal', ['account' => $account, 'activityTypes' => $activityTypes])
         @endpush
+        @endif
     @endcan
 @endsection

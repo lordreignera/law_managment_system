@@ -25,7 +25,7 @@
                 @can('recoveries.assignment.edit')
                     <a class="kfms-link-btn" href="{{ route('recoveries.assignment.edit', $account) }}">
                         <i class="mdi mdi-account-switch-outline"></i>
-                        Assign Officer
+                        {{ $account->assigned_to ? 'Change Officer' : 'Assign Officer' }}
                     </a>
                 @endcan
                 <button class="kfms-btn" type="submit">

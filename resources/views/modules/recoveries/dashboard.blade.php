@@ -49,8 +49,8 @@
         </section>
     </div>
 
-    <div class="kfms-grid-two">
-        <section class="kfms-panel">
+    <div class="kfms-recovery-dashboard-stack">
+        <section class="kfms-panel" data-recovery-dashboard-section="recent-imports">
             <div class="kfms-panel-header">
                 <div>
                     <h2>Recent Imports</h2>
@@ -85,7 +85,7 @@
             </div>
         </section>
 
-        <section class="kfms-panel">
+        <section class="kfms-panel" data-recovery-dashboard-section="officer-load">
             <div class="kfms-panel-header">
                 <div>
                     <h2>Officer Load</h2>
@@ -107,7 +107,7 @@
                             <tr>
                                 <td>{{ $officer->name }}</td>
                                 <td>{{ number_format($officer->active_recoveries_count) }}</td>
-                                <td>{{ number_format(max(($officer->outstanding_total ?? 0) - ($officer->recovered_total ?? 0), 0)) }}</td>
+                                <td>{{ number_format(max(($officer->outstanding_total ?? 0) - ($officer->recovered_for_outstanding ?? 0), 0)) }}</td>
                                 <td>{{ number_format($officer->recovered_total ?? 0) }}</td>
                             </tr>
                         @empty
@@ -154,7 +154,7 @@
                             <td>{{ $client->name }}</td>
                             <td>{{ $client->portfolio_types ? implode(', ', $client->portfolio_types) : '-' }}</td>
                             <td>{{ number_format($client->accounts_count) }}</td>
-                            <td>{{ number_format(max(($client->outstanding_total ?? 0) - ($client->recovered_total ?? 0), 0)) }}</td>
+                            <td>{{ number_format(max(($client->outstanding_total ?? 0) - ($client->recovered_for_outstanding ?? 0), 0)) }}</td>
                             <td>{{ number_format($client->recovered_total ?? 0) }}</td>
                         </tr>
                     @empty

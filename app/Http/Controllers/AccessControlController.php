@@ -54,6 +54,20 @@ class AccessControlController extends Controller
 
         return view('modules.access-control.user-edit', [
             'user' => $user->load(['branch', 'department', 'roles', 'permissions', 'staffProfile']),
+            'managers' => User::query()
+                ->with('department')
+                ->whereKeyNot($user->id)
+                ->where(function ($query) {
+                    $query->whereNull('account_type')->orWhere('account_type', '!=', 'client');
+                })
+                ->whereHas('staffProfile', fn ($query) => $query->where('employment_status', 'active'))
+                ->where(function ($query) {
+                    $query
+                        ->whereHas('roles.permissions', fn ($permission) => $permission->where('name', 'leave.approve'))
+                        ->orWhereHas('permissions', fn ($permission) => $permission->where('name', 'leave.approve'));
+                })
+                ->orderBy('name')
+                ->get(),
             'roles' => Role::orderBy('name')->get(),
             'permissionGroups' => $this->permissionGroups(),
             'statuses' => ['pending', 'active', 'inactive', 'suspended'],
@@ -164,6 +178,7 @@ class AccessControlController extends Controller
             'direct_permissions' => ['nullable', 'array'],
             'direct_permissions.*' => ['exists:permissions,name'],
             'employment_status' => ['required', Rule::in(['pending', 'active', 'inactive', 'suspended'])],
+            'manager_id' => ['nullable', 'exists:users,id'],
         ]);
 
         $roles = $data['roles'] ?? [];
@@ -184,9 +199,21 @@ class AccessControlController extends Controller
             'You cannot remove your own access-control permission or deactivate your account.'
         );
 
+        if (! empty($data['manager_id'])) {
+            abort_if((int) $data['manager_id'] === (int) $user->id, 422, 'A user cannot be their own supervisor.');
+
+            $manager = User::with('staffProfile')->findOrFail($data['manager_id']);
+            abort_unless($manager->staffProfile?->employment_status === 'active', 422, 'The selected supervisor must be active.');
+            abort_unless($manager->can('leave.approve'), 422, 'The selected supervisor must have leave approval permission.');
+            $managerDepartmentId = $manager->department_id ?: $manager->staffProfile?->department_id;
+            $userDepartmentId = $user->department_id ?: $user->staffProfile?->department_id;
+            abort_if($managerDepartmentId && $userDepartmentId && (int) $managerDepartmentId !== (int) $userDepartmentId, 422, 'The supervisor must belong to the same department.');
+        }
+
         $userData = [
             'name' => $data['name'],
             'email' => $data['email'],
+            'manager_id' => $data['manager_id'] ?? null,
         ];
 
         if (filled($data['password'] ?? null)) {

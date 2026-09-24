@@ -89,6 +89,7 @@ class DatabaseSeeder extends Seeder
             'Administrator' => array_keys(RoutePermissionRegistry::MODULES),
 
             'Managing Partner' => ['dashboard', 'messages', 'clients', 'intakes', 'matters', 'litigation', 'letters', 'recoveries', 'land-titles', 'finance', 'expenses', 'petty-cash', 'ledger', 'hr', 'staff', 'leave', 'requisitions', 'branches', 'holidays'],
+            'Department Manager' => ['dashboard', 'messages', 'leave'],
             'Senior Partner' => ['dashboard', 'messages', 'clients', 'intakes', 'matters', 'litigation', 'letters'],
             'Litigation Officer' => ['dashboard', 'messages', 'clients', 'intakes', 'matters', 'litigation', 'letters', 'calendar'],
             'Advocate' => ['dashboard', 'messages', 'clients', 'intakes', 'matters', 'litigation', 'letters'],
@@ -123,7 +124,7 @@ class DatabaseSeeder extends Seeder
         // Self-service leave (request + view own + cancel) for every staff role
         // that is not already a leave approver. Approval routes are withheld.
         $leaveSelfService = array_values(array_intersect(
-            ['leave.index', 'leave.create', 'leave.store', 'leave.show', 'leave.cancel'],
+            ['leave.index', 'leave.create', 'leave.store', 'leave.show', 'leave.cancel', 'leave.reschedule.edit', 'leave.reschedule.update'],
             $allPermissions
         ));
 

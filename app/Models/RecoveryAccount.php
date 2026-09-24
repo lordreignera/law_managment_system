@@ -31,6 +31,7 @@ class RecoveryAccount extends Model
         'outstanding_amount' => 'decimal:2',
         'amount_recovered' => 'decimal:2',
         'opening_recovered_amount' => 'decimal:2',
+        'settled_externally_at' => 'datetime',
     ];
 
     public function client()
@@ -65,6 +66,10 @@ class RecoveryAccount extends Model
 
     public function getNetOutstandingBalanceAttribute(): float
     {
+        if ($this->settled_externally_at) {
+            return 0;
+        }
+
         return max(((float) $this->outstanding_amount) - ((float) $this->amount_recovered), 0);
     }
 
@@ -75,15 +80,23 @@ class RecoveryAccount extends Model
     {
         $runningRecovered = (float) $this->opening_recovered_amount;
         $openingOutstanding = (float) $this->outstanding_amount;
+        $settledExternally = false;
 
         RecoveryActivity::query()
             ->where('recovery_account_id', $this->id)
             ->orderBy('activity_at')
             ->orderBy('id')
             ->get()
-            ->each(function (RecoveryActivity $activity) use (&$runningRecovered, $openingOutstanding) {
+            ->each(function (RecoveryActivity $activity) use (&$runningRecovered, $openingOutstanding, &$settledExternally) {
                 $runningRecovered += (float) $activity->amount_paid;
-                $balanceAfter = max($openingOutstanding - $runningRecovered, 0);
+
+                if ($activity->response_outcome === 'fully_repaid') {
+                    $settledExternally = true;
+                }
+
+                $balanceAfter = $settledExternally
+                    ? 0
+                    : max($openingOutstanding - $runningRecovered, 0);
 
                 if ((float) $activity->outstanding_balance_after !== $balanceAfter) {
                     $activity->forceFill(['outstanding_balance_after' => $balanceAfter])->save();

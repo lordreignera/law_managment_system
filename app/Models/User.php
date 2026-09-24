@@ -39,6 +39,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'password',
         'branch_id',
         'department_id',
+        'manager_id',
         'signature_path',
     ];
 
@@ -94,6 +95,16 @@ class User extends Authenticatable implements MustVerifyEmail
     public function department()
     {
         return $this->belongsTo(Department::class);
+    }
+
+    public function manager()
+    {
+        return $this->belongsTo(self::class, 'manager_id');
+    }
+
+    public function directReports()
+    {
+        return $this->hasMany(self::class, 'manager_id');
     }
 
     public function staffProfile()

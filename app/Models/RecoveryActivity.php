@@ -25,6 +25,7 @@ class RecoveryActivity extends Model
     public const OUTCOMES = [
         'no_response' => 'No response',
         'paid' => 'Client paid',
+        'fully_repaid' => 'Fully repaid before follow-up',
         'promised' => 'Promised to pay',
         'refused' => 'Refused to pay',
         'disputed' => 'Disputed debt',

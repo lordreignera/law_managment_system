@@ -134,6 +134,20 @@
                     </label>
 
                     <label>
+                        <span>Department Supervisor</span>
+                        <select name="manager_id">
+                            <option value="">No supervisor assigned</option>
+                            @foreach ($managers as $manager)
+                                <option value="{{ $manager->id }}" @selected((string) old('manager_id', $staff->manager_id) === (string) $manager->id)>
+                                    {{ $manager->name }}{{ $manager->department?->name ? ' - '.$manager->department->name : '' }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <small>Leave requests start with this supervisor before HR and final executive approval.</small>
+                        @error('manager_id')<small>{{ $message }}</small>@enderror
+                    </label>
+
+                    <label>
                         <span>Employment Status *</span>
                         <select name="employment_status" required>
                             @foreach ($statuses as $value => $label)

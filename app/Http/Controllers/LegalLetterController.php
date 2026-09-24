@@ -2,17 +2,18 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\LegalLetterMail;
 use App\Models\Client;
-use App\Models\CompanySetting;
 use App\Models\LegalLetter;
 use App\Models\LetterTemplate;
 use App\Models\Matter;
 use App\Models\RecoveryAccount;
 use App\Models\User;
+use App\Support\LetterPdf;
 use App\Support\StorageUrl;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -89,6 +90,10 @@ class LegalLetterController extends Controller
         $letter = LegalLetter::create($data);
         $this->storeAttachments($request, $letter);
 
+        if ($request->expectsJson()) {
+            return $this->savedResponse($letter);
+        }
+
         return redirect()
             ->route('letters.show', $letter)
             ->with('status', 'Letter drafted.');
@@ -131,6 +136,10 @@ class LegalLetterController extends Controller
 
         $letter->update($data);
         $this->storeAttachments($request, $letter);
+
+        if ($request->expectsJson()) {
+            return $this->savedResponse($letter);
+        }
 
         return redirect()
             ->route('letters.show', $letter)
@@ -237,14 +246,87 @@ class LegalLetterController extends Controller
         return back()->with('status', $letter->client_visible ? 'Letter is visible in the client portal.' : 'Letter hidden from client portal.');
     }
 
-    public function pdf(LegalLetter $letter)
+    public function pdf(Request $request, LegalLetter $letter, LetterPdf $pdf)
     {
         $letter->load(['client', 'matter.client', 'recoveryAccount', 'creator', 'signer']);
 
-        return Pdf::loadView('modules.letters.pdf.letter', [
-            'letter' => $letter,
-            'company' => CompanySetting::current(),
-        ])->download(str($letter->reference_no)->replace('/', '-')->lower().'.pdf');
+        $document = $pdf->render($letter);
+
+        return $request->boolean('inline')
+            ? $document->stream($pdf->filename($letter))
+            : $document->download($pdf->filename($letter));
+    }
+
+    public function preview(Request $request, LetterPdf $pdf, ?LegalLetter $letter = null)
+    {
+        abort_unless($request->user()->can($letter ? 'letters.edit' : 'letters.create'), 403);
+        $data = $this->validatedData($request, $letter, preview: true);
+        $draft = $letter ? clone $letter : new LegalLetter;
+        $draft->fill(collect($data)->except(['signature_upload', 'drawn_signature', 'documents'])->all());
+        $draft->body = $draft->body ?? '';
+        $draft->setRelation('creator', $letter?->creator ?: $request->user());
+        $draft->setRelation('signer', null);
+        if ($draft->signature_mode !== $letter?->signature_mode) {
+            $draft->signature_path = null;
+        }
+        $signature = '';
+
+        if ($draft->signature_mode === 'profile') {
+            $draft->signature_path = $request->user()->signature_path;
+            $draft->setRelation('signer', $request->user());
+            $signature = null;
+        } elseif ($draft->signature_mode === 'upload' && $request->hasFile('signature_upload')) {
+            $file = $request->file('signature_upload');
+            $signature = 'data:'.$file->getMimeType().';base64,'.base64_encode($file->get());
+            $draft->setRelation('signer', $request->user());
+        } elseif ($draft->signature_mode === 'drawn' && $request->filled('drawn_signature')) {
+            $signature = $data['drawn_signature'];
+            $draft->setRelation('signer', $request->user());
+        } elseif (in_array($draft->signature_mode, ['upload', 'drawn'], true)) {
+            $signature = null;
+            $draft->setRelation('signer', $draft->signature_path ? $letter?->signer : null);
+        }
+
+        return $pdf->render($draft, $signature)->stream($pdf->filename($draft));
+    }
+
+    public function email(Request $request, LegalLetter $letter, LetterPdf $pdf)
+    {
+        $data = $request->validate([
+            'to' => ['required', 'email', 'max:191'],
+            'subject' => ['required', 'string', 'max:255', 'not_regex:/[\r\n]/'],
+            'message' => ['required', 'string', 'max:5000'],
+        ]);
+
+        try {
+            $transport = config('mail.mailers.'.config('mail.default').'.transport');
+            if (! app()->environment('testing') && in_array($transport, ['log', 'array'], true)) {
+                return response()->json(['message' => 'Email delivery is not configured. Please contact your administrator.'], 422);
+            }
+
+            Mail::to($data['to'])->send(
+                (new LegalLetterMail($letter, $data['subject'], $data['message'], $pdf->render($letter)->output(), $pdf->filename($letter)))
+                    ->replyTo($request->user()->email, $request->user()->name)
+            );
+        } catch (\Throwable $exception) {
+            report($exception);
+
+            return response()->json(['message' => 'The email could not be sent. Your letter is saved; please try again.'], 503);
+        }
+
+        return response()->json(['message' => 'Letter emailed to '.$data['to'].'.']);
+    }
+
+    private function savedResponse(LegalLetter $letter)
+    {
+        return response()->json([
+            'message' => 'Letter saved.',
+            'update_url' => route('letters.update', $letter),
+            'edit_url' => route('letters.edit', $letter),
+            'preview_url' => route('letters.preview', $letter),
+            'email_url' => route('letters.email', $letter),
+            'reference_no' => $letter->reference_no,
+        ]);
     }
 
     public function destroy(LegalLetter $letter)
@@ -290,26 +372,28 @@ class LegalLetterController extends Controller
         ], $overrides);
     }
 
-    private function validatedData(Request $request, ?LegalLetter $letter = null): array
+    private function validatedData(Request $request, ?LegalLetter $letter = null, bool $preview = false): array
     {
+        $required = $preview ? 'nullable' : 'required';
+
         return $request->validate([
-            'reference_no' => ['nullable', 'string', 'max:80', Rule::unique('legal_letters', 'reference_no')->ignore($letter?->id)],
+            'reference_no' => array_filter(['nullable', 'string', 'max:80', $preview ? null : Rule::unique('legal_letters', 'reference_no')->ignore($letter?->id)]),
             'letter_template_id' => ['nullable', 'exists:letter_templates,id'],
             'letterhead_id' => ['nullable', 'exists:letterheads,id'],
             'client_id' => ['nullable', 'exists:clients,id'],
             'matter_id' => ['nullable', 'exists:matters,id'],
             'recovery_account_id' => ['nullable', 'exists:recovery_accounts,id'],
             'letter_type' => ['required', Rule::in(array_keys(LetterTemplate::CATEGORIES))],
-            'recipient_name' => ['required', 'string', 'max:191'],
+            'recipient_name' => [$required, 'string', 'max:191'],
             'recipient_contact' => ['nullable', 'string', 'max:191'],
-            'recipient_email' => ['nullable', 'email', 'max:191'],
+            'recipient_email' => ['nullable', $preview ? 'string' : 'email', 'max:191'],
             'recipient_address' => ['nullable', 'string', 'max:2000'],
-            'subject' => ['required', 'string', 'max:255'],
-            'body' => ['required', 'string'],
-            'letter_date' => ['required', 'date'],
+            'subject' => [$required, 'string', 'max:255'],
+            'body' => [$required, 'string', 'max:200000'],
+            'letter_date' => [$required, 'date'],
             'signature_mode' => ['required', Rule::in(array_keys(LegalLetter::SIGNATURE_MODES))],
-            'signature_upload' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
-            'drawn_signature' => ['nullable', 'string'],
+            'signature_upload' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'drawn_signature' => ['nullable', 'string', 'max:2800000', 'regex:/^data:image\/png;base64,[A-Za-z0-9+\/=]+$/'],
             'documents' => ['nullable', 'array'],
             'documents.*' => ['file', 'max:20480', 'mimes:pdf,jpg,jpeg,png,doc,docx,xls,xlsx'],
         ]);
@@ -317,11 +401,13 @@ class LegalLetterController extends Controller
 
     private function prepareSignature(Request $request, array $data, ?LegalLetter $letter = null): array
     {
-        $data['signed_by'] = null;
-        $data['signature_path'] = $letter?->signature_path;
+        $keepSignature = $letter && $data['signature_mode'] === $letter->signature_mode;
+        $data['signed_by'] = $keepSignature ? $letter->signed_by : null;
+        $data['signature_path'] = $keepSignature ? $letter->signature_path : null;
 
         if ($data['signature_mode'] === 'none') {
             $data['signature_path'] = null;
+            $data['signed_by'] = null;
         }
 
         if ($data['signature_mode'] === 'profile') {

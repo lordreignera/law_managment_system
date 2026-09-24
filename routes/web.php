@@ -165,12 +165,18 @@ Route::middleware([
         Route::get('/letters', [LegalLetterController::class, 'index'])->name('letters.index');
         Route::get('/letters/create', [LegalLetterController::class, 'create'])->name('letters.create');
         Route::post('/letters', [LegalLetterController::class, 'store'])->name('letters.store');
+        Route::post('/letters/preview', [LegalLetterController::class, 'preview'])
+            ->withoutMiddleware('route.permission')->name('letters.draft-preview');
         Route::get('/letters/templates', [LetterTemplateController::class, 'index'])->name('letters.templates.index');
         Route::post('/letters/templates', [LetterTemplateController::class, 'store'])->name('letters.templates.store');
         Route::put('/letters/templates/{template}', [LetterTemplateController::class, 'update'])->name('letters.templates.update');
         Route::delete('/letters/templates/{template}', [LetterTemplateController::class, 'destroy'])->name('letters.templates.destroy');
         Route::get('/letters/{letter}', [LegalLetterController::class, 'show'])->name('letters.show');
         Route::get('/letters/{letter}/edit', [LegalLetterController::class, 'edit'])->name('letters.edit');
+        Route::post('/letters/{letter}/preview', [LegalLetterController::class, 'preview'])
+            ->withoutMiddleware('route.permission')->name('letters.preview');
+        Route::post('/letters/{letter}/email', [LegalLetterController::class, 'email'])
+            ->withoutMiddleware('route.permission')->middleware(['can:letters.mark-sent', 'can:letters.pdf', 'throttle:10,1'])->name('letters.email');
         Route::put('/letters/{letter}', [LegalLetterController::class, 'update'])->name('letters.update');
         Route::delete('/letters/{letter}', [LegalLetterController::class, 'destroy'])->name('letters.destroy');
         Route::patch('/letters/{letter}/submit', [LegalLetterController::class, 'submit'])->name('letters.submit');
@@ -260,6 +266,12 @@ Route::middleware([
         Route::get('/leave', [LeaveController::class, 'index'])->name('leave.index');
         Route::get('/leave/create', [LeaveController::class, 'create'])->name('leave.create');
         Route::post('/leave', [LeaveController::class, 'store'])->name('leave.store');
+        Route::get('/leave/{leave}/reschedule', [LeaveController::class, 'rescheduleEdit'])
+            ->withoutMiddleware('route.permission')
+            ->name('leave.reschedule.edit');
+        Route::patch('/leave/{leave}/reschedule', [LeaveController::class, 'reschedule'])
+            ->withoutMiddleware('route.permission')
+            ->name('leave.reschedule.update');
         Route::get('/leave/{leave}', [LeaveController::class, 'show'])->name('leave.show');
         Route::patch('/leave/{leave}/approve', [LeaveController::class, 'approve'])->name('leave.approve');
         Route::patch('/leave/{leave}/reject', [LeaveController::class, 'reject'])->name('leave.reject');

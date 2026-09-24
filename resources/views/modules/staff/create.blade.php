@@ -145,6 +145,20 @@
                         @error('department_id')<small>{{ $message }}</small>@enderror
                     </label>
 
+                    <label>
+                        <span>Department Supervisor</span>
+                        <select name="manager_id">
+                            <option value="">Select supervisor</option>
+                            @foreach ($managers as $manager)
+                                <option value="{{ $manager->id }}" @selected((string) old('manager_id') === (string) $manager->id)>
+                                    {{ $manager->name }}{{ $manager->department?->name ? ' - '.$manager->department->name : '' }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <small>Used as the first leave approver. The supervisor must be active and in the same department.</small>
+                        @error('manager_id')<small>{{ $message }}</small>@enderror
+                    </label>
+
                     <div class="kfms-staff-auto-approval">
                         <span class="kfms-card-label">Employment Status</span>
                         <strong>Active</strong>

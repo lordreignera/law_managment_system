@@ -7,7 +7,7 @@
     <section class="kfms-panel kfms-recovery-assignment-panel">
         <div class="kfms-panel-header">
             <div>
-                <h2>Assign Recovery Officer</h2>
+                <h2>{{ $account->assigned_to ? 'Change Recovery Officer' : 'Assign Recovery Officer' }}</h2>
                 <span>{{ $account->debtor_name }} - {{ $account->client?->name ?: 'No client' }}</span>
             </div>
             <a class="kfms-link-btn" href="{{ route('recoveries.show', $account) }}">

@@ -69,6 +69,11 @@
                             <small data-remaining-note></small>
                         </div>
 
+                        <div class="kfms-alert kfms-alert-info kfms-span-2" data-response-panel="fully_repaid">
+                            <i class="mdi mdi-information-outline"></i>
+                            The client reports that the account was already fully repaid. This will close the account, but it will not be counted as money collected by the recovery officer.
+                        </div>
+
                         <label data-response-panel="paid">
                             <span>Receipt *</span>
                             <input type="file" name="receipt" accept=".pdf,.jpg,.jpeg,.png,.webp">

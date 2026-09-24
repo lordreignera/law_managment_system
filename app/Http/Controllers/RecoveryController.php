@@ -26,24 +26,28 @@ class RecoveryController extends Controller
         $base = RecoveryAccount::query()->forBranchOf($request->user());
 
         $clientRows = RecoveryClient::withCount('accounts')
-            ->withSum('accounts as outstanding_total', 'outstanding_amount')
+            ->withSum(['accounts as outstanding_total' => fn (Builder $query) => $query->whereNull('settled_externally_at')], 'outstanding_amount')
+            ->withSum(['accounts as recovered_for_outstanding' => fn (Builder $query) => $query->whereNull('settled_externally_at')], 'amount_recovered')
             ->withSum('accounts as recovered_total', 'amount_recovered')
             ->orderBy('name')
             ->get();
 
         $officerRows = User::role('Recovery Officer')
             ->withCount(['assignedRecoveries as active_recoveries_count' => fn (Builder $query) => $query->where('status', 'active')])
-            ->withSum('assignedRecoveries as outstanding_total', 'outstanding_amount')
+            ->withSum(['assignedRecoveries as outstanding_total' => fn (Builder $query) => $query->whereNull('settled_externally_at')], 'outstanding_amount')
+            ->withSum(['assignedRecoveries as recovered_for_outstanding' => fn (Builder $query) => $query->whereNull('settled_externally_at')], 'amount_recovered')
             ->withSum('assignedRecoveries as recovered_total', 'amount_recovered')
             ->orderBy('name')
             ->get();
+
+        $unsettled = (clone $base)->whereNull('settled_externally_at');
 
         return view('modules.recoveries.dashboard', [
             'summary' => [
                 'active' => (clone $base)->where('status', 'active')->count(),
                 'unassigned' => (clone $base)->whereNull('assigned_to')->count(),
-                'original_outstanding' => (clone $base)->sum('outstanding_amount'),
-                'outstanding' => max((clone $base)->sum('outstanding_amount') - (clone $base)->sum('amount_recovered'), 0),
+                'original_outstanding' => (clone $unsettled)->sum('outstanding_amount'),
+                'outstanding' => max((clone $unsettled)->sum('outstanding_amount') - (clone $unsettled)->sum('amount_recovered'), 0),
                 'recovered' => (clone $base)->sum('amount_recovered'),
             ],
             'recentBatches' => RecoveryImportBatch::with(['client', 'uploader'])->latest()->take(6)->get(),
@@ -92,12 +96,13 @@ class RecoveryController extends Controller
             ->withQueryString();
 
         $base = RecoveryAccount::where('assigned_to', $user->id);
+        $unsettled = (clone $base)->whereNull('settled_externally_at');
 
         $summary = [
             'total' => (clone $base)->count(),
             'active' => (clone $base)->where('status', 'active')->count(),
-            'original_outstanding' => (clone $base)->sum('outstanding_amount'),
-            'outstanding' => max((clone $base)->sum('outstanding_amount') - (clone $base)->sum('amount_recovered'), 0),
+            'original_outstanding' => (clone $unsettled)->sum('outstanding_amount'),
+            'outstanding' => max((clone $unsettled)->sum('outstanding_amount') - (clone $unsettled)->sum('amount_recovered'), 0),
             'recovered' => (clone $base)->sum('amount_recovered'),
         ];
 
@@ -235,10 +240,16 @@ class RecoveryController extends Controller
 
     public function batchShow(RecoveryImportBatch $batch)
     {
+        $batch->load(['client', 'uploader'])
+            ->loadCount('accounts')
+            ->loadCount(['accounts as assigned_accounts_count' => fn (Builder $query) => $query->whereNotNull('assigned_to')]);
+
         return view('modules.recoveries.batch', [
-            'batch' => $batch->load(['client', 'uploader']),
+            'batch' => $batch,
             'accounts' => $batch->accounts()->with(['assignee'])->latest()->paginate(15),
             'officers' => $this->recoveryOfficers(),
+            'hasAssignments' => $batch->assigned_accounts_count > 0,
+            'isFullyAssigned' => $batch->accounts_count > 0 && $batch->assigned_accounts_count >= $batch->accounts_count,
         ]);
     }
 

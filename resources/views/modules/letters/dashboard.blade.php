@@ -59,45 +59,17 @@
                 <h2>Document Workspace</h2>
                 <span>Create branded letters, opinions, notices, and client correspondence.</span>
             </div>
-        </div>
-
-        <div class="kfms-workflow-actions">
-            <a href="{{ route('letters.create', ['letter_type' => 'general']) }}">
-                <i class="mdi mdi-email-edit-outline"></i>
-                <strong>Draft Letter</strong>
-                <span>Use firm branding, client details, and a reusable template.</span>
-            </a>
-            <a href="{{ route('letters.create', ['letter_type' => 'opinion']) }}">
-                <i class="mdi mdi-scale-balance"></i>
-                <strong>Legal Opinion</strong>
-                <span>Prepare structured advice after instructions or consultation.</span>
-            </a>
-            <a href="{{ route('letters.create', ['letter_type' => 'demand_notice']) }}">
-                <i class="mdi mdi-file-alert-outline"></i>
-                <strong>Demand Notice</strong>
-                <span>Generate pre-litigation and recovery notices with references.</span>
-            </a>
-            <a href="{{ route('letters.index', ['status' => 'pending_review']) }}">
-                <i class="mdi mdi-check-decagram-outline"></i>
-                <strong>Review Queue</strong>
-                <span>Approve letters before sending them to recipients or clients.</span>
-            </a>
+            @can('letters.create')
+                <a class="kfms-btn" href="{{ route('letters.create') }}">
+                    <i class="mdi mdi-file-document-edit-outline"></i>
+                    Open Document Workspace
+                </a>
+            @endcan
         </div>
     </section>
 
-    <div class="kfms-grid-two">
-        <section class="kfms-panel">
-            <div class="kfms-panel-header">
-                <div>
-                    <h2>Recent Letters</h2>
-                    <span>Latest drafts and outgoing correspondence</span>
-                </div>
-                <a class="kfms-link-btn" href="{{ route('letters.index') }}">View all</a>
-            </div>
-            @include('modules.letters.partials.table', ['letters' => $recentLetters])
-        </section>
-
-        <section class="kfms-panel">
+    <div class="kfms-letter-dashboard-stack">
+        <section class="kfms-panel" data-letter-dashboard-section="pending-review">
             <div class="kfms-panel-header">
                 <div>
                     <h2>Pending Review</h2>
@@ -106,6 +78,17 @@
                 <a class="kfms-link-btn" href="{{ route('letters.index', ['status' => 'pending_review']) }}">Open queue</a>
             </div>
             @include('modules.letters.partials.table', ['letters' => $pendingLetters])
+        </section>
+
+        <section class="kfms-panel" data-letter-dashboard-section="recent">
+            <div class="kfms-panel-header">
+                <div>
+                    <h2>Recent Letters</h2>
+                    <span>Latest drafts and outgoing correspondence</span>
+                </div>
+                <a class="kfms-link-btn" href="{{ route('letters.index') }}">View all</a>
+            </div>
+            @include('modules.letters.partials.table', ['letters' => $recentLetters])
         </section>
     </div>
 @endsection

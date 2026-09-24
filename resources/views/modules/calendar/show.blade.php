@@ -31,9 +31,9 @@
         <dl class="kfms-detail-list">
             <div><dt>When</dt><dd>{{ $event->all_day ? $event->starts_at?->format('d M Y').' (All day)' : $event->starts_at?->format('d M Y, H:i') }}</dd></div>
             <div><dt>Ends</dt><dd>{{ $event->ends_at?->format('d M Y, H:i') ?: '-' }}</dd></div>
-            <div><dt>Branch</dt><dd>{{ $event->branch?->name ?: 'Firm-wide' }}</dd></div>
+            <div><dt>Branches</dt><dd>{{ $event->branchLabel() }}</dd></div>
             <div><dt>Related Matter</dt><dd>{{ $event->matter ? $event->matter->reference_no.' — '.$event->matter->title : '-' }}</dd></div>
-            <div><dt>Assigned To</dt><dd>{{ $event->assignee?->name ?: 'Unassigned' }}</dd></div>
+            <div><dt>Assigned To</dt><dd>{{ $event->assignees->pluck('name')->join(', ') ?: ($event->assignee?->name ?: 'Unassigned') }}</dd></div>
             <div><dt>Location</dt><dd>{{ $event->location ?: '-' }}</dd></div>
             <div><dt>Created By</dt><dd>{{ $event->creator?->name ?: '-' }}</dd></div>
             <div><dt>Notes</dt><dd>{{ $event->notes ?: '-' }}</dd></div>

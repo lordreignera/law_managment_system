@@ -66,6 +66,7 @@ class StaffController extends Controller
         return view('modules.staff.create', [
             'branches' => Branch::orderBy('name')->get(),
             'departments' => Department::orderBy('name')->get(),
+            'managers' => $this->managerOptions(),
             'roles' => $this->assignableRoles(),
             'statuses' => $this->statuses(),
             'nextStaffNo' => StaffProfile::nextStaffNumber(),
@@ -93,6 +94,7 @@ class StaffController extends Controller
             'job_title' => ['required', 'string', 'max:191'],
             'branch_id' => ['required', 'exists:branches,id'],
             'department_id' => ['required', 'exists:departments,id'],
+            'manager_id' => ['nullable', 'exists:users,id'],
             'joined_on' => ['nullable', 'date'],
             'role' => [
                 'required',
@@ -101,12 +103,15 @@ class StaffController extends Controller
             ],
         ]);
 
+        $this->validateManagerAssignment($data['manager_id'] ?? null, (int) $data['department_id']);
+
         $staff = User::create([
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
             'branch_id' => $data['branch_id'],
             'department_id' => $data['department_id'],
+            'manager_id' => $data['manager_id'] ?? null,
         ]);
         $staff->markEmailAsVerified();
 
@@ -153,6 +158,7 @@ class StaffController extends Controller
             'staff' => $staff,
             'branches' => Branch::orderBy('name')->get(),
             'departments' => Department::orderBy('name')->get(),
+            'managers' => $this->managerOptions($staff),
             'roles' => $this->assignableRoles(),
             'statuses' => $this->statuses(),
             'nextStaffNo' => $staff->staffProfile?->staff_no ?: StaffProfile::nextStaffNumber(),
@@ -170,6 +176,7 @@ class StaffController extends Controller
             'job_title' => ['nullable', 'string', 'max:191'],
             'branch_id' => ['nullable', 'exists:branches,id'],
             'department_id' => ['nullable', 'exists:departments,id'],
+            'manager_id' => ['nullable', 'exists:users,id'],
             'joined_on' => ['nullable', 'date'],
             'employment_status' => ['required', Rule::in(array_keys($this->statuses()))],
             'password' => ['nullable', 'string', 'min:8', 'confirmed'],
@@ -186,11 +193,14 @@ class StaffController extends Controller
             'You cannot deactivate your own account from HR.'
         );
 
+        $this->validateManagerAssignment($data['manager_id'] ?? null, $data['department_id'] ?? null, $staff);
+
         $userData = [
             'name' => $data['name'],
             'email' => $data['email'],
             'branch_id' => $data['branch_id'] ?? null,
             'department_id' => $data['department_id'] ?? null,
+            'manager_id' => $data['manager_id'] ?? null,
         ];
 
         if (filled($data['password'] ?? null)) {
@@ -237,5 +247,44 @@ class StaffController extends Controller
         return Role::whereNotIn('name', ['Super Admin', 'Administrator'])
             ->orderBy('name')
             ->get();
+    }
+
+    private function managerOptions(?User $exclude = null)
+    {
+        return User::query()
+            ->with(['department', 'staffProfile'])
+            ->when($exclude, fn ($query) => $query->whereKeyNot($exclude->id))
+            ->where(function ($query) {
+                $query->whereNull('account_type')->orWhere('account_type', '!=', 'client');
+            })
+            ->whereHas('staffProfile', fn ($query) => $query->where('employment_status', 'active'))
+            ->where(function ($query) {
+                $query
+                    ->whereHas('roles.permissions', fn ($permission) => $permission->where('name', 'leave.approve'))
+                    ->orWhereHas('permissions', fn ($permission) => $permission->where('name', 'leave.approve'));
+            })
+            ->orderBy('name')
+            ->get();
+    }
+
+    private function validateManagerAssignment(?int $managerId, ?int $departmentId, ?User $staff = null): void
+    {
+        if (! $managerId) {
+            return;
+        }
+
+        $manager = User::with('staffProfile')->findOrFail($managerId);
+
+        abort_if($staff && $manager->is($staff), 422, 'A staff member cannot be their own supervisor.');
+        abort_unless($manager->staffProfile?->employment_status === 'active', 422, 'The selected supervisor must be an active staff member.');
+        abort_unless($manager->can('leave.approve'), 422, 'The selected supervisor must have leave approval permission.');
+
+        $managerDepartmentId = $manager->department_id ?: $manager->staffProfile?->department_id;
+
+        abort_if(
+            $departmentId && $managerDepartmentId && (int) $departmentId !== (int) $managerDepartmentId,
+            422,
+            'The supervisor must belong to the same department.'
+        );
     }
 }

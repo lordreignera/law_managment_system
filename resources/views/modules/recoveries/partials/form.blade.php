@@ -50,7 +50,7 @@
     </label>
 
     <label>
-        <span>Phone</span>
+        <span>Debtor Phone Number</span>
         <input type="text" name="phone" value="{{ old('phone', $account?->phone) }}" maxlength="50">
         @error('phone') <small>{{ $message }}</small> @enderror
     </label>

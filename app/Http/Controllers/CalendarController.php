@@ -10,6 +10,7 @@ use App\Models\PublicHoliday;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Validation\ValidationException;
 
 class CalendarController extends Controller
 {
@@ -22,7 +23,7 @@ class CalendarController extends Controller
         $rangeEnd = $month->copy()->endOfMonth();
 
         // General calendar events visible to this user's branch.
-        $calendarEvents = CalendarEvent::with(['matter', 'assignee', 'branch'])
+        $calendarEvents = CalendarEvent::with(['matter', 'assignee', 'branch', 'branches'])
             ->forBranchOf($user)
             ->whereBetween('starts_at', [$rangeStart, $rangeEnd])
             ->get()
@@ -91,7 +92,8 @@ class CalendarController extends Controller
             'types' => CalendarEvent::TYPES,
             'branches' => Branch::where('is_active', true)->orderBy('name')->get(['id', 'name']),
             'matters' => Matter::orderByDesc('id')->limit(300)->get(['id', 'reference_no', 'title']),
-            'officers' => User::orderBy('name')->get(['id', 'name']),
+            'officers' => $this->calendarUsers(),
+            'defaultBranchId' => $request->user()->branch_id,
             'defaultDate' => $request->filled('date') ? $request->string('date')->toString() : now()->toDateString(),
         ]);
     }
@@ -100,9 +102,12 @@ class CalendarController extends Controller
     {
         $data = $this->validateEvent($request);
         $data['created_by'] = $request->user()->id;
-        $data['branch_id'] = $data['branch_id'] ?? $request->user()->branch_id;
+        $branchIds = $this->resolveBranchIds($data, $request);
+        $assigneeIds = $this->resolveAssigneeIds($data, $branchIds);
 
         $event = CalendarEvent::create($data);
+        $event->branches()->sync($branchIds);
+        $event->assignees()->sync($assigneeIds);
 
         return redirect()
             ->route('calendar.show', $event)
@@ -112,27 +117,31 @@ class CalendarController extends Controller
     public function show(CalendarEvent $calendar)
     {
         return view('modules.calendar.show', [
-            'event' => $calendar->load(['matter', 'branch', 'assignee', 'creator']),
+            'event' => $calendar->load(['matter', 'branch', 'branches', 'assignee', 'assignees', 'creator']),
         ]);
     }
 
     public function edit(CalendarEvent $calendar)
     {
         return view('modules.calendar.edit', [
-            'event' => $calendar,
+            'event' => $calendar->load(['branches', 'assignees']),
             'types' => CalendarEvent::TYPES,
             'statuses' => CalendarEvent::STATUSES,
             'branches' => Branch::where('is_active', true)->orderBy('name')->get(['id', 'name']),
             'matters' => Matter::orderByDesc('id')->limit(300)->get(['id', 'reference_no', 'title']),
-            'officers' => User::orderBy('name')->get(['id', 'name']),
+            'officers' => $this->calendarUsers(),
         ]);
     }
 
     public function update(Request $request, CalendarEvent $calendar)
     {
         $data = $this->validateEvent($request, true);
+        $branchIds = $this->resolveBranchIds($data, $request);
+        $assigneeIds = $this->resolveAssigneeIds($data, $branchIds);
 
         $calendar->update($data);
+        $calendar->branches()->sync($branchIds);
+        $calendar->assignees()->sync($assigneeIds);
 
         return redirect()
             ->route('calendar.show', $calendar)
@@ -166,9 +175,11 @@ class CalendarController extends Controller
         $rules = [
             'title' => ['required', 'string', 'max:191'],
             'type' => ['required', 'in:'.implode(',', array_keys(CalendarEvent::TYPES))],
-            'branch_id' => ['nullable', 'exists:branches,id'],
+            'branch_ids' => ['nullable', 'array'],
+            'branch_ids.*' => ['integer', 'distinct', 'exists:branches,id'],
             'matter_id' => ['nullable', 'exists:matters,id'],
-            'assigned_to' => ['nullable', 'exists:users,id'],
+            'assigned_to' => ['nullable', 'array'],
+            'assigned_to.*' => ['integer', 'distinct', 'exists:users,id'],
             'location' => ['nullable', 'string', 'max:191'],
             'starts_at' => ['required', 'date'],
             'ends_at' => ['nullable', 'date', 'after_or_equal:starts_at'],
@@ -184,5 +195,63 @@ class CalendarController extends Controller
         $data['all_day'] = $request->boolean('all_day');
 
         return $data;
+    }
+
+    private function resolveBranchIds(array &$data, Request $request): array
+    {
+        $branchIds = collect($data['branch_ids'] ?? [])
+            ->filter()
+            ->map(fn ($branchId) => (int) $branchId)
+            ->unique()
+            ->values();
+
+        if ($branchIds->isEmpty() && $request->user()->branch_id) {
+            $branchIds->push((int) $request->user()->branch_id);
+        }
+
+        $data['branch_id'] = $branchIds->first();
+        unset($data['branch_ids']);
+
+        return $branchIds->all();
+    }
+
+    private function resolveAssigneeIds(array &$data, array $branchIds): array
+    {
+        $assigneeIds = collect($data['assigned_to'] ?? [])
+            ->filter()
+            ->map(fn ($userId) => (int) $userId)
+            ->unique()
+            ->values();
+
+        if ($assigneeIds->isEmpty()) {
+            $data['assigned_to'] = null;
+
+            return [];
+        }
+
+        $validIds = User::query()
+            ->whereIn('id', $assigneeIds)
+            ->whereIn('branch_id', $branchIds)
+            ->pluck('id')
+            ->map(fn ($userId) => (int) $userId);
+
+        if ($validIds->count() !== $assigneeIds->count()) {
+            throw ValidationException::withMessages([
+                'assigned_to' => 'Each assigned user must belong to one of the selected branches.',
+            ]);
+        }
+
+        $data['assigned_to'] = $assigneeIds->first();
+
+        return $assigneeIds->all();
+    }
+
+    private function calendarUsers()
+    {
+        return User::query()
+            ->whereNotNull('branch_id')
+            ->with('branch:id,name')
+            ->orderBy('name')
+            ->get(['id', 'name', 'branch_id']);
     }
 }

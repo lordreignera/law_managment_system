@@ -4,7 +4,7 @@
 @section('page-title', 'Create Letter')
 
 @section('content')
-    <section class="kfms-panel">
+    <section class="kfms-panel kfms-letter-compose">
         <div class="kfms-panel-header">
             <div>
                 <h2>Create Letter / Opinion</h2>

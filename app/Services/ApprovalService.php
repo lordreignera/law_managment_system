@@ -25,10 +25,12 @@ class ApprovalService
             ->update(['status' => Approval::CANCELLED]);
 
         $rows = collect();
+        $round = ((int) $approvable->approvals()->max('round')) + 1;
 
         if ($approverIds === []) {
             $rows->push($approvable->approvals()->create([
                 'requested_by' => $requester?->id,
+                'round' => $round,
                 'level' => 1,
                 'status' => Approval::PENDING,
             ]));
@@ -37,6 +39,7 @@ class ApprovalService
                 $rows->push($approvable->approvals()->create([
                     'requested_by' => $requester?->id,
                     'approver_id' => $approverId,
+                    'round' => $round,
                     'level' => $index + 1,
                     'status' => Approval::PENDING,
                 ]));

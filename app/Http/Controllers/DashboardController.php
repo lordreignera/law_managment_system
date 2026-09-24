@@ -51,6 +51,12 @@ class DashboardController extends Controller
         $link = fn (string $permission, string $route, array $params = []) => $can($permission) ? route($route, $params) : null;
 
         $invoiceOutstanding = (float) Invoice::sum('total') - (float) Invoice::sum('paid_amount');
+        $activeRecoveries = RecoveryAccount::where('status', 'active')
+            ->whereNull('settled_externally_at');
+        $recoveryOutstanding = max(
+            (clone $activeRecoveries)->sum('outstanding_amount') - (clone $activeRecoveries)->sum('amount_recovered'),
+            0
+        );
 
         $stats = [
             ['label' => 'Open Matters', 'value' => number_format(Matter::whereNotIn('status', ['closed', 'archived'])->count()), 'icon' => 'mdi-briefcase-outline', 'route' => $link('matters.index', 'matters.index')],
@@ -58,7 +64,7 @@ class DashboardController extends Controller
             ['label' => 'Clients', 'value' => number_format(Client::count()), 'icon' => 'mdi-account-group-outline', 'route' => $link('clients.index', 'clients.index')],
             ['label' => 'Pending Intakes', 'value' => number_format(ClientIntake::where('status', 'pending_review')->count()), 'icon' => 'mdi-account-plus-outline', 'route' => $link('intakes.index', 'intakes.index')],
             ['label' => 'Active Recoveries', 'value' => number_format(RecoveryAccount::where('status', 'active')->count()), 'icon' => 'mdi-bank-outline', 'route' => $link('recoveries.index', 'recoveries.index')],
-            ['label' => 'Recovery Outstanding', 'value' => number_format(RecoveryAccount::where('status', 'active')->sum('outstanding_amount')), 'icon' => 'mdi-cash-remove', 'route' => $link('recoveries.index', 'recoveries.index')],
+            ['label' => 'Recovery Outstanding', 'value' => number_format($recoveryOutstanding), 'icon' => 'mdi-cash-remove', 'route' => $link('recoveries.index', 'recoveries.index')],
             ['label' => 'Pending Securities', 'value' => number_format(LandTitle::where('status', 'pending')->count()), 'icon' => 'mdi-file-document-outline', 'route' => $link('land-titles.index', 'land-titles.index')],
             ['label' => 'Upcoming Court Events', 'value' => number_format(CourtEvent::whereDate('starts_at', '>=', today())->whereIn('status', ['scheduled', 'adjourned'])->count()), 'icon' => 'mdi-gavel', 'route' => $link('litigation.index', 'litigation.index')],
             ['label' => 'Outstanding Invoices', 'value' => number_format(max($invoiceOutstanding, 0)), 'icon' => 'mdi-receipt-text-outline', 'route' => $link('finance.index', 'finance.index')],

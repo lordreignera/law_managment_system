@@ -85,6 +85,7 @@
                 <thead>
                     <tr>
                         <th>Debtor</th>
+                        <th>Phone</th>
                         <th>Bank/Client</th>
                         <th>Account</th>
                         <th>Officer</th>
@@ -99,6 +100,7 @@
                     @forelse ($accounts as $account)
                         <tr>
                             <td><a href="{{ route('recoveries.show', $account) }}">{{ $account->debtor_name }}</a></td>
+                            <td>{{ $account->phone ?: '-' }}</td>
                             <td>{{ $account->client?->name ?: '-' }}</td>
                             <td>{{ $account->account_number ?: '-' }}</td>
                             <td>{{ $account->assignee?->name ?: 'Unassigned' }}</td>
@@ -107,44 +109,47 @@
                             <td>{{ number_format($account->amount_recovered) }}</td>
                             <td><span class="kfms-status kfms-status-{{ $account->status }}">{{ $account->statusLabel() }}</span></td>
                             <td>
-                                <div class="kfms-table-actions">
+                                <details class="kfms-action-menu">
+                                    <summary><i class="mdi mdi-dots-horizontal"></i> Options</summary>
+                                    <div class="kfms-action-menu-list">
                                     @can('recoveries.show')
-                                        <a href="{{ route('recoveries.show', $account) }}">
+                                        <a class="dropdown-item" href="{{ route('recoveries.show', $account) }}">
                                             <i class="mdi mdi-eye-outline"></i>
                                             View
                                         </a>
                                     @endcan
 
                                     @can('recoveries.update')
-                                        <a href="{{ route('recoveries.edit', $account) }}">
+                                        <a class="dropdown-item" href="{{ route('recoveries.edit', $account) }}">
                                             <i class="mdi mdi-pencil-outline"></i>
                                             Edit
                                         </a>
                                     @endcan
 
                                     @can('recoveries.assignment.edit')
-                                        <a href="{{ route('recoveries.assignment.edit', $account) }}">
+                                        <a class="dropdown-item" href="{{ route('recoveries.assignment.edit', $account) }}">
                                             <i class="mdi mdi-account-switch-outline"></i>
-                                            Assign
+                                            {{ $account->assigned_to ? 'Change' : 'Assign' }}
                                         </a>
                                     @endcan
 
                                     @can('recoveries.destroy')
-                                        <form method="POST" action="{{ route('recoveries.destroy', $account) }}">
+                                        <form class="dropdown-item-form" method="POST" action="{{ route('recoveries.destroy', $account) }}">
                                             @csrf
                                             @method('DELETE')
-                                            <button class="is-danger" type="submit" onclick="return confirm('Delete this recovery account?')">
+                                            <button class="dropdown-item is-danger" type="submit" onclick="return confirm('Delete this recovery account?')">
                                                 <i class="mdi mdi-delete-outline"></i>
                                                 Delete
                                             </button>
                                         </form>
                                     @endcan
-                                </div>
+                                    </div>
+                                </details>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="9" class="kfms-empty">No recovery accounts yet.</td>
+                            <td colspan="10" class="kfms-empty">No recovery accounts yet.</td>
                         </tr>
                     @endforelse
                 </tbody>

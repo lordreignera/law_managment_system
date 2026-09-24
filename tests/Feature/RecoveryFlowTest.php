@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Attachment;
 use App\Models\Branch;
 use App\Models\RecoveryAccount;
 use App\Models\RecoveryActivity;
@@ -50,13 +51,14 @@ class RecoveryFlowTest extends TestCase
     public function test_manager_can_create_and_assign_a_recovery(): void
     {
         $branch = Branch::create(['name' => 'Branch A', 'code' => 'BRA']);
-        $manager = $this->activeUser(['recoveries.index', 'recoveries.create', 'recoveries.store', 'recoveries.show'], 'Recoveries Manager', $branch->id);
+        $manager = $this->activeUser(['recoveries.index', 'recoveries.create', 'recoveries.store', 'recoveries.show', 'recoveries.assignment.edit'], 'Recoveries Manager', $branch->id);
         $officer = $this->activeUser([], 'Recovery Officer', $branch->id);
         $client = RecoveryClient::create(['name' => 'Stanbic Bank', 'code' => 'RC-1']);
 
         $response = $this->actingAs($manager)->post(route('recoveries.store'), [
             'recovery_client_id' => $client->id,
             'debtor_name' => 'John Debtor',
+            'phone' => '0700000000',
             'outstanding_amount' => 5000000,
             'currency' => 'UGX',
             'status' => 'active',
@@ -73,6 +75,12 @@ class RecoveryFlowTest extends TestCase
         // Branch defaults from the assigned officer's branch.
         $this->assertSame($branch->id, $account->branch_id);
         $response->assertRedirect(route('recoveries.show', $account));
+
+        $this->actingAs($manager)->get(route('recoveries.index'))
+            ->assertOk()
+            ->assertSee('Phone')
+            ->assertSee('0700000000')
+            ->assertSee('Change');
     }
 
     public function test_recovery_manager_lands_on_recovery_dashboard(): void
@@ -147,7 +155,13 @@ class RecoveryFlowTest extends TestCase
         $response->assertRedirect(route('recoveries.batches.show', $batch));
         $this->assertSame('John Debtor', $account->debtor_name);
         $this->assertSame('ACC-001', $account->account_number);
+        $this->assertSame('0700000000', $account->phone);
         $this->assertEquals(300000, (float) $account->outstanding_amount);
+
+        $this->actingAs($manager)->get(route('recoveries.batches.show', $batch))
+            ->assertOk()
+            ->assertSee('0700000000')
+            ->assertSee('Assign Batch To');
 
         $this->actingAs($manager)->patch(route('recoveries.batches.assign', $batch), [
             'assigned_to' => $officer->id,
@@ -155,6 +169,11 @@ class RecoveryFlowTest extends TestCase
         ])->assertSessionHasNoErrors();
 
         $this->assertSame($officer->id, $account->fresh()->assigned_to);
+
+        $this->actingAs($manager)->get(route('recoveries.batches.show', $batch))
+            ->assertOk()
+            ->assertSee('Change Assignment')
+            ->assertSee('Change Batch Officer');
 
         $export = $this->actingAs($manager)->get(route('recoveries.accounts.export', [
             'client' => $client->id,
@@ -222,7 +241,7 @@ class RecoveryFlowTest extends TestCase
             'outstanding_balance_after' => 600000,
         ]);
         $activityIds = RecoveryActivity::where('recovery_account_id', $account->id)->pluck('id');
-        $this->assertSame(2, \App\Models\Attachment::where('attachable_type', RecoveryActivity::class)->whereIn('attachable_id', $activityIds)->count());
+        $this->assertSame(2, Attachment::where('attachable_type', RecoveryActivity::class)->whereIn('attachable_id', $activityIds)->count());
     }
 
     public function test_officer_cannot_log_payment_above_net_outstanding_balance(): void
@@ -339,6 +358,51 @@ class RecoveryFlowTest extends TestCase
         $this->assertSame('promised', $activity->response_outcome);
         $this->assertNull($activity->amount_paid);
         $this->assertSame(0, $activity->attachments()->count());
+    }
+
+    public function test_full_repayment_closes_account_without_counting_as_officer_collection(): void
+    {
+        $branch = Branch::create(['name' => 'Branch A', 'code' => 'BRA']);
+        $officer = $this->activeUser(['recoveries.activities.store'], 'Recovery Officer', $branch->id);
+        $client = RecoveryClient::create(['name' => 'DFCU Bank', 'code' => 'RC-25']);
+
+        $account = RecoveryAccount::create([
+            'recovery_client_id' => $client->id,
+            'debtor_name' => 'Already Repaid Debtor',
+            'outstanding_amount' => 1000000,
+            'opening_recovered_amount' => 150000,
+            'amount_recovered' => 150000,
+            'status' => 'active',
+            'assigned_to' => $officer->id,
+            'branch_id' => $branch->id,
+        ]);
+
+        $this->actingAs($officer)->post(route('recoveries.activities.store', $account), [
+            'activity_type' => 'call',
+            'response_outcome' => 'fully_repaid',
+            'activity_at' => now()->format('Y-m-d\TH:i'),
+            'notes' => 'Client provided proof that the balance was already fully repaid.',
+        ])->assertRedirect(route('recoveries.show', $account));
+
+        $account->refresh();
+
+        $this->assertSame('closed', $account->status);
+        $this->assertNotNull($account->settled_externally_at);
+        $this->assertEquals(150000, (float) $account->amount_recovered);
+        $this->assertEquals(0, $account->net_outstanding_balance);
+        $this->assertDatabaseHas('recovery_activities', [
+            'recovery_account_id' => $account->id,
+            'response_outcome' => 'fully_repaid',
+            'amount_paid' => null,
+            'outstanding_balance_after' => 0,
+        ]);
+
+        $this->actingAs($officer)->post(route('recoveries.activities.store', $account), [
+            'activity_type' => 'call',
+            'response_outcome' => 'no_response',
+            'activity_at' => now()->format('Y-m-d\TH:i'),
+            'notes' => 'This should not be logged after settlement.',
+        ])->assertStatus(422);
     }
 
     public function test_officer_only_sees_own_assigned_recoveries(): void
@@ -468,7 +532,7 @@ class RecoveryFlowTest extends TestCase
         $this->actingAs($manager)->get(route('recoveries.edit', $account))
             ->assertOk()
             ->assertSee('Update Recovery')
-            ->assertSee('Assign Officer')
+            ->assertSee('Change Officer')
             ->assertDontSee('Assign to Recovery Officer');
 
         $this->actingAs($manager)->put(route('recoveries.update', $account), [
@@ -490,7 +554,7 @@ class RecoveryFlowTest extends TestCase
 
         $this->actingAs($manager)->get(route('recoveries.assignment.edit', $account))
             ->assertOk()
-            ->assertSee('Assign Recovery Officer')
+            ->assertSee('Change Recovery Officer')
             ->assertSee($officer->name);
 
         $this->actingAs($manager)->patch(route('recoveries.assignment.update', $account), [
@@ -535,7 +599,19 @@ class RecoveryFlowTest extends TestCase
         $this->actingAs($manager)->get(route('recoveries.reports'))
             ->assertOk()
             ->assertSee('Recovery Reports')
-            ->assertSee('Daily / Weekly Collections');
+            ->assertSee('Whole year')
+            ->assertSee('Collections in Selected Period')
+            ->assertSee('Monthly Recovery Graph')
+            ->assertSee('Export');
+
+        $this->actingAs($manager)->get(route('recoveries.reports', [
+            'period' => 'quarter',
+            'period_value' => 2,
+            'year' => now()->year,
+        ]))
+            ->assertOk()
+            ->assertSee('Quarter 2 '.now()->year)
+            ->assertSee('Monthly Recovery Graph');
 
         $this->actingAs($manager)->get(route('recoveries.reports', [
             'grain' => 'daily',

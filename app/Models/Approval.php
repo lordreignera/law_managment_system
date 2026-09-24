@@ -21,6 +21,7 @@ class Approval extends Model
 
     protected $casts = [
         'level' => 'integer',
+        'round' => 'integer',
         'decided_at' => 'datetime',
     ];
 

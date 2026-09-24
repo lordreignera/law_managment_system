@@ -19,7 +19,7 @@ class SendCalendarReminders extends Command
         $days = (int) $this->option('days');
         $target = now()->addDays($days)->toDateString();
 
-        $events = CalendarEvent::with(['assignee.staffProfile'])
+        $events = CalendarEvent::with(['assignee.staffProfile', 'assignees.staffProfile'])
             ->where('status', 'scheduled')
             ->whereNull('reminded_at')
             ->whereDate('starts_at', $target)
@@ -34,11 +34,19 @@ class SendCalendarReminders extends Command
         $sent = 0;
 
         foreach ($events as $event) {
-            if (! $event->assignee || ! $event->assignee->routeNotificationForSms()) {
+            $assignees = $event->assignees;
+
+            if ($assignees->isEmpty() && $event->assignee) {
+                $assignees = collect([$event->assignee]);
+            }
+
+            $recipients = $assignees->filter(fn ($user) => $user->routeNotificationForSms());
+
+            if ($recipients->isEmpty()) {
                 continue;
             }
 
-            Notification::send($event->assignee, new CalendarEventReminder($event));
+            Notification::send($recipients, new CalendarEventReminder($event));
             $event->forceFill(['reminded_at' => now()])->save();
             $sent++;
         }

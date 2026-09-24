@@ -17,6 +17,8 @@ class RecoveryActivityController extends Controller
      */
     public function store(Request $request, RecoveryAccount $recovery)
     {
+        abort_if($recovery->status !== 'active' || $recovery->settled_externally_at, 422, 'This recovery account is closed and cannot receive another activity.');
+
         $request->merge([
             'amount_paid' => $this->normalizeMoney($request->input('amount_paid')),
             'promised_amount' => $this->normalizeMoney($request->input('promised_amount')),
@@ -44,6 +46,10 @@ class RecoveryActivityController extends Controller
             $data['promised_on'] = null;
         }
 
+        if ($data['response_outcome'] === 'fully_repaid') {
+            $data['outstanding_balance_after'] = 0;
+        }
+
         $amountPaid = (float) ($data['amount_paid'] ?? 0);
         $netOutstanding = $recovery->net_outstanding_balance;
 
@@ -64,6 +70,13 @@ class RecoveryActivityController extends Controller
                     'category' => 'recovery-payment-receipt',
                     'title' => 'Payment receipt',
                 ]);
+            }
+
+            if ($data['response_outcome'] === 'fully_repaid') {
+                $recovery->forceFill([
+                    'status' => 'closed',
+                    'settled_externally_at' => now(),
+                ])->save();
             }
 
             $recovery->recomputeRecovered();

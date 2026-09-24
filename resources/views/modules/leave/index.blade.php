@@ -29,6 +29,20 @@
             <div class="kfms-alert">{{ session('status') }}</div>
         @endif
 
+        @if ($errors->has('leave'))
+            <div class="kfms-alert kfms-alert-danger">{{ $errors->first('leave') }}</div>
+        @endif
+
+        @if ($annualLeavePlan && $annualLeavePlan['remaining_days'] > 0)
+            <div class="kfms-alert">
+                <strong>Annual leave reminder for {{ $annualLeavePlan['year'] }}.</strong>
+                You have scheduled {{ rtrim(rtrim(number_format($annualLeavePlan['scheduled_days'], 1), '0'), '.') }} of
+                {{ $annualLeavePlan['required_days'] }} days. Please schedule the remaining
+                {{ rtrim(rtrim(number_format($annualLeavePlan['remaining_days'], 1), '0'), '.') }} days.
+                <a class="kfms-link-btn" href="{{ route('leave.create') }}">Schedule leave</a>
+            </div>
+        @endif
+
         <form class="kfms-table-toolbar" method="GET" action="{{ route('leave.index') }}">
             <label class="kfms-search-box">
                 <i class="mdi mdi-magnify"></i>

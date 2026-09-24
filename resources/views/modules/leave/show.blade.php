@@ -30,6 +30,7 @@
                 <div><dt>Reason</dt><dd>{{ $leave->reason ?: '-' }}</dd></div>
                 <div><dt>Reviewed By</dt><dd>{{ $leave->reviewer?->name ?: '-' }}</dd></div>
                 <div><dt>Review Notes</dt><dd>{{ $leave->review_notes ?: '-' }}</dd></div>
+                <div><dt>Resubmissions</dt><dd>{{ $leave->resubmission_count ?: 0 }}</dd></div>
             </dl>
 
             @if ($leave->attachments->isNotEmpty())
@@ -48,6 +49,15 @@
                     <button class="kfms-link-btn kfms-link-btn-danger" type="submit">Cancel Request</button>
                 </form>
             @endif
+
+            @if ($leave->user_id === auth()->id() && $leave->status === 'rejected')
+                <div class="kfms-form-actions">
+                    <a class="kfms-btn" href="{{ route('leave.reschedule.edit', $leave) }}">
+                        <i class="mdi mdi-calendar-refresh"></i>
+                        Reschedule Request
+                    </a>
+                </div>
+            @endif
         </section>
 
         <section class="kfms-panel">
@@ -56,6 +66,10 @@
             </div>
 
             @if ($canApprove && $leave->status === 'submitted')
+                <div class="kfms-alert">
+                    <strong>{{ App\Models\LeaveRequest::approvalStageLabel($currentApproval?->level ?: 1) }}</strong>
+                    approval is waiting for your decision.
+                </div>
                 <form class="kfms-form" method="POST" action="{{ route('leave.approve', $leave) }}">
                     @csrf
                     @method('PATCH')
@@ -70,12 +84,22 @@
                 <form class="kfms-form" method="POST" action="{{ route('leave.reject', $leave) }}">
                     @csrf
                     @method('PATCH')
+                    <label class="kfms-span-2">
+                        <span>Rejection Notes (optional)</span>
+                        <textarea name="review_notes" rows="2">{{ old('review_notes') }}</textarea>
+                    </label>
                     <div class="kfms-form-actions">
                         <button class="kfms-link-btn kfms-link-btn-danger" type="submit"><i class="mdi mdi-close"></i> Reject</button>
                     </div>
                 </form>
             @elseif ($leave->status === 'submitted')
-                <p class="kfms-muted">Awaiting approval.</p>
+                <p class="kfms-muted">
+                    Awaiting {{ App\Models\LeaveRequest::approvalStageLabel($currentApproval?->level ?: 1) }}
+                    @if ($currentApproval?->approver)
+                        ({{ $currentApproval->approver->name }})
+                    @endif
+                    approval.
+                </p>
             @else
                 <p class="kfms-muted">This request is {{ strtolower($leave->statusLabel()) }}.</p>
             @endif
@@ -83,9 +107,10 @@
             @if ($leave->approvals->isNotEmpty())
                 <div class="kfms-panel-subheader"><h3>Approval Trail</h3></div>
                 @include('modules.partials.table', [
-                    'headers' => ['Level', 'Approver', 'Status', 'Decided'],
+                    'headers' => ['Round', 'Stage', 'Approver', 'Status', 'Decided'],
                     'rows' => $leave->approvals->map(fn ($a) => [
-                        $a->level,
+                        $a->round ?: 1,
+                        App\Models\LeaveRequest::approvalStageLabel($a->level),
                         $a->approver?->name ?: 'Pending',
                         ucfirst($a->status),
                         $a->decided_at?->format('d M Y H:i'),

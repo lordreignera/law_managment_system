@@ -57,14 +57,66 @@ class CalendarFlowTest extends TestCase
         $this->assertNotNull($event);
         $this->assertSame('Partner Meeting', $event->title);
         $this->assertSame($branch->id, $event->branch_id);
+        $this->assertSame([$branch->id], $event->branches()->pluck('branches.id')->all());
         $this->assertSame($user->id, $event->created_by);
         $response->assertRedirect(route('calendar.show', $event));
+    }
+
+    public function test_staff_can_schedule_an_event_for_multiple_branches(): void
+    {
+        $branchA = Branch::create(['name' => 'Branch A', 'code' => 'BRA']);
+        $branchB = Branch::create(['name' => 'Branch B', 'code' => 'BRB']);
+        $user = $this->activeUser(['calendar.index', 'calendar.create', 'calendar.store', 'calendar.show'], 'Advocate', $branchA->id);
+        $branchBUser = $this->activeUser([], 'Advocate', $branchB->id);
+
+        $response = $this->actingAs($user)->post(route('calendar.store'), [
+            'title' => 'Joint Planning',
+            'type' => 'meeting',
+            'branch_ids' => [$branchA->id, $branchB->id],
+            'assigned_to' => [$user->id, $branchBUser->id],
+            'starts_at' => now()->addDays(2)->format('Y-m-d\TH:i'),
+        ]);
+
+        $event = CalendarEvent::first();
+
+        $this->assertNotNull($event);
+        $this->assertSame($branchA->id, $event->branch_id);
+        $this->assertSame([$branchA->id, $branchB->id], $event->branches()->orderBy('branches.id')->pluck('branches.id')->all());
+        $this->assertSame([$user->id, $branchBUser->id], $event->assignees()->orderBy('users.id')->pluck('users.id')->all());
+        $response->assertRedirect(route('calendar.show', $event));
+    }
+
+    public function test_assignees_must_belong_to_selected_branches(): void
+    {
+        $branchA = Branch::create(['name' => 'Branch A', 'code' => 'BRA']);
+        $branchB = Branch::create(['name' => 'Branch B', 'code' => 'BRB']);
+        $branchC = Branch::create(['name' => 'Branch C', 'code' => 'BRC']);
+        $user = $this->activeUser(['calendar.create', 'calendar.store'], 'Advocate', $branchA->id);
+        $otherBranchUser = $this->activeUser([], 'Advocate', $branchC->id);
+
+        $this->actingAs($user)->get(route('calendar.create'))
+            ->assertOk()
+            ->assertSee('data-assignee-select', false)
+            ->assertSee('data-assignee-select-all', false)
+            ->assertSee('data-user-branch-id="'.$branchA->id.'"', false)
+            ->assertSee('data-user-branch-id="'.$branchC->id.'"', false);
+
+        $this->actingAs($user)->post(route('calendar.store'), [
+            'title' => 'Restricted Assignment',
+            'type' => 'meeting',
+            'branch_ids' => [$branchA->id, $branchB->id],
+            'assigned_to' => [$otherBranchUser->id],
+            'starts_at' => now()->addDays(2)->format('Y-m-d\TH:i'),
+        ])->assertSessionHasErrors('assigned_to');
+
+        $this->assertDatabaseCount('calendar_events', 0);
     }
 
     public function test_calendar_is_branch_scoped(): void
     {
         $branchA = Branch::create(['name' => 'Branch A', 'code' => 'BRA']);
         $branchB = Branch::create(['name' => 'Branch B', 'code' => 'BRB']);
+        $branchC = Branch::create(['name' => 'Branch C', 'code' => 'BRC']);
 
         CalendarEvent::create([
             'title' => 'A Meeting',
@@ -80,14 +132,30 @@ class CalendarFlowTest extends TestCase
             'starts_at' => now()->addDay(),
             'status' => 'scheduled',
         ]);
+        $sharedEvent = CalendarEvent::create([
+            'title' => 'Shared Meeting',
+            'type' => 'meeting',
+            'branch_id' => $branchB->id,
+            'starts_at' => now()->addDay(),
+            'status' => 'scheduled',
+        ]);
+        $sharedEvent->branches()->sync([$branchA->id, $branchB->id]);
 
         $user = $this->activeUser(['calendar.index'], 'Advocate', $branchA->id);
+        $otherUser = $this->activeUser(['calendar.index'], 'Other Advocate', $branchC->id);
 
         $response = $this->actingAs($user)->get(route('calendar.index'));
 
         $response->assertOk();
         $response->assertSee('A Meeting');
+        $response->assertSee('Shared Meeting');
         $response->assertDontSee('B Meeting');
+
+        $otherResponse = $this->actingAs($otherUser)->get(route('calendar.index'));
+
+        $otherResponse->assertOk();
+        $otherResponse->assertDontSee('A Meeting');
+        $otherResponse->assertDontSee('Shared Meeting');
     }
 
     public function test_public_holidays_and_weekends_show_on_calendar(): void
