@@ -96,7 +96,7 @@
             </li>
 
             <li class="nav-item dropdown">
-                <a class="nav-link" id="profileDropdown" href="#" data-bs-toggle="dropdown">
+                <a class="nav-link" id="profileDropdown" href="#" data-bs-toggle="dropdown" aria-label="Account menu" aria-expanded="false">
                     <div class="navbar-profile">
                         @php
                             $navbarUser = auth()->user()?->fresh();

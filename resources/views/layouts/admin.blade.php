@@ -9,6 +9,7 @@
 
         @include('layouts.partials.favicon')
         @include('layouts.partials.css')
+        @include('layouts.partials.session-history')
         @livewireStyles
     </head>
     <body class="kfms-template" style="--kfms-primary: {{ $companySetting->primary_color }}; --kfms-secondary: {{ $companySetting->secondary_color }};">

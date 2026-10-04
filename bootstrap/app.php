@@ -20,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        $middleware->web(prepend: [\App\Http\Middleware\PreventBrowserCaching::class]);
         $middleware->alias([
             'active.staff' => EnsureStaffIsActive::class,
             'client.portal' => EnsureClientPortalAccount::class,

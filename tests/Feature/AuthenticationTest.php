@@ -41,4 +41,30 @@ class AuthenticationTest extends TestCase
 
         $this->assertGuest();
     }
+
+    public function test_logout_ends_session_and_protected_pages_require_login_again(): void
+    {
+        $user = User::factory()->create();
+        $this->post('/login', [
+            'email' => $user->email,
+            'password' => 'password',
+            'remember' => true,
+        ]);
+        $this->assertAuthenticated();
+
+        $this->post('/logout')->assertRedirect();
+        $this->assertGuest();
+        $this->get('/dashboard')->assertRedirect(route('login'));
+        $this->get('/client/dashboard')->assertRedirect(route('login'));
+        $this->get('/user/profile')->assertRedirect(route('login'));
+    }
+
+    public function test_web_pages_cannot_be_stored_in_browser_cache(): void
+    {
+        $response = $this->get('/login')->assertOk();
+        $this->assertTrue($response->headers->hasCacheControlDirective('no-store'));
+        $this->assertTrue($response->headers->hasCacheControlDirective('private'));
+        $this->get('/dashboard')->assertRedirect(route('login'))
+            ->assertHeader('Pragma', 'no-cache');
+    }
 }

@@ -955,7 +955,6 @@ a.kfms-stat-card:hover {
 
     /* Hide non-essential text in compact view to save space */
     .kfms-quick-action span,
-    .kfms-navbar-actions .nav-link span,
     .navbar-profile .navbar-profile-name {
         display: none !important;
     }
