@@ -15,6 +15,8 @@ class MatterBillingController extends Controller
 {
     public function show(Matter $matter)
     {
+        abort_unless(Matter::forBranchOf(request()->user())->whereKey($matter->id)->exists(), 403);
+
         return view('modules.matters.billing', [
             'matter' => $matter->load(['client', 'practiceArea', 'invoices', 'expenses.category', 'expenses.recorder']),
             'expenseCategories' => ExpenseCategory::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
@@ -43,6 +45,7 @@ class MatterBillingController extends Controller
         $subtotal = (float) $data['subtotal'];
         $tax = (float) ($data['tax'] ?? 0);
         $paidAmount = (float) ($data['paid_amount'] ?? 0);
+        abort_if($paidAmount > $subtotal + $tax, 422, 'Paid amount cannot exceed the invoice total. Record payments through the finance payment workflow.');
 
         Invoice::create([
             'client_id' => $matter->client_id,

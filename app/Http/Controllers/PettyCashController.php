@@ -6,6 +6,7 @@ use App\Models\ExpenseCategory;
 use App\Models\PettyCashTransaction;
 use App\Support\MonthlyReferenceNumber;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class PettyCashController extends Controller
 {
@@ -63,23 +64,28 @@ class PettyCashController extends Controller
             'from' => ['nullable', 'string'],
         ]);
 
-        if ($data['type'] === 'disbursement' && $data['amount'] > PettyCashTransaction::balance()) {
-            return back()
-                ->withInput()
-                ->withErrors(['amount' => 'Disbursement exceeds the available petty cash balance.']);
-        }
+        try {
+            $transaction = DB::transaction(function () use ($data, $request) {
+                $balance = PettyCashTransaction::query()->lockForUpdate()->selectRaw("COALESCE(SUM(CASE WHEN type = 'top_up' THEN amount ELSE -amount END), 0) AS balance")->value('balance');
+                if ($data['type'] === 'disbursement' && (float) $data['amount'] > (float) $balance) {
+                    throw new \RuntimeException('Disbursement exceeds the available petty cash balance.');
+                }
 
-        $transaction = PettyCashTransaction::create([
-            'reference_no' => MonthlyReferenceNumber::make(PettyCashTransaction::class, 'reference_no', 'PC'),
-            'type' => $data['type'],
-            'expense_category_id' => $data['type'] === 'disbursement' ? ($data['expense_category_id'] ?? null) : null,
-            'recorded_by' => $request->user()->id,
-            'payee' => $data['payee'] ?? null,
-            'description' => $data['description'],
-            'amount' => $data['amount'],
-            'transacted_on' => $data['transacted_on'],
-            'notes' => $data['notes'] ?? null,
-        ]);
+                return PettyCashTransaction::create([
+                    'reference_no' => MonthlyReferenceNumber::make(PettyCashTransaction::class, 'reference_no', 'PC'),
+                    'type' => $data['type'],
+                    'expense_category_id' => $data['type'] === 'disbursement' ? ($data['expense_category_id'] ?? null) : null,
+                    'recorded_by' => $request->user()->id,
+                    'payee' => $data['payee'] ?? null,
+                    'description' => $data['description'],
+                    'amount' => $data['amount'],
+                    'transacted_on' => $data['transacted_on'],
+                    'notes' => $data['notes'] ?? null,
+                ]);
+            });
+        } catch (\RuntimeException $exception) {
+            return back()->withInput()->withErrors(['amount' => $exception->getMessage()]);
+        }
 
         return redirect()
             ->route($request->input('from') === 'finance-dashboard' ? 'finance.dashboard' : 'petty-cash.index')

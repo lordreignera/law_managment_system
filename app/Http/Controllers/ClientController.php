@@ -83,6 +83,8 @@ class ClientController extends Controller
 
     public function show(Client $client)
     {
+        abort_unless(Client::forBranchOf(request()->user())->whereKey($client->id)->exists(), 403);
+
         return view('modules.clients.show', [
             'client' => $client->load([
                 'clientInCharge',
@@ -105,6 +107,8 @@ class ClientController extends Controller
 
     public function editDetails(Client $client)
     {
+        abort_unless(Client::forBranchOf(request()->user())->whereKey($client->id)->exists(), 403);
+
         return view('modules.clients.details', [
             'client' => $client->load('nextOfKin'),
             'salutations' => Salutation::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),

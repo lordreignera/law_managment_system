@@ -32,6 +32,8 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withSchedule(function (Schedule $schedule) {
         $schedule->command('kfms:leave-reminders')->yearlyOn(1, 2, '08:00');
+        $schedule->command('kfms:calendar-reminders')->dailyAt('07:00')->withoutOverlapping();
+        $schedule->command('kfms:court-reminders')->dailyAt('07:05')->withoutOverlapping();
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

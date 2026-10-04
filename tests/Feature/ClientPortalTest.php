@@ -74,7 +74,7 @@ class ClientPortalTest extends TestCase
             'client_type' => 'individual',
             'name' => 'Portal Client',
             'email' => 'client@example.test',
-            'phone' => '+256 700 111222',
+                'phone' => '+256 700 111222',
             'status' => 'active',
         ]);
 
@@ -83,13 +83,13 @@ class ClientPortalTest extends TestCase
             'phone' => '+256 700 111222',
             'password' => 'password',
             'password_confirmation' => 'password',
-        ])->assertRedirect(route('client.dashboard'));
+        ])->assertRedirect(route('verification.notice'));
 
         $user = User::where('email', 'client@example.test')->first();
 
         $this->assertNotNull($user);
         $this->assertSame('client', $user->account_type);
-        $this->assertTrue($user->hasVerifiedEmail());
+        $this->assertFalse($user->hasVerifiedEmail());
         $this->assertDatabaseHas('client_portal_accounts', [
             'client_id' => $client->id,
             'user_id' => $user->id,
@@ -139,9 +139,9 @@ class ClientPortalTest extends TestCase
             ->assertOk()
             ->assertJson([
                 'exists' => true,
-                'phone' => '+256 700 999111',
                 'has_portal_account' => false,
-            ]);
+            ])
+            ->assertJsonMissing(['phone' => '+256 700 999111']);
     }
 
     public function test_client_lookup_rejects_unknown_email(): void
@@ -165,17 +165,18 @@ class ClientPortalTest extends TestCase
 
         $this->post(route('client.register.store'), [
             'email' => 'portal.registration@example.test',
+            'phone' => '+256 700 111222',
             'password' => 'password',
             'password_confirmation' => 'password',
-        ])->assertRedirect(route('client.dashboard'));
+        ])->assertRedirect(route('verification.notice'));
 
         $user = User::where('email', 'portal.registration@example.test')->first();
         $portalAccount = ClientPortalAccount::where('client_id', $client->id)->first();
 
         $this->assertNotNull($user);
         $this->assertNotNull($portalAccount);
-        $this->assertTrue($user->hasVerifiedEmail());
-        $this->assertNotNull($portalAccount->verified_at);
+        $this->assertFalse($user->hasVerifiedEmail());
+        $this->assertNull($portalAccount->verified_at);
     }
 
     public function test_existing_client_account_is_verified_and_sent_to_dashboard_on_login(): void
@@ -190,7 +191,7 @@ class ClientPortalTest extends TestCase
         $user = User::factory()->create([
             'email' => 'login.client@example.test',
             'account_type' => 'client',
-            'email_verified_at' => null,
+            'email_verified_at' => now(),
         ]);
         ClientPortalAccount::create([
             'client_id' => $client->id,
@@ -207,7 +208,7 @@ class ClientPortalTest extends TestCase
 
         $this->assertAuthenticatedAs($user);
         $this->assertTrue($user->hasVerifiedEmail());
-        $this->assertNotNull($user->clientPortalAccount->fresh()->verified_at);
+        $this->assertNull($user->clientPortalAccount->fresh()->verified_at);
     }
 
     public function test_client_portal_logout_returns_to_client_welcome_page(): void

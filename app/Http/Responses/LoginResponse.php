@@ -17,13 +17,9 @@ class LoginResponse implements LoginResponseContract
         if ($user?->isClientAccount()) {
             $portalAccount = $user->clientPortalAccount;
 
-            if (! $user->hasVerifiedEmail()) {
-                $user->markEmailAsVerified();
-            }
-
             $portalAccount?->update([
                 'last_login_at' => now(),
-                'verified_at' => $portalAccount?->verified_at ?: now(),
+                'verified_at' => $portalAccount?->verified_at,
             ]);
 
             return redirect()->intended(route('client.dashboard'));

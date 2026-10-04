@@ -158,6 +158,8 @@ class MatterController extends Controller
 
     public function show(Matter $matter)
     {
+        abort_unless(Matter::forBranchOf(request()->user())->whereKey($matter->id)->exists(), 403);
+
         return view('modules.matters.show', [
             'matter' => $matter->load(['client', 'practiceArea', 'files.billingType', 'files.attachments', 'assignments.user', 'courtEvents.court', 'courtEvents.assignee']),
         ]);

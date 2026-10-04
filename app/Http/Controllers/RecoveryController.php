@@ -305,6 +305,8 @@ class RecoveryController extends Controller
 
     public function show(Request $request, RecoveryAccount $recovery)
     {
+        abort_unless(RecoveryAccount::forBranchOf($request->user())->whereKey($recovery->id)->exists(), 403);
+
         return view('modules.recoveries.show', [
             'account' => $recovery->load(['client', 'branch', 'assignee', 'assigner', 'importBatch', 'activities.user', 'activities.attachments']),
             'activityTypes' => RecoveryActivity::TYPES,

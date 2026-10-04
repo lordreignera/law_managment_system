@@ -167,6 +167,8 @@ class StaffController extends Controller
 
     public function update(Request $request, User $staff)
     {
+        abort_if($staff->hasAnyRole(['Super Admin', 'Administrator']) && ! auth()->user()->hasRole('Super Admin'), 403, 'Protected administrator accounts can only be managed by a Super Admin.');
+
         $profile = $staff->staffProfile ?: new StaffProfile(['user_id' => $staff->id]);
 
         $data = $request->validate([

@@ -54,7 +54,6 @@ class ClientPortalAuthController extends Controller
         return response()->json([
             'exists' => true,
             'client_no' => $client->client_no,
-            'phone' => $client->phone,
             'has_portal_account' => $client->portalAccount()->exists(),
             'message' => $client->portalAccount()->exists()
                 ? 'A portal account already exists for this client. Please sign in or use forgot password.'
@@ -82,7 +81,7 @@ class ClientPortalAuthController extends Controller
             ]);
         }
 
-        if (! empty($data['phone']) && $client->phone && $this->normalizePhone($data['phone']) !== $this->normalizePhone($client->phone)) {
+        if ($client->phone && ($this->normalizePhone($data['phone'] ?? null) !== $this->normalizePhone($client->phone))) {
             throw ValidationException::withMessages([
                 'phone' => 'The phone number does not match the client record held by the firm.',
             ]);
@@ -118,14 +117,11 @@ class ClientPortalAuthController extends Controller
             'registered_phone' => $client->phone,
         ]);
 
-        $user->markEmailAsVerified();
-        $portalAccount->update(['verified_at' => now()]);
-
         Auth::login($user);
 
         return redirect()
-            ->route('client.dashboard')
-            ->with('status', 'Your client record was confirmed and your portal is active.');
+            ->route('verification.notice')
+            ->with('status', 'Your account was created. Check your email to verify it before entering the portal.');
     }
 
     private function normalizePhone(?string $phone): ?string
