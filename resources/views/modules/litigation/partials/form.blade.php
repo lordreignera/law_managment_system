@@ -54,8 +54,17 @@
 
     <label>
         <span>Judicial Officer</span>
-        <input type="text" name="judicial_officer" value="{{ old('judicial_officer', $event?->judicial_officer) }}" maxlength="255">
+        <select name="judicial_officer_id">
+            <option value="">Select judicial officer</option>
+            @foreach ($judicialOfficers as $judicialOfficer)
+                <option value="{{ $judicialOfficer->id }}" @selected((string) old('judicial_officer_id', $event?->judicial_officer_id) === (string) $judicialOfficer->id)>
+                    {{ $judicialOfficer->name }}{{ $judicialOfficer->court?->name ? ' - '.$judicialOfficer->court->name : '' }}
+                </option>
+            @endforeach
+        </select>
+        <input type="text" name="judicial_officer" value="{{ old('judicial_officer', $event?->judicial_officer) }}" maxlength="255" placeholder="Or enter an unlisted officer">
         @error('judicial_officer') <small>{{ $message }}</small> @enderror
+        @error('judicial_officer_id') <small>{{ $message }}</small> @enderror
     </label>
 
     <label>

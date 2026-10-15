@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\BusinessIndustry;
 use App\Models\Client;
 use App\Models\File;
+use App\Models\InstructionType;
 use App\Models\Matter;
 use App\Models\MatterCategory;
+use App\Models\OpposingCounsel;
 use App\Models\PracticeArea;
 use App\Models\Shelf;
 use App\Models\User;
@@ -161,7 +163,7 @@ class MatterController extends Controller
         abort_unless(Matter::forBranchOf(request()->user())->whereKey($matter->id)->exists(), 403);
 
         return view('modules.matters.show', [
-            'matter' => $matter->load(['client', 'practiceArea', 'files.billingType', 'files.attachments', 'assignments.user', 'courtEvents.court', 'courtEvents.assignee']),
+            'matter' => $matter->load(['client', 'practiceArea', 'instructionType', 'opposingCounsel', 'files.billingType', 'files.attachments', 'assignments.user', 'courtEvents.court', 'courtEvents.judicialOfficer', 'courtEvents.assignee']),
         ]);
     }
 
@@ -169,11 +171,13 @@ class MatterController extends Controller
     {
         return view('modules.matters.create', [
             'matterNumber' => MonthlyReferenceNumber::make(Matter::class, 'reference_no', 'MT'),
-            'clients' => Client::orderBy('name')->get(),
+            'clients' => Client::forBranchOf(request()->user())->orderBy('name')->get(),
             'practiceAreas' => PracticeArea::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
+            'instructionTypes' => InstructionType::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
             'businessIndustries' => BusinessIndustry::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
             'matterCategories' => MatterCategory::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
             'shelves' => Shelf::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
+            'opposingCounsels' => OpposingCounsel::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
             'users' => User::orderBy('name')->get(),
             'statuses' => Matter::STATUSES,
         ]);
@@ -181,6 +185,8 @@ class MatterController extends Controller
 
     public function createForClient(Client $client)
     {
+        abort_unless(Client::forBranchOf(request()->user())->whereKey($client->id)->exists(), 404);
+
         if ($client->matter) {
             return redirect()
                 ->route('matters.show', $client->matter)
@@ -193,9 +199,11 @@ class MatterController extends Controller
             'client' => $client,
             'matterNumber' => MonthlyReferenceNumber::make(Matter::class, 'reference_no', 'MT'),
             'practiceAreas' => PracticeArea::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
+            'instructionTypes' => InstructionType::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
             'businessIndustries' => BusinessIndustry::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
             'matterCategories' => MatterCategory::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
             'shelves' => Shelf::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
+            'opposingCounsels' => OpposingCounsel::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
             'users' => User::orderBy('name')->get(),
             'suggestedTitle' => $client->files()->latest()->value('file_name'),
         ]);
@@ -203,12 +211,15 @@ class MatterController extends Controller
 
     public function storeForClient(Request $request, Client $client)
     {
+        abort_unless(Client::forBranchOf($request->user())->whereKey($client->id)->exists(), 404);
+
         abort_if((bool) $client->matter, 422, 'This client already has a matter.');
         abort_if($client->files()->doesntExist(), 422, 'Open a file for this client before opening a matter.');
 
         $data = $request->validate([
             'title' => ['required', 'string', 'max:191'],
             'practice_area_id' => ['required', 'exists:practice_areas,id'],
+            'instruction_type_id' => ['nullable', 'exists:instruction_types,id'],
             'business_industry_id' => ['nullable', 'exists:business_industries,id'],
             'matter_category_id' => ['nullable', 'exists:matter_categories,id'],
             'shelf_id' => ['nullable', 'exists:shelves,id'],
@@ -216,6 +227,7 @@ class MatterController extends Controller
             'instruction_date' => ['nullable', 'date', 'before_or_equal:opened_on'],
             'privacy_status' => ['required', Rule::in(['public', 'private'])],
             'opposite_counsel' => ['nullable', 'string', 'max:191'],
+            'opposing_counsel_id' => ['nullable', 'exists:opposing_counsels,id'],
             'description' => ['required', 'string', 'max:3000'],
             'next_action' => ['nullable', 'string', 'max:255'],
             'next_action_due' => ['nullable', 'date'],
@@ -283,6 +295,7 @@ class MatterController extends Controller
             ],
             'ultimate_client_id' => ['nullable', 'exists:clients,id'],
             'practice_area_id' => ['required', 'exists:practice_areas,id'],
+            'instruction_type_id' => ['nullable', 'exists:instruction_types,id'],
             'business_industry_id' => ['nullable', 'exists:business_industries,id'],
             'matter_category_id' => ['nullable', 'exists:matter_categories,id'],
             'shelf_id' => ['nullable', 'exists:shelves,id'],
@@ -292,6 +305,7 @@ class MatterController extends Controller
             'status' => ['required', Rule::in(array_keys(Matter::STATUSES))],
             'privacy_status' => ['required', Rule::in(['public', 'private'])],
             'opposite_counsel' => ['nullable', 'string', 'max:191'],
+            'opposing_counsel_id' => ['nullable', 'exists:opposing_counsels,id'],
             'description' => ['required', 'string', 'max:3000'],
             'next_action' => ['nullable', 'string', 'max:255'],
             'next_action_due' => ['nullable', 'date'],
@@ -300,6 +314,8 @@ class MatterController extends Controller
             'associate_ids' => ['nullable', 'array'],
             'associate_ids.*' => ['exists:users,id'],
         ]);
+
+        abort_unless(Client::forBranchOf($request->user())->whereKey($data['client_id'])->exists(), 422);
 
         DB::transaction(function () use ($data) {
             $partnerIds = $data['partner_ids'];

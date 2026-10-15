@@ -15,6 +15,9 @@
             + (in_array('office_location', $extraFields, true) ? 1 : 0)
             + (in_array('districts_covered', $extraFields, true) ? 1 : 0)
             + (in_array('portfolio_types', $extraFields, true) ? 1 : 0);
+            $tableColumns += collect(['court_id', 'firm_name', 'centenary_region_id', 'tax_type', 'rate', 'channel', 'event_key'])
+                ->filter(fn ($field) => in_array($field, $extraFields, true))
+                ->count();
     @endphp
 
     <section class="kfms-panel">
@@ -68,6 +71,12 @@
                             <th>Level</th>
                             <th>Station</th>
                         @endif
+                        @if (in_array('court_id', $extraFields, true))
+                            <th>Court</th>
+                        @endif
+                        @if (in_array('firm_name', $extraFields, true))
+                            <th>Firm</th>
+                        @endif
                         @if (in_array('symbol', $extraFields, true))
                             <th>Symbol</th>
                         @endif
@@ -87,6 +96,21 @@
                         @if (in_array('portfolio_types', $extraFields, true))
                             <th>Portfolio Types</th>
                         @endif
+                        @if (in_array('centenary_region_id', $extraFields, true))
+                            <th>Region</th>
+                        @endif
+                        @if (in_array('tax_type', $extraFields, true))
+                            <th>Tax Type</th>
+                        @endif
+                        @if (in_array('rate', $extraFields, true))
+                            <th>Rate</th>
+                        @endif
+                        @if (in_array('channel', $extraFields, true))
+                            <th>Channel</th>
+                        @endif
+                        @if (in_array('event_key', $extraFields, true))
+                            <th>Event Key</th>
+                        @endif
                         @if (in_array('is_default', $extraFields, true))
                             <th>Default</th>
                         @endif
@@ -102,6 +126,12 @@
                             @if (in_array('court_level', $extraFields, true))
                                 <td>{{ $record->court_level ?: '-' }}</td>
                                 <td>{{ $record->station ?: '-' }}</td>
+                            @endif
+                            @if (in_array('court_id', $extraFields, true))
+                                <td>{{ $record->court?->name ?: '-' }}</td>
+                            @endif
+                            @if (in_array('firm_name', $extraFields, true))
+                                <td>{{ $record->firm_name ?: '-' }}</td>
                             @endif
                             @if (in_array('symbol', $extraFields, true))
                                 <td>{{ $record->symbol ?: '-' }}</td>
@@ -121,6 +151,21 @@
                             @endif
                             @if (in_array('portfolio_types', $extraFields, true))
                                 <td>{{ $record->portfolio_types ? implode(', ', $record->portfolio_types) : '-' }}</td>
+                            @endif
+                            @if (in_array('centenary_region_id', $extraFields, true))
+                                <td>{{ $record->region?->name ?: '-' }}</td>
+                            @endif
+                            @if (in_array('tax_type', $extraFields, true))
+                                <td>{{ str($record->tax_type)->headline() }}</td>
+                            @endif
+                            @if (in_array('rate', $extraFields, true))
+                                <td>{{ number_format((float) $record->rate, 4) }}%</td>
+                            @endif
+                            @if (in_array('channel', $extraFields, true))
+                                <td>{{ str($record->channel)->headline() }}</td>
+                            @endif
+                            @if (in_array('event_key', $extraFields, true))
+                                <td>{{ $record->event_key }}</td>
                             @endif
                             @if (in_array('is_default', $extraFields, true))
                                 <td>{{ $record->is_default ? 'Yes' : 'No' }}</td>

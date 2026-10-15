@@ -60,6 +60,16 @@ class Matter extends Model
         return $this->belongsTo(PracticeArea::class);
     }
 
+    public function instructionType()
+    {
+        return $this->belongsTo(InstructionType::class);
+    }
+
+    public function opposingCounsel()
+    {
+        return $this->belongsTo(OpposingCounsel::class);
+    }
+
     public function businessIndustry()
     {
         return $this->belongsTo(BusinessIndustry::class);

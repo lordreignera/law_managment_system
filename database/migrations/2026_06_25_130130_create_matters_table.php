@@ -8,11 +8,37 @@ return new class extends Migration
 {
     public function up(): void
     {
+        Schema::create('instruction_types', function (Blueprint $table) {
+            $table->id();
+            $table->string('name')->unique();
+            $table->string('code', 40)->unique();
+            $table->text('description')->nullable();
+            $table->unsignedInteger('sort_order')->default(0);
+            $table->boolean('is_active')->default(true);
+            $table->timestamps();
+        });
+
+        Schema::create('opposing_counsels', function (Blueprint $table) {
+            $table->id();
+            $table->string('name', 120);
+            $table->string('code', 40)->unique();
+            $table->string('firm_name', 120)->nullable();
+            $table->string('email')->nullable();
+            $table->string('phone')->nullable();
+            $table->text('address')->nullable();
+            $table->unsignedInteger('sort_order')->default(0);
+            $table->boolean('is_active')->default(true);
+            $table->timestamps();
+            $table->unique(['name', 'firm_name']);
+        });
+
         Schema::create('matters', function (Blueprint $table) {
             $table->id();
             $table->foreignId('client_id')->constrained()->cascadeOnDelete();
             $table->foreignId('ultimate_client_id')->nullable()->constrained('clients')->nullOnDelete();
             $table->foreignId('practice_area_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('instruction_type_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('opposing_counsel_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('business_industry_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('matter_category_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('shelf_id')->nullable()->constrained('shelves')->nullOnDelete();
@@ -50,5 +76,7 @@ return new class extends Migration
     {
         Schema::dropIfExists('matter_assignments');
         Schema::dropIfExists('matters');
+        Schema::dropIfExists('opposing_counsels');
+        Schema::dropIfExists('instruction_types');
     }
 };

@@ -24,6 +24,7 @@ use App\Http\Controllers\LedgerController;
 use App\Http\Controllers\LetterTemplateController;
 use App\Http\Controllers\LitigationController;
 use App\Http\Controllers\MatterController;
+use App\Http\Controllers\ImportTemplateController;
 use App\Http\Controllers\MatterBillingController;
 use App\Http\Controllers\MatterInstructionController;
 use App\Http\Controllers\MessageController;
@@ -113,6 +114,8 @@ Route::middleware([
         Route::post('/clients', [ClientController::class, 'store'])->name('clients.store');
         Route::get('/clients/export', [ClientController::class, 'export'])->name('clients.export');
         Route::post('/clients/import', [ClientController::class, 'import'])->name('clients.import');
+        Route::get('/imports/templates/{template}', [ImportTemplateController::class, 'download'])
+            ->withoutMiddleware('route.permission')->name('imports.templates.download');
         Route::get('/clients/{client}', [ClientController::class, 'show'])->name('clients.show');
         Route::get('/clients/{client}/details', [ClientController::class, 'editDetails'])->name('clients.details.edit');
         Route::put('/clients/{client}/details', [ClientController::class, 'updateDetails'])->name('clients.details.update');

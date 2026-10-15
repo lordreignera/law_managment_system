@@ -3,7 +3,9 @@
 namespace App\Imports;
 
 use App\Models\CourtEvent;
+use App\Models\Court;
 use App\Models\Matter;
+use App\Models\JudicialOfficer;
 use App\Models\User;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -59,6 +61,8 @@ class LitigationImport implements ToCollection, WithHeadingRow
 
             CourtEvent::create([
                 'matter_id' => $matter->id,
+                'court_id' => Court::where('name', $courtName)->value('id'),
+                'judicial_officer_id' => JudicialOfficer::where('name', $this->str($row['judicial_officer'] ?? null))->value('id'),
                 'assigned_to' => $assignedTo,
                 'court_name' => $courtName,
                 'case_number' => $this->str($row['case_number'] ?? null),

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Court;
 use App\Models\CourtEvent;
+use App\Models\JudicialOfficer;
 use App\Models\Matter;
 use App\Models\User;
 use App\Exports\LitigationExport;
@@ -114,6 +115,7 @@ class LitigationController extends Controller
         return view('modules.litigation.create', [
             'matters' => Matter::forBranchOf($request->user())->orderByDesc('id')->limit(300)->get(['id', 'reference_no', 'title']),
             'courts' => Court::orderBy('name')->get(['id', 'name']),
+            'judicialOfficers' => JudicialOfficer::where('is_active', true)->with('court')->orderBy('sort_order')->orderBy('name')->get(),
             'officers' => $this->staffOfficers(),
             'statuses' => CourtEvent::STATUSES,
             'eventTypes' => CourtEvent::EVENT_TYPES,
@@ -142,7 +144,7 @@ class LitigationController extends Controller
         $this->ensureEventVisible($litigation, request()->user());
 
         return view('modules.litigation.show', [
-            'event' => $litigation->load(['matter', 'court', 'assignee', 'attachments']),
+            'event' => $litigation->load(['matter', 'court', 'judicialOfficer', 'assignee', 'attachments']),
             'statuses' => CourtEvent::STATUSES,
         ]);
     }
@@ -155,6 +157,7 @@ class LitigationController extends Controller
             'event' => $litigation,
             'matters' => Matter::forBranchOf(request()->user())->orderByDesc('id')->limit(300)->get(['id', 'reference_no', 'title']),
             'courts' => Court::orderBy('name')->get(['id', 'name']),
+            'judicialOfficers' => JudicialOfficer::where('is_active', true)->with('court')->orderBy('sort_order')->orderBy('name')->get(),
             'officers' => $this->staffOfficers(),
             'statuses' => CourtEvent::STATUSES,
             'eventTypes' => CourtEvent::EVENT_TYPES,
@@ -199,6 +202,7 @@ class LitigationController extends Controller
         $data = $request->validate([
             'matter_id' => ['required', 'exists:matters,id'],
             'court_id' => ['nullable', 'exists:courts,id'],
+            'judicial_officer_id' => ['nullable', 'exists:judicial_officers,id'],
             'assigned_to' => ['nullable', 'exists:users,id'],
             'court_name' => ['required_without:court_id', 'nullable', 'string', 'max:255'],
             'case_number' => ['nullable', 'string', 'max:255'],

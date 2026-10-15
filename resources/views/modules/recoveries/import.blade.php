@@ -16,6 +16,7 @@
                     <span>Select the client and workbook structure before upload.</span>
                 </div>
                 <a class="kfms-link-btn" href="{{ route('recoveries.dashboard') }}"><i class="mdi mdi-arrow-left"></i> Dashboard</a>
+                <a class="kfms-link-btn" href="{{ route('imports.templates.download', 'recoveries') }}">CSV Template</a>
             </div>
 
             <form class="kfms-form" method="POST" action="{{ route('recoveries.import.store') }}" enctype="multipart/form-data">

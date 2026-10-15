@@ -67,7 +67,7 @@ class LitigationExport implements FromQuery, WithHeadings, WithMapping, WithTitl
             $event->matter?->client?->display_name ?: $event->matter?->client?->name,
             $event->court?->name ?: $event->court_name,
             $event->case_number,
-            $event->judicial_officer,
+            $event->judicialOfficer?->name ?: $event->judicial_officer,
             $event->event_type,
             optional($event->starts_at)->format('Y-m-d H:i'),
             optional($event->ends_at)->format('Y-m-d H:i'),

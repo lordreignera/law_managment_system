@@ -23,6 +23,7 @@
                         <input type="file" name="file" accept=".xlsx,.xls,.csv" required>
                         <button type="submit"><i class="mdi mdi-upload"></i> Import</button>
                     </form>
+                    <a class="kfms-link-btn" href="{{ route('imports.templates.download', 'clients') }}">Template</a>
                 @endcan
                 @can('intakes.create')
                     <a class="kfms-btn" href="{{ route('intakes.create') }}">

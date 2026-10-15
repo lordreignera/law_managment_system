@@ -53,6 +53,10 @@
                 <strong>{{ $matter->practiceArea?->name ?: '-' }}</strong>
             </div>
             <div>
+                <span>Instruction Type</span>
+                <strong>{{ $matter->instructionType?->name ?: '-' }}</strong>
+            </div>
+            <div>
                 <span>Matter Status</span>
                 <strong>{{ $matter->statusLabel() }}</strong>
             </div>
@@ -74,7 +78,7 @@
             </div>
             <div>
                 <span>Opposite Counsel</span>
-                <strong>{{ $matter->opposite_counsel ?: '-' }}</strong>
+                <strong>{{ $matter->opposingCounsel?->name ?: ($matter->opposite_counsel ?: '-') }}</strong>
             </div>
             <div>
                 <span>Next Action</span>

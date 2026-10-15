@@ -29,7 +29,7 @@
                 <div><dt>Matter</dt><dd>{{ $event->matter ? $event->matter->reference_no.' - '.$event->matter->title : '-' }}</dd></div>
                 <div><dt>Court</dt><dd>{{ $event->court?->name ?: $event->court_name ?: '-' }}</dd></div>
                 <div><dt>Case Number</dt><dd>{{ $event->case_number ?: '-' }}</dd></div>
-                <div><dt>Judicial Officer</dt><dd>{{ $event->judicial_officer ?: '-' }}</dd></div>
+                <div><dt>Judicial Officer</dt><dd>{{ $event->judicialOfficer?->name ?: ($event->judicial_officer ?: '-') }}</dd></div>
                 <div><dt>Assigned Advocate</dt><dd>{{ $event->assignee?->name ?: '-' }}</dd></div>
                 <div><dt>Starts At</dt><dd>{{ $event->starts_at?->format('d M Y, H:i') }}</dd></div>
                 <div><dt>Ends At</dt><dd>{{ $event->ends_at?->format('d M Y, H:i') ?: '-' }}</dd></div>

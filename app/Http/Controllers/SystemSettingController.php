@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Branch;
 use App\Models\Bank;
 use App\Models\CurrencyType;
+use App\Models\CentenaryRegion;
+use App\Models\Court;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -72,6 +74,8 @@ class SystemSettingController extends Controller
             'banks' => Bank::orderBy('name')->get(),
             'currencyTypes' => CurrencyType::orderBy('name')->get(),
             'branches' => Branch::orderBy('name')->get(),
+            'courts' => Court::orderBy('name')->get(),
+            'centenaryRegions' => CentenaryRegion::orderBy('name')->get(),
             'filters' => $request->only(['search', 'status']),
         ]);
     }
@@ -87,6 +91,8 @@ class SystemSettingController extends Controller
             'banks' => Bank::orderBy('name')->get(),
             'currencyTypes' => CurrencyType::orderBy('name')->get(),
             'branches' => Branch::orderBy('name')->get(),
+            'courts' => Court::orderBy('name')->get(),
+            'centenaryRegions' => CentenaryRegion::orderBy('name')->get(),
         ]);
     }
 
@@ -115,6 +121,8 @@ class SystemSettingController extends Controller
             'banks' => Bank::orderBy('name')->get(),
             'currencyTypes' => CurrencyType::orderBy('name')->get(),
             'branches' => Branch::orderBy('name')->get(),
+            'courts' => Court::orderBy('name')->get(),
+            'centenaryRegions' => CentenaryRegion::orderBy('name')->get(),
         ]);
     }
 
@@ -184,6 +192,26 @@ class SystemSettingController extends Controller
             $rules['phone'] = ['nullable', 'string', 'max:50'];
         }
 
+        if (in_array('firm_name', $extraFields, true)) {
+            $rules['firm_name'] = ['nullable', 'string', 'max:191'];
+        }
+
+        if (in_array('title', $extraFields, true)) {
+            $rules['title'] = ['nullable', 'string', 'max:191'];
+        }
+
+        if (in_array('chambers', $extraFields, true)) {
+            $rules['chambers'] = ['nullable', 'string', 'max:191'];
+        }
+
+        if (in_array('court_id', $extraFields, true)) {
+            $rules['court_id'] = ['nullable', 'exists:courts,id'];
+        }
+
+        if (in_array('centenary_region_id', $extraFields, true)) {
+            $rules['centenary_region_id'] = ['required', 'exists:centenary_regions,id'];
+        }
+
         if (in_array('portfolio_types', $extraFields, true)) {
             $rules['portfolio_types'] = ['nullable', 'string', 'max:3000'];
         }
@@ -224,6 +252,34 @@ class SystemSettingController extends Controller
             $rules['districts_covered'] = ['nullable', 'string', 'max:3000'];
         }
 
+        if (in_array('tax_type', $extraFields, true)) {
+            $rules['tax_type'] = ['required', 'string', 'max:40'];
+        }
+
+        if (in_array('rate', $extraFields, true)) {
+            $rules['rate'] = ['required', 'numeric', 'min:0', 'max:100'];
+        }
+
+        if (in_array('is_inclusive', $extraFields, true)) {
+            $rules['is_inclusive'] = ['nullable', 'boolean'];
+        }
+
+        if (in_array('channel', $extraFields, true)) {
+            $rules['channel'] = ['required', 'in:database,email,sms'];
+        }
+
+        if (in_array('event_key', $extraFields, true)) {
+            $rules['event_key'] = ['required', 'string', 'max:120', Rule::unique($table, 'event_key')->ignore($ignore)];
+        }
+
+        if (in_array('subject', $extraFields, true)) {
+            $rules['subject'] = ['nullable', 'string', 'max:191'];
+        }
+
+        if (in_array('body', $extraFields, true)) {
+            $rules['body'] = ['required', 'string', 'max:5000'];
+        }
+
         $data = $request->validate($rules);
 
         $data['sort_order'] = $data['sort_order'] ?? 0;
@@ -231,6 +287,10 @@ class SystemSettingController extends Controller
 
         if (in_array('is_default', $extraFields, true)) {
             $data['is_default'] = $request->boolean('is_default');
+        }
+
+        if (in_array('is_inclusive', $extraFields, true)) {
+            $data['is_inclusive'] = $request->boolean('is_inclusive');
         }
 
         if (in_array('portfolio_types', $extraFields, true)) {

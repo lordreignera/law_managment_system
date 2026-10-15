@@ -82,6 +82,17 @@
                 </label>
 
                 <label>
+                    <span>Instruction Type</span>
+                    <select name="instruction_type_id">
+                        <option value="">Select instruction type</option>
+                        @foreach ($instructionTypes as $instructionType)
+                            <option value="{{ $instructionType->id }}" @selected((string) old('instruction_type_id') === (string) $instructionType->id)>{{ $instructionType->name }}</option>
+                        @endforeach
+                    </select>
+                    @error('instruction_type_id') <small>{{ $message }}</small> @enderror
+                </label>
+
+                <label>
                     <span>Matter Category</span>
                     <select name="matter_category_id">
                         <option value="">Select category</option>
@@ -155,6 +166,17 @@
                     <span>Opposite Counsel</span>
                     <input type="text" name="opposite_counsel" value="{{ old('opposite_counsel') }}">
                     @error('opposite_counsel') <small>{{ $message }}</small> @enderror
+                </label>
+
+                <label>
+                    <span>Opposing Counsel Register</span>
+                    <select name="opposing_counsel_id">
+                        <option value="">Select counsel</option>
+                        @foreach ($opposingCounsels as $counsel)
+                            <option value="{{ $counsel->id }}" @selected((string) old('opposing_counsel_id') === (string) $counsel->id)>{{ $counsel->name }}{{ $counsel->firm_name ? ' - '.$counsel->firm_name : '' }}</option>
+                        @endforeach
+                    </select>
+                    @error('opposing_counsel_id') <small>{{ $message }}</small> @enderror
                 </label>
 
                 <label>

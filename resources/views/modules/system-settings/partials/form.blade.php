@@ -33,6 +33,43 @@
         </label>
     @endif
 
+    @if (in_array('court_id', $extraFields, true))
+        <label>
+            <span>Court</span>
+            <select name="court_id">
+                <option value="">Select court</option>
+                @foreach (($courts ?? []) as $court)
+                    <option value="{{ $court->id }}" @selected((string) old('court_id', $record->court_id) === (string) $court->id)>{{ $court->name }}</option>
+                @endforeach
+            </select>
+            @error('court_id') <small>{{ $message }}</small> @enderror
+        </label>
+    @endif
+
+    @if (in_array('title', $extraFields, true))
+        <label>
+            <span>Title / Rank</span>
+            <input type="text" name="title" value="{{ old('title', $record->title) }}">
+            @error('title') <small>{{ $message }}</small> @enderror
+        </label>
+    @endif
+
+    @if (in_array('chambers', $extraFields, true))
+        <label>
+            <span>Chambers</span>
+            <input type="text" name="chambers" value="{{ old('chambers', $record->chambers) }}">
+            @error('chambers') <small>{{ $message }}</small> @enderror
+        </label>
+    @endif
+
+    @if (in_array('firm_name', $extraFields, true))
+        <label>
+            <span>Firm</span>
+            <input type="text" name="firm_name" value="{{ old('firm_name', $record->firm_name) }}">
+            @error('firm_name') <small>{{ $message }}</small> @enderror
+        </label>
+    @endif
+
     @if (in_array('symbol', $extraFields, true))
         <label>
             <span>Symbol</span>
@@ -111,6 +148,19 @@
         </label>
     @endif
 
+    @if (in_array('centenary_region_id', $extraFields, true))
+        <label>
+            <span>Centenary Region</span>
+            <select name="centenary_region_id" required>
+                <option value="">Select region</option>
+                @foreach (($centenaryRegions ?? []) as $region)
+                    <option value="{{ $region->id }}" @selected((string) old('centenary_region_id', $record->centenary_region_id) === (string) $region->id)>{{ $region->name }}</option>
+                @endforeach
+            </select>
+            @error('centenary_region_id') <small>{{ $message }}</small> @enderror
+        </label>
+    @endif
+
     @if (in_array('portfolio_types', $extraFields, true))
         <label class="kfms-span-2">
             <span>Portfolio Types</span>
@@ -139,6 +189,69 @@
                 @endforeach
             </select>
             @error('currency_type_id') <small>{{ $message }}</small> @enderror
+        </label>
+    @endif
+
+    @if (in_array('tax_type', $extraFields, true))
+        <label>
+            <span>Tax Type</span>
+            <select name="tax_type">
+                @foreach (['vat' => 'VAT', 'withholding' => 'Withholding', 'other' => 'Other'] as $value => $label)
+                    <option value="{{ $value }}" @selected(old('tax_type', $record->tax_type ?: 'vat') === $value)>{{ $label }}</option>
+                @endforeach
+            </select>
+            @error('tax_type') <small>{{ $message }}</small> @enderror
+        </label>
+    @endif
+
+    @if (in_array('rate', $extraFields, true))
+        <label>
+            <span>Rate (%)</span>
+            <input type="number" name="rate" min="0" max="100" step="0.0001" value="{{ old('rate', $record->rate ?? 0) }}" required>
+            @error('rate') <small>{{ $message }}</small> @enderror
+        </label>
+    @endif
+
+    @if (in_array('is_inclusive', $extraFields, true))
+        <label class="kfms-check-row">
+            <input type="checkbox" name="is_inclusive" value="1" @checked(old('is_inclusive', $record->is_inclusive))>
+            <span>Tax inclusive</span>
+        </label>
+    @endif
+
+    @if (in_array('channel', $extraFields, true))
+        <label>
+            <span>Channel</span>
+            <select name="channel">
+                @foreach (['database' => 'In-app', 'email' => 'Email', 'sms' => 'SMS'] as $value => $label)
+                    <option value="{{ $value }}" @selected(old('channel', $record->channel ?: 'database') === $value)>{{ $label }}</option>
+                @endforeach
+            </select>
+            @error('channel') <small>{{ $message }}</small> @enderror
+        </label>
+    @endif
+
+    @if (in_array('event_key', $extraFields, true))
+        <label>
+            <span>Event Key</span>
+            <input type="text" name="event_key" value="{{ old('event_key', $record->event_key) }}" required>
+            @error('event_key') <small>{{ $message }}</small> @enderror
+        </label>
+    @endif
+
+    @if (in_array('subject', $extraFields, true))
+        <label>
+            <span>Subject</span>
+            <input type="text" name="subject" value="{{ old('subject', $record->subject) }}">
+            @error('subject') <small>{{ $message }}</small> @enderror
+        </label>
+    @endif
+
+    @if (in_array('body', $extraFields, true))
+        <label class="kfms-span-2">
+            <span>Template Body</span>
+            <textarea name="body" rows="5" required>{{ old('body', $record->body) }}</textarea>
+            @error('body') <small>{{ $message }}</small> @enderror
         </label>
     @endif
 

@@ -33,6 +33,8 @@ class MatterBillingController extends Controller
 
     public function storeInvoice(Request $request, Matter $matter)
     {
+        $this->ensureVisible($matter, $request->user());
+
         $data = $request->validate([
             'invoice_date' => ['required', 'date'],
             'due_date' => ['nullable', 'date', 'after_or_equal:invoice_date'],
@@ -67,6 +69,8 @@ class MatterBillingController extends Controller
 
     public function storeCost(Request $request, Matter $matter)
     {
+        $this->ensureVisible($matter, $request->user());
+
         $data = $request->validate([
             'expense_category_id' => ['nullable', 'exists:expense_categories,id'],
             'payee' => ['nullable', 'string', 'max:255'],
@@ -99,5 +103,10 @@ class MatterBillingController extends Controller
         return redirect()
             ->route('matters.billing.show', $matter)
             ->with('status', 'Cost recorded for '.$matter->reference_no.'.');
+    }
+
+    private function ensureVisible(Matter $matter, $user): void
+    {
+        abort_unless(Matter::forBranchOf($user)->whereKey($matter->id)->exists(), 403);
     }
 }

@@ -19,6 +19,7 @@
                     <i class="mdi mdi-format-list-bulleted"></i>
                     Register
                 </a>
+                <a class="kfms-link-btn" href="{{ route('imports.templates.download', 'land-titles') }}">CSV Template</a>
             </div>
         </div>
 

@@ -44,13 +44,17 @@ class DatabaseSeeder extends Seeder
             JobTitleSeeder::class,
             BudgetCategorySeeder::class,
             CourtSeeder::class,
+            JudicialOfficerSeeder::class,
+            OpposingCounselSeeder::class,
             BankSeeder::class,
             BankBranchSeeder::class,
             ZonalOfficeSeeder::class,
+            CentenaryRegionSeeder::class,
             LeaveTypeSeeder::class,
             PaymentModeSeeder::class,
             BillingTypeSeeder::class,
             CurrencyTypeSeeder::class,
+            TaxSettingSeeder::class,
             AccountClassSeeder::class,
             ChartAccountSeeder::class,
             FinanceAccountMappingSeeder::class,
@@ -59,6 +63,7 @@ class DatabaseSeeder extends Seeder
             LetterheadSeeder::class,
             LetterTemplateSeeder::class,
             BillableRateSeeder::class,
+            NotificationTemplateSeeder::class,
         ]);
 
         // ============================================================

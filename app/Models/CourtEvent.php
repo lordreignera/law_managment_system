@@ -55,6 +55,11 @@ class CourtEvent extends Model
         return $this->belongsTo(Court::class);
     }
 
+    public function judicialOfficer()
+    {
+        return $this->belongsTo(JudicialOfficer::class);
+    }
+
     public function assignee()
     {
         return $this->belongsTo(User::class, 'assigned_to');

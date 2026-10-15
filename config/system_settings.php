@@ -10,19 +10,25 @@ use App\Models\ContactPosition;
 use App\Models\Country;
 use App\Models\Court;
 use App\Models\CurrencyType;
+use App\Models\CentenaryBranch;
+use App\Models\CentenaryRegion;
 use App\Models\ExpenseCategory;
 use App\Models\InstructionType;
+use App\Models\JudicialOfficer;
 use App\Models\JobTitle;
 use App\Models\LeaveType;
 use App\Models\Letterhead;
 use App\Models\MatterCategory;
 use App\Models\PaymentMode;
 use App\Models\PracticeArea;
+use App\Models\OpposingCounsel;
+use App\Models\NotificationTemplate;
 use App\Models\RecoveryClient;
 use App\Models\RelationshipType;
 use App\Models\RequisitionCategory;
 use App\Models\Salutation;
 use App\Models\Shelf;
+use App\Models\TaxSetting;
 use App\Models\ZonalOffice;
 
 return [
@@ -99,6 +105,20 @@ return [
         'description' => 'Court stations and divisions used for litigation work.',
         'extra_fields' => ['court_level', 'station'],
     ],
+    'judicial-officers' => [
+        'title' => 'Judicial Officers',
+        'singular' => 'Judicial Officer',
+        'model' => JudicialOfficer::class,
+        'description' => 'Judicial officers assigned to courts and court events.',
+        'extra_fields' => ['court_id', 'title', 'chambers', 'email', 'phone'],
+    ],
+    'opposing-counsels' => [
+        'title' => 'Opposing Counsel',
+        'singular' => 'Opposing Counsel',
+        'model' => OpposingCounsel::class,
+        'description' => 'External advocates and firms linked to matters.',
+        'extra_fields' => ['firm_name', 'email', 'phone'],
+    ],
     'banks' => [
         'title' => 'Banks',
         'singular' => 'Bank',
@@ -126,6 +146,20 @@ return [
         'description' => 'Ministry zonal offices, office locations, and districts covered for securities work.',
         'extra_fields' => ['office_location', 'districts_covered'],
     ],
+    'centenary-regions' => [
+        'title' => 'Centenary Regions',
+        'singular' => 'Centenary Region',
+        'model' => CentenaryRegion::class,
+        'description' => 'Centenary Bank recovery regions.',
+        'extra_fields' => ['office_location'],
+    ],
+    'centenary-branches' => [
+        'title' => 'Centenary Branches',
+        'singular' => 'Centenary Branch',
+        'model' => CentenaryBranch::class,
+        'description' => 'Centenary Bank branches linked to a region.',
+        'extra_fields' => ['centenary_region_id', 'office_location'],
+    ],
     'leave-types' => [
         'title' => 'Leave Types',
         'singular' => 'Leave Type',
@@ -150,6 +184,20 @@ return [
         'model' => CurrencyType::class,
         'description' => 'Currencies used for billing, recoveries, and expenses.',
         'extra_fields' => ['symbol'],
+    ],
+    'tax-settings' => [
+        'title' => 'Tax Settings',
+        'singular' => 'Tax Setting',
+        'model' => TaxSetting::class,
+        'description' => 'Tax rates and treatment used by billing and finance.',
+        'extra_fields' => ['tax_type', 'rate', 'is_inclusive'],
+    ],
+    'notification-templates' => [
+        'title' => 'Notification Templates',
+        'singular' => 'Notification Template',
+        'model' => NotificationTemplate::class,
+        'description' => 'Reusable messages for system notifications.',
+        'extra_fields' => ['channel', 'event_key', 'subject', 'body'],
     ],
     'requisition-categories' => [
         'title' => 'Requisition Categories',

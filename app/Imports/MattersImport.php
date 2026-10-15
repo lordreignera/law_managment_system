@@ -5,6 +5,8 @@ namespace App\Imports;
 use App\Models\Client;
 use App\Models\Matter;
 use App\Models\MatterCategory;
+use App\Models\InstructionType;
+use App\Models\OpposingCounsel;
 use App\Models\PracticeArea;
 use App\Models\User;
 use App\Support\MonthlyReferenceNumber;
@@ -33,7 +35,7 @@ class MattersImport implements ToCollection, WithHeadingRow
                 continue;
             }
 
-            $client = Client::where('client_no', $clientNo)->first();
+            $client = Client::forBranchOf($this->user)->where('client_no', $clientNo)->first();
 
             // One matter per client: skip unknown clients or those that already have a matter.
             if (! $client || $client->matter) {
@@ -51,6 +53,7 @@ class MattersImport implements ToCollection, WithHeadingRow
             Matter::create([
                 'client_id' => $client->id,
                 'practice_area_id' => $this->lookupId(PracticeArea::class, $this->str($row['practice_area'] ?? null)),
+                'instruction_type_id' => $this->lookupId(InstructionType::class, $this->str($row['instruction_type'] ?? null)),
                 'matter_category_id' => $this->lookupId(MatterCategory::class, $this->str($row['matter_category'] ?? null)),
                 'opened_by' => $this->user->id,
                 'branch_id' => $this->user->branch_id,
@@ -60,6 +63,7 @@ class MattersImport implements ToCollection, WithHeadingRow
                 'opened_on' => $this->date($row['opened_on'] ?? null) ?: now()->toDateString(),
                 'privacy_status' => $privacy,
                 'opposite_counsel' => $this->str($row['opposite_counsel'] ?? null),
+                'opposing_counsel_id' => $this->lookupId(OpposingCounsel::class, $this->str($row['opposing_counsel_name'] ?? null)),
                 'status' => $status,
                 'description' => $this->str($row['description'] ?? null) ?: 'Imported matter.',
             ]);
