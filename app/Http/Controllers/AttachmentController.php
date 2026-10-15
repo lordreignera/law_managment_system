@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Attachment;
+use App\Models\CourtEvent;
 use App\Models\Matter;
 use App\Models\Message;
 use App\Models\Requisition;
@@ -50,7 +51,12 @@ class AttachmentController extends Controller
         }
 
         if ($parent instanceof Matter) {
-            abort_unless($parent->forBranchOf($user)->whereKey($parent->id)->exists(), 403);
+            abort_unless(Matter::visibleTo($user)->whereKey($parent->id)->exists(), 403);
+            return;
+        }
+
+        if ($parent instanceof CourtEvent) {
+            abort_unless(Matter::visibleTo($user)->whereKey($parent->matter_id)->exists(), 403);
             return;
         }
 

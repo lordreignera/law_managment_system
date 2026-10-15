@@ -18,6 +18,7 @@ use App\Support\MonthlyReferenceNumber;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Maatwebsite\Excel\Facades\Excel;
 
 class MatterController extends Controller
@@ -25,9 +26,7 @@ class MatterController extends Controller
     public function dashboard(Request $request)
     {
         $user = $request->user();
-        $baseQuery = Matter::query()->forBranchOf($user);
-        $activeStatuses = ['open', 'planning', 'active', 'waiting_for_client', 'waiting_for_third_party_or_court', 'billing_pending', 'under_review'];
-
+        $baseQuery = Matter::query()->visibleTo($user);
         $stats = [
             [
                 'label' => 'Total Matters',
@@ -37,7 +36,7 @@ class MatterController extends Controller
             ],
             [
                 'label' => 'Open Matters',
-                'value' => (clone $baseQuery)->whereIn('status', $activeStatuses)->count(),
+                'value' => (clone $baseQuery)->where('status', 'open')->count(),
                 'icon' => 'mdi-folder-open-outline',
                 'route' => route('matters.index', ['status' => 'open']),
             ],
@@ -79,7 +78,7 @@ class MatterController extends Controller
         $practiceAreaRows = PracticeArea::query()
             ->withCount([
                 'matters as active_matters_count' => fn ($query) => $query
-                    ->forBranchOf($user)
+                    ->visibleTo($user)
                     ->whereNotIn('status', ['closed', 'archived']),
             ])
             ->orderByDesc('active_matters_count')
@@ -88,7 +87,7 @@ class MatterController extends Controller
             ->get();
 
         $myMatters = Matter::with(['client', 'practiceArea'])
-            ->forBranchOf($user)
+            ->visibleTo($user)
             ->where(function ($query) use ($user) {
                 $query
                     ->where('opened_by', $user->id)
@@ -99,8 +98,8 @@ class MatterController extends Controller
             ->get();
 
         $recentMatters = Matter::with(['client', 'practiceArea'])
-            ->forBranchOf($user)
-            ->latest()
+            ->visibleTo($user)
+            ->latest('updated_at')
             ->limit(8)
             ->get();
 
@@ -116,7 +115,7 @@ class MatterController extends Controller
     public function index(Request $request)
     {
         $matters = Matter::with(['client', 'practiceArea'])
-            ->forBranchOf($request->user())
+            ->visibleTo($request->user())
             ->when($request->filled('search'), function ($query) use ($request) {
                 $search = $request->string('search')->toString();
 
@@ -128,13 +127,23 @@ class MatterController extends Controller
                 });
             })
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')->toString()))
+            ->when(in_array($request->query('litigation_stage'), ['opening', 'review'], true), function ($query) use ($request) {
+                $statuses = $request->query('litigation_stage') === 'opening'
+                    ? ['inquiry', 'consultation', 'conflict_check', 'file_pending']
+                    : ['open', 'planning', 'waiting_for_client'];
+
+                $query->whereIn('status', $statuses)
+                    ->where(fn ($query) => $query
+                        ->whereHas('practiceArea', fn ($query) => $query->where('name', 'like', '%Litigation%'))
+                        ->orWhereHas('courtEvents'));
+            })
             ->latest()
             ->paginate(15)
             ->withQueryString();
 
         return view('modules.matters.index', [
             'matters' => $matters,
-            'filters' => $request->only(['search', 'status']),
+            'filters' => $request->only(['search', 'status', 'litigation_stage']),
             'statuses' => Matter::STATUSES,
         ]);
     }
@@ -160,10 +169,10 @@ class MatterController extends Controller
 
     public function show(Matter $matter)
     {
-        abort_unless(Matter::forBranchOf(request()->user())->whereKey($matter->id)->exists(), 403);
+        abort_unless(Matter::visibleTo(request()->user())->whereKey($matter->id)->exists(), 403);
 
         return view('modules.matters.show', [
-            'matter' => $matter->load(['client', 'practiceArea', 'instructionType', 'opposingCounsel', 'files.billingType', 'files.attachments', 'assignments.user', 'courtEvents.court', 'courtEvents.judicialOfficer', 'courtEvents.assignee']),
+            'matter' => $matter->load(['client', 'ultimateClient', 'practiceArea', 'instructionType', 'businessIndustry', 'matterCategory', 'shelf', 'opposingCounsel', 'files.billingType', 'files.attachments', 'assignments.user', 'courtEvents.court', 'courtEvents.judicialOfficer', 'courtEvents.assignee']),
         ]);
     }
 
@@ -178,7 +187,7 @@ class MatterController extends Controller
             'matterCategories' => MatterCategory::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
             'shelves' => Shelf::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
             'opposingCounsels' => OpposingCounsel::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
-            'users' => User::orderBy('name')->get(),
+            'users' => $this->assignableUsers()->orderBy('name')->get(),
             'statuses' => Matter::STATUSES,
         ]);
     }
@@ -188,6 +197,8 @@ class MatterController extends Controller
         abort_unless(Client::forBranchOf(request()->user())->whereKey($client->id)->exists(), 404);
 
         if ($client->matter) {
+            abort_unless(Matter::visibleTo(request()->user())->whereKey($client->matter->id)->exists(), 404);
+
             return redirect()
                 ->route('matters.show', $client->matter)
                 ->with('status', 'This client already has a matter.');
@@ -204,9 +215,77 @@ class MatterController extends Controller
             'matterCategories' => MatterCategory::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
             'shelves' => Shelf::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
             'opposingCounsels' => OpposingCounsel::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
-            'users' => User::orderBy('name')->get(),
+            'users' => $this->assignableUsers()->orderBy('name')->get(),
             'suggestedTitle' => $client->files()->latest()->value('file_name'),
         ]);
+    }
+
+    public function edit(Request $request, Matter $matter)
+    {
+        abort_unless(Matter::visibleTo($request->user())->whereKey($matter->id)->exists(), 404);
+
+        return view('modules.matters.create', [
+            'matter' => $matter->load(['client', 'assignments']),
+            'clients' => Client::forBranchOf($request->user())->orderBy('name')->get(),
+            'practiceAreas' => PracticeArea::where('is_active', true)->orWhere('id', $matter->practice_area_id)->orderBy('sort_order')->orderBy('name')->get(),
+            'instructionTypes' => InstructionType::where('is_active', true)->orWhere('id', $matter->instruction_type_id)->orderBy('sort_order')->orderBy('name')->get(),
+            'businessIndustries' => BusinessIndustry::where('is_active', true)->orWhere('id', $matter->business_industry_id)->orderBy('sort_order')->orderBy('name')->get(),
+            'matterCategories' => MatterCategory::where('is_active', true)->orWhere('id', $matter->matter_category_id)->orderBy('sort_order')->orderBy('name')->get(),
+            'shelves' => Shelf::where('is_active', true)->orWhere('id', $matter->shelf_id)->orderBy('sort_order')->orderBy('name')->get(),
+            'opposingCounsels' => OpposingCounsel::where('is_active', true)->orWhere('id', $matter->opposing_counsel_id)->orderBy('sort_order')->orderBy('name')->get(),
+            'users' => $this->assignableUsers()->orderBy('name')->get(),
+            'statuses' => Matter::STATUSES,
+        ]);
+    }
+
+    public function update(Request $request, Matter $matter)
+    {
+        abort_unless(Matter::visibleTo($request->user())->whereKey($matter->id)->exists(), 404);
+
+        $data = $request->validate([
+            'title' => ['required', 'string', 'max:191'],
+            'ultimate_client_id' => ['nullable', 'exists:clients,id'],
+            'practice_area_id' => ['required', 'exists:practice_areas,id'],
+            'instruction_type_id' => ['nullable', 'exists:instruction_types,id'],
+            'business_industry_id' => ['nullable', 'exists:business_industries,id'],
+            'matter_category_id' => ['nullable', 'exists:matter_categories,id'],
+            'shelf_id' => ['nullable', 'exists:shelves,id'],
+            'opened_on' => ['required', 'date'],
+            'instruction_date' => ['nullable', 'date', 'before_or_equal:opened_on'],
+            'closed_on' => ['nullable', 'date', 'after_or_equal:opened_on'],
+            'status' => ['required', Rule::in(array_keys(Matter::STATUSES))],
+            'privacy_status' => ['required', Rule::in(['public', 'private'])],
+            'opposite_counsel' => ['nullable', 'string', 'max:191'],
+            'opposing_counsel_id' => ['nullable', 'exists:opposing_counsels,id'],
+            'description' => ['required', 'string', 'max:3000'],
+            'next_action' => ['nullable', 'string', 'max:255'],
+            'next_action_due' => ['nullable', 'date'],
+            'partner_ids' => ['required', 'array', 'min:1'],
+            'partner_ids.*' => ['distinct', 'exists:users,id'],
+            'associate_ids' => ['nullable', 'array'],
+            'associate_ids.*' => ['distinct', 'exists:users,id'],
+        ]);
+
+        $this->validateUltimateClient($data, $request->user());
+        $this->validateAssignableUsers($data);
+
+        DB::transaction(function () use ($matter, $data) {
+            $partnerIds = array_values(array_unique($data['partner_ids']));
+            $associateIds = array_values(array_diff(array_unique($data['associate_ids'] ?? []), $partnerIds));
+            $matter->update(collect($data)->except(['partner_ids', 'associate_ids'])->toArray());
+
+            $matter->assignments()->whereNotIn('user_id', array_merge($partnerIds, $associateIds))->delete();
+            foreach (['partner' => $partnerIds, 'associate' => $associateIds] as $role => $userIds) {
+                foreach ($userIds as $index => $userId) {
+                    $matter->assignments()->updateOrCreate(
+                        ['user_id' => $userId],
+                        ['assignment_role' => $role, 'assigned_on' => now()->toDateString(), 'is_lead' => $role === 'partner' && $index === 0]
+                    );
+                }
+            }
+        });
+
+        return redirect()->route('matters.show', $matter)->with('status', 'Matter updated.');
     }
 
     public function storeForClient(Request $request, Client $client)
@@ -232,10 +311,12 @@ class MatterController extends Controller
             'next_action' => ['nullable', 'string', 'max:255'],
             'next_action_due' => ['nullable', 'date'],
             'partner_ids' => ['required', 'array', 'min:1'],
-            'partner_ids.*' => ['exists:users,id'],
+            'partner_ids.*' => ['distinct', 'exists:users,id'],
             'associate_ids' => ['nullable', 'array'],
-            'associate_ids.*' => ['exists:users,id'],
+            'associate_ids.*' => ['distinct', 'exists:users,id'],
         ]);
+
+        $this->validateAssignableUsers($data);
 
         $matter = DB::transaction(function () use ($client, $data) {
             $partnerIds = $data['partner_ids'];
@@ -246,7 +327,7 @@ class MatterController extends Controller
                 ->merge([
                     'client_id' => $client->id,
                     'opened_by' => auth()->id(),
-                    'branch_id' => auth()->user()->branch_id,
+                    'branch_id' => $client->branch_id ?? auth()->user()->branch_id,
                     'department_id' => auth()->user()->department_id,
                     'reference_no' => MonthlyReferenceNumber::make(Matter::class, 'reference_no', 'MT'),
                     'status' => 'open',
@@ -310,14 +391,17 @@ class MatterController extends Controller
             'next_action' => ['nullable', 'string', 'max:255'],
             'next_action_due' => ['nullable', 'date'],
             'partner_ids' => ['required', 'array', 'min:1'],
-            'partner_ids.*' => ['exists:users,id'],
+            'partner_ids.*' => ['distinct', 'exists:users,id'],
             'associate_ids' => ['nullable', 'array'],
-            'associate_ids.*' => ['exists:users,id'],
+            'associate_ids.*' => ['distinct', 'exists:users,id'],
         ]);
 
-        abort_unless(Client::forBranchOf($request->user())->whereKey($data['client_id'])->exists(), 422);
+        $client = Client::forBranchOf($request->user())->find($data['client_id']);
+        abort_unless($client, 422);
+        $this->validateUltimateClient($data, $request->user());
+        $this->validateAssignableUsers($data);
 
-        DB::transaction(function () use ($data) {
+        DB::transaction(function () use ($data, $client) {
             $partnerIds = $data['partner_ids'];
             $associateIds = $data['associate_ids'] ?? [];
 
@@ -325,7 +409,7 @@ class MatterController extends Controller
                 ->except(['partner_ids', 'associate_ids'])
                 ->merge([
                     'opened_by' => auth()->id(),
-                    'branch_id' => auth()->user()->branch_id,
+                    'branch_id' => $client->branch_id ?? auth()->user()->branch_id,
                     'department_id' => auth()->user()->department_id,
                     'reference_no' => MonthlyReferenceNumber::make(Matter::class, 'reference_no', 'MT'),
                 ])
@@ -352,6 +436,28 @@ class MatterController extends Controller
         return redirect()
             ->route('matters.index')
             ->with('status', 'Matter created.');
+    }
+
+    private function assignableUsers()
+    {
+        return User::query()
+            ->where(fn ($query) => $query->whereNull('account_type')->orWhere('account_type', 'staff'))
+            ->whereHas('staffProfile', fn ($query) => $query->where('employment_status', 'active'));
+    }
+
+    private function validateAssignableUsers(array $data): void
+    {
+        $ids = array_unique(array_merge($data['partner_ids'], $data['associate_ids'] ?? []));
+        if ($this->assignableUsers()->whereIn('id', $ids)->count() !== count($ids)) {
+            throw ValidationException::withMessages(['partner_ids' => 'Select active internal staff for the responsible team.']);
+        }
+    }
+
+    private function validateUltimateClient(array $data, User $user): void
+    {
+        if (! empty($data['ultimate_client_id']) && ! Client::forBranchOf($user)->whereKey($data['ultimate_client_id'])->exists()) {
+            throw ValidationException::withMessages(['ultimate_client_id' => 'Select a client in your branch.']);
+        }
     }
 
 }

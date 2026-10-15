@@ -18,7 +18,7 @@ class MattersExport implements FromQuery, WithHeadings, WithMapping, WithTitle
     public function query()
     {
         return Matter::query()
-            ->forBranchOf($this->user)
+            ->visibleTo($this->user)
             ->with(['client', 'practiceArea', 'matterCategory', 'branch'])
             ->withCount('files')
             ->latest();

@@ -15,7 +15,7 @@ class MatterBillingController extends Controller
 {
     public function show(Matter $matter)
     {
-        abort_unless(Matter::forBranchOf(request()->user())->whereKey($matter->id)->exists(), 403);
+        abort_unless(Matter::visibleTo(request()->user())->whereKey($matter->id)->exists(), 403);
 
         return view('modules.matters.billing', [
             'matter' => $matter->load(['client', 'practiceArea', 'invoices', 'expenses.category', 'expenses.recorder']),
@@ -107,6 +107,6 @@ class MatterBillingController extends Controller
 
     private function ensureVisible(Matter $matter, $user): void
     {
-        abort_unless(Matter::forBranchOf($user)->whereKey($matter->id)->exists(), 403);
+        abort_unless(Matter::visibleTo($user)->whereKey($matter->id)->exists(), 403);
     }
 }

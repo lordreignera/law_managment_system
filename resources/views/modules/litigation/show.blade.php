@@ -49,6 +49,7 @@
             @endif
         </section>
 
+        @can('litigation.outcome')
         <section class="kfms-panel">
             <div class="kfms-panel-header">
                 <h2>Record Outcome</h2>
@@ -89,5 +90,6 @@
                 </div>
             </form>
         </section>
+        @endcan
     </div>
 @endsection

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Concerns\BranchScoped;
 use App\Models\Concerns\HasAttachments;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -123,5 +124,24 @@ class Matter extends Model
     public function statusLabel(): string
     {
         return self::STATUSES[$this->status] ?? str($this->status)->headline()->toString();
+    }
+
+    public function scopeVisibleTo(Builder $query, ?User $user): Builder
+    {
+        if (! $user) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        $query->forBranchOf($user);
+
+        if ($user->canSeeAllBranches()) {
+            return $query;
+        }
+
+        return $query->where(fn (Builder $query) => $query
+            ->whereNull('privacy_status')
+            ->orWhere('privacy_status', 'public')
+            ->orWhere('opened_by', $user->id)
+            ->orWhereHas('assignments', fn (Builder $query) => $query->where('user_id', $user->id)));
     }
 }

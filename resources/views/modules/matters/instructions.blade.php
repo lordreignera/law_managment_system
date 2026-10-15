@@ -49,6 +49,7 @@
                 </div>
             </div>
 
+            @can('matters.instructions.update')
             <form class="kfms-form" method="POST" action="{{ route('matters.instructions.update', $matter) }}">
                 @csrf
                 @method('PATCH')
@@ -66,6 +67,9 @@
                     </button>
                 </div>
             </form>
+            @else
+                <p class="kfms-muted-text">{{ $matter->description ?: 'No instructions recorded.' }}</p>
+            @endcan
         </section>
 
         <section class="kfms-panel">
@@ -76,6 +80,7 @@
                 </div>
             </div>
 
+            @can('matters.documents.store')
             <form class="kfms-form" method="POST" action="{{ route('matters.documents.store', $matter) }}" enctype="multipart/form-data">
                 @csrf
                 <div class="kfms-form-grid">
@@ -104,6 +109,7 @@
                     </button>
                 </div>
             </form>
+            @endcan
         </section>
     </div>
 

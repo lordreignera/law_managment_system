@@ -143,6 +143,8 @@ Route::middleware([
         Route::post('/matters', [MatterController::class, 'store'])->name('matters.store');
         Route::get('/matters/export', [MatterController::class, 'export'])->name('matters.export');
         Route::post('/matters/import', [MatterController::class, 'import'])->name('matters.import');
+        Route::get('/matters/{matter}/edit', [MatterController::class, 'edit'])->name('matters.edit');
+        Route::put('/matters/{matter}', [MatterController::class, 'update'])->name('matters.update');
         Route::get('/matters/{matter}/billing', [MatterBillingController::class, 'show'])->name('matters.billing.show');
         Route::post('/matters/{matter}/billing/invoices', [MatterBillingController::class, 'storeInvoice'])->name('matters.billing.invoices.store');
         Route::post('/matters/{matter}/billing/costs', [MatterBillingController::class, 'storeCost'])->name('matters.billing.costs.store');

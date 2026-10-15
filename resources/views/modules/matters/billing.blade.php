@@ -55,6 +55,7 @@
                 </div>
             </div>
 
+            @can('matters.billing.invoices.store')
             <form class="kfms-form" method="POST" action="{{ route('matters.billing.invoices.store', $matter) }}">
                 @csrf
                 <div class="kfms-form-grid">
@@ -100,6 +101,7 @@
                     </button>
                 </div>
             </form>
+            @endcan
         </section>
 
         <section class="kfms-panel">
@@ -110,6 +112,7 @@
                 </div>
             </div>
 
+            @can('matters.billing.costs.store')
             <form class="kfms-form" method="POST" action="{{ route('matters.billing.costs.store', $matter) }}">
                 @csrf
                 <div class="kfms-form-grid">
@@ -175,6 +178,7 @@
                     </button>
                 </div>
             </form>
+            @endcan
         </section>
     </div>
 
@@ -208,8 +212,10 @@
                                 <td>{{ str($invoice->status)->headline() }}</td>
                                 <td>
                                     <div class="kfms-table-actions">
-                                        <a href="{{ route('finance.invoices.documents.show', [$invoice, 'invoice']) }}">Invoice</a>
-                                        <a href="{{ route('finance.invoices.documents.show', [$invoice, 'fee-note']) }}">Fee Note</a>
+                                        @can('finance.invoices.documents.show')
+                                            <a href="{{ route('finance.invoices.documents.show', [$invoice, 'invoice']) }}">Invoice</a>
+                                            <a href="{{ route('finance.invoices.documents.show', [$invoice, 'fee-note']) }}">Fee Note</a>
+                                        @endcan
                                     </div>
                                 </td>
                             </tr>

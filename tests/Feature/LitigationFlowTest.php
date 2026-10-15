@@ -3,11 +3,15 @@
 namespace Tests\Feature;
 
 use App\Models\Client;
+use App\Models\Branch;
 use App\Models\CourtEvent;
 use App\Models\Matter;
 use App\Models\StaffProfile;
 use App\Models\User;
+use App\Exports\LitigationExport;
+use App\Exports\MattersExport;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
@@ -229,6 +233,121 @@ class LitigationFlowTest extends TestCase
             ->assertSee('Track court work, deadlines, outcomes, and next steps.')
             ->assertSee('Schedule Event')
             ->assertSee('Litigation Lifecycle');
+    }
+
+    public function test_lifecycle_counts_match_visible_branch_events(): void
+    {
+        $branchA = Branch::create(['name' => 'Litigation A', 'code' => 'LTA']);
+        $branchB = Branch::create(['name' => 'Litigation B', 'code' => 'LTB']);
+        $advocate = $this->activeUser(['litigation.dashboard'], 'Advocate');
+        $advocate->update(['branch_id' => $branchA->id]);
+
+        $ownMatter = $this->matter();
+        $ownMatter->update(['branch_id' => $branchA->id]);
+        $otherMatter = $this->matter();
+        $otherMatter->update(['branch_id' => $branchB->id]);
+
+        foreach ([$ownMatter, $otherMatter] as $matter) {
+            CourtEvent::create(['matter_id' => $matter->id, 'event_type' => 'hearing', 'status' => 'scheduled', 'starts_at' => now()->addDay()]);
+            CourtEvent::create(['matter_id' => $matter->id, 'event_type' => 'judgment', 'status' => 'completed', 'starts_at' => now()->subDay()]);
+            CourtEvent::create(['matter_id' => $matter->id, 'event_type' => 'taxation', 'status' => 'scheduled', 'starts_at' => now()->addDays(2)]);
+        }
+
+        $this->actingAs($advocate)->get(route('litigation.dashboard'))
+            ->assertOk()
+            ->assertViewHas('lifecycle', function ($stages) {
+                $counts = collect($stages)->pluck('count', 'stage');
+
+                return $counts['Filing, Service & Court Process'] === 1
+                    && $counts['Judgment / Ruling'] === 1
+                    && $counts['Taxation & Execution'] === 1;
+            });
+    }
+
+    public function test_court_event_show_and_edit_screens_respect_outcome_permission(): void
+    {
+        $matter = $this->matter();
+        $viewer = $this->activeUser(['litigation.show', 'litigation.edit'], 'Court Viewer');
+        $event = CourtEvent::create([
+            'matter_id' => $matter->id,
+            'event_type' => 'hearing',
+            'status' => 'scheduled',
+            'starts_at' => now()->addDay(),
+        ]);
+        $this->actingAs($viewer)->get(route('litigation.show', $event))
+            ->assertOk()->assertSee($matter->reference_no)->assertDontSee('Record Outcome');
+        $this->actingAs($viewer)->get(route('litigation.edit', $event))
+            ->assertOk()->assertSee('Save Changes');
+    }
+
+    public function test_court_documents_are_only_downloadable_from_a_visible_branch(): void
+    {
+        Storage::fake('local');
+        $branchA = Branch::create(['name' => 'Document A', 'code' => 'DCA']);
+        $branchB = Branch::create(['name' => 'Document B', 'code' => 'DCB']);
+        $matter = $this->matter();
+        $matter->update(['branch_id' => $branchA->id]);
+        $event = CourtEvent::create([
+            'matter_id' => $matter->id,
+            'event_type' => 'filing_deadline',
+            'status' => 'scheduled',
+            'starts_at' => now()->addDay(),
+        ]);
+        Storage::disk('local')->put('court/notice.txt', 'Court notice');
+        $attachment = $event->attachments()->create([
+            'disk' => 'local',
+            'path' => 'court/notice.txt',
+            'original_name' => 'notice.txt',
+        ]);
+        $localUser = $this->activeUser([], 'Local Advocate');
+        $localUser->update(['branch_id' => $branchA->id]);
+        $otherUser = $this->activeUser([], 'Other Advocate');
+        $otherUser->update(['branch_id' => $branchB->id]);
+
+        $this->actingAs($localUser)->get(route('attachments.download', $attachment))->assertOk();
+        $this->actingAs($otherUser)->get(route('attachments.download', $attachment))->assertForbidden();
+    }
+
+    public function test_private_matter_and_court_work_are_visible_only_to_its_team(): void
+    {
+        $permissions = ['matters.index', 'matters.show', 'litigation.index', 'litigation.show'];
+        $owner = $this->activeUser($permissions, 'Private Matter Owner');
+        $teammate = $this->activeUser($permissions, 'Private Matter Teammate');
+        $outsider = $this->activeUser($permissions, 'Private Matter Outsider');
+        $matter = $this->matter();
+        $matter->update(['privacy_status' => 'private', 'opened_by' => $owner->id]);
+        $matter->assignments()->create([
+            'user_id' => $teammate->id,
+            'assignment_role' => 'associate',
+            'assigned_on' => today(),
+        ]);
+        $event = CourtEvent::create([
+            'matter_id' => $matter->id,
+            'event_type' => 'hearing',
+            'status' => 'scheduled',
+            'starts_at' => now()->addDay(),
+        ]);
+        Storage::fake('local');
+        Storage::disk('local')->put('private/notice.txt', 'Private court notice');
+        $attachment = $event->attachments()->create([
+            'disk' => 'local',
+            'path' => 'private/notice.txt',
+            'original_name' => 'notice.txt',
+        ]);
+
+        foreach ([$owner, $teammate] as $visibleUser) {
+            $this->actingAs($visibleUser)->get(route('matters.show', $matter))->assertOk();
+            $this->actingAs($visibleUser)->get(route('litigation.show', $event))->assertOk();
+        }
+
+        $this->actingAs($outsider)->get(route('matters.index'))->assertOk()->assertDontSee($matter->reference_no);
+        $this->actingAs($outsider)->get(route('litigation.index'))->assertOk()->assertDontSee($matter->reference_no);
+        $this->actingAs($outsider)->get(route('matters.show', $matter))->assertForbidden();
+        $this->actingAs($outsider)->get(route('litigation.show', $event))->assertNotFound();
+        $this->actingAs($outsider)->get(route('attachments.download', $attachment))->assertForbidden();
+        $this->actingAs($teammate)->get(route('attachments.download', $attachment))->assertOk();
+        $this->assertSame(0, (new MattersExport($outsider))->query()->count());
+        $this->assertSame(0, (new LitigationExport([], $outsider))->query()->count());
     }
 
     public function test_court_reminder_command_runs(): void

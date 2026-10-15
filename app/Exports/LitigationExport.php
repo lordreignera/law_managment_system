@@ -3,6 +3,7 @@
 namespace App\Exports;
 
 use App\Models\CourtEvent;
+use App\Models\User;
 use App\Support\Litigation\LitigationQueryFilters;
 use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -12,10 +13,8 @@ use Maatwebsite\Excel\Concerns\WithTitle;
 class LitigationExport implements FromQuery, WithHeadings, WithMapping, WithTitle
 {
     public function __construct(
-        private array $filters = [],
-        private ?int $currentUserId = null,
-        private ?int $branchId = null,
-        private bool $canSeeAllBranches = false,
+        private array $filters,
+        private User $user,
     )
     {
     }
@@ -25,17 +24,10 @@ class LitigationExport implements FromQuery, WithHeadings, WithMapping, WithTitl
         $query = LitigationQueryFilters::apply(
             CourtEvent::query()->with(['matter.client', 'court', 'assignee']),
             $this->filters,
-            $this->currentUserId
+            $this->user->id
         );
 
-        if (! $this->canSeeAllBranches) {
-            $query->whereHas('matter', function ($matterQuery) {
-                $matterQuery->whereNull('branch_id');
-                if ($this->branchId) {
-                    $matterQuery->orWhere('branch_id', $this->branchId);
-                }
-            });
-        }
+        $query->whereHas('matter', fn ($matterQuery) => $matterQuery->visibleTo($this->user));
 
         return $query->latest('starts_at');
     }

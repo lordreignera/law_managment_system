@@ -156,6 +156,16 @@
                     <textarea name="description" rows="5" required>{{ old('description') }}</textarea>
                     @error('description') <small>{{ $message }}</small> @enderror
                 </label>
+                <label>
+                    <span>Next Action</span>
+                    <input type="text" name="next_action" value="{{ old('next_action') }}" maxlength="255">
+                    @error('next_action') <small>{{ $message }}</small> @enderror
+                </label>
+                <label>
+                    <span>Next Action Due</span>
+                    <input type="date" name="next_action_due" value="{{ old('next_action_due') }}">
+                    @error('next_action_due') <small>{{ $message }}</small> @enderror
+                </label>
             </div>
 
             <div class="kfms-form-actions">

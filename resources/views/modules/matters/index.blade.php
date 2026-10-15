@@ -11,6 +11,9 @@
                 <span>{{ $matters->total() }} internal firm files</span>
             </div>
             <div class="kfms-toolbar-actions">
+                @can('matters.create')
+                    <a class="kfms-btn" href="{{ route('matters.create') }}"><i class="mdi mdi-plus"></i> Add Matter</a>
+                @endcan
                 @can('matters.export')
                     <a class="kfms-link-btn" href="{{ route('matters.export') }}">
                         <i class="mdi mdi-microsoft-excel"></i>
@@ -49,6 +52,14 @@
                     @foreach ($statuses as $value => $label)
                         <option value="{{ $value }}" @selected(($filters['status'] ?? '') === $value)>{{ $label }}</option>
                     @endforeach
+                </select>
+            </label>
+            <label>
+                <span>Litigation Stage</span>
+                <select name="litigation_stage">
+                    <option value="">All Stages</option>
+                    <option value="opening" @selected(($filters['litigation_stage'] ?? '') === 'opening')>Instructions &amp; File Opening</option>
+                    <option value="review" @selected(($filters['litigation_stage'] ?? '') === 'review')>Review, Opinion &amp; Pleadings</option>
                 </select>
             </label>
             <div class="kfms-toolbar-actions">

@@ -36,22 +36,10 @@ class CalendarController extends Controller
                 'url' => route('calendar.show', $event),
             ]);
 
-        // Court events visible by branch (via the parent matter's branch).
+        // Court entries follow the same matter visibility rules as Litigation.
         $courtEvents = CourtEvent::with(['matter'])
             ->whereBetween('starts_at', [$rangeStart, $rangeEnd])
-            ->when(! $user->canSeeAllBranches(), function ($query) use ($user) {
-                $query->where(function ($query) use ($user) {
-                    $query->where('assigned_to', $user->id);
-
-                    $query->orWhereHas('matter', function ($query) use ($user) {
-                        $query->whereNull('branch_id');
-
-                        if ($user->branch_id) {
-                            $query->orWhere('branch_id', $user->branch_id);
-                        }
-                    });
-                });
-            })
+            ->whereHas('matter', fn ($query) => $query->visibleTo($user))
             ->get()
             ->map(fn (CourtEvent $event) => [
                 'date' => $event->starts_at?->toDateString(),

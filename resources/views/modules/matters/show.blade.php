@@ -7,7 +7,7 @@
     @php
         $files = $matter->files;
         $totalAgreedFee = $files->sum('agreed_fee_amount');
-        $isLitigation = str($matter->practiceArea?->name ?? '')->contains('Litigation', true);
+        $isLitigation = str($matter->practiceArea?->name ?? '')->contains('Litigation', true) || $matter->courtEvents->isNotEmpty();
         $openCourtEvents = $matter->courtEvents->whereIn('status', ['scheduled', 'adjourned']);
     @endphp
 
@@ -18,6 +18,9 @@
                 <span>{{ $matter->title }} - {{ $matter->statusLabel() }}</span>
             </div>
             <div class="kfms-toolbar-actions">
+                @can('matters.edit')
+                    <a class="kfms-link-btn" href="{{ route('matters.edit', $matter) }}"><i class="mdi mdi-pencil"></i> Edit Matter</a>
+                @endcan
                 @if ($isLitigation)
                     @can('litigation.create')
                         <a class="kfms-btn" href="{{ route('litigation.create', ['matter_id' => $matter->id]) }}">
@@ -49,8 +52,20 @@
                 <strong>{{ $matter->client?->display_name ?: '-' }}</strong>
             </div>
             <div>
+                <span>Ultimate Client</span>
+                <strong>{{ $matter->ultimateClient?->display_name ?: '-' }}</strong>
+            </div>
+            <div>
                 <span>Practice Area</span>
                 <strong>{{ $matter->practiceArea?->name ?: '-' }}</strong>
+            </div>
+            <div>
+                <span>Business Industry</span>
+                <strong>{{ $matter->businessIndustry?->name ?: '-' }}</strong>
+            </div>
+            <div>
+                <span>Matter Category</span>
+                <strong>{{ $matter->matterCategory?->name ?: '-' }}</strong>
             </div>
             <div>
                 <span>Instruction Type</span>
@@ -59,6 +74,10 @@
             <div>
                 <span>Matter Status</span>
                 <strong>{{ $matter->statusLabel() }}</strong>
+            </div>
+            <div>
+                <span>Privacy</span>
+                <strong>{{ str($matter->privacy_status ?: 'public')->headline() }}</strong>
             </div>
             <div>
                 <span>Files</span>
@@ -77,6 +96,14 @@
                 <strong>{{ $matter->instruction_date?->format('d M Y') ?: '-' }}</strong>
             </div>
             <div>
+                <span>Closed On</span>
+                <strong>{{ $matter->closed_on?->format('d M Y') ?: '-' }}</strong>
+            </div>
+            <div>
+                <span>Shelf</span>
+                <strong>{{ $matter->shelf?->name ?: '-' }}</strong>
+            </div>
+            <div>
                 <span>Opposite Counsel</span>
                 <strong>{{ $matter->opposingCounsel?->name ?: ($matter->opposite_counsel ?: '-') }}</strong>
             </div>
@@ -90,7 +117,7 @@
             </div>
             <div>
                 <span>Responsible Team</span>
-                <strong>{{ $matter->assignments->count() }} assigned</strong>
+                <strong>{{ $matter->assignments->pluck('user.name')->filter()->join(', ') ?: 'Unassigned' }}</strong>
             </div>
             <div>
                 <span>Court Events</span>
@@ -124,7 +151,13 @@
                 <tbody>
                     @forelse ($files as $matterFile)
                         <tr>
-                            <td><a href="{{ route('clients.files.show', $matterFile) }}">{{ $matterFile->file_number }}</a></td>
+                            <td>
+                                @can('clients.files.show')
+                                    <a href="{{ route('clients.files.show', $matterFile) }}">{{ $matterFile->file_number }}</a>
+                                @else
+                                    {{ $matterFile->file_number }}
+                                @endcan
+                            </td>
                             <td>{{ $matterFile->file_name }}</td>
                             <td>{{ $matterFile->billingType?->name ?: '-' }}</td>
                             <td>{{ $matterFile->agreed_fee_amount ? number_format($matterFile->agreed_fee_amount, 2) : '-' }}</td>
@@ -149,11 +182,13 @@
             </div>
 
             <div class="kfms-workflow-actions">
+                @can('matters.instructions.show')
                 <a href="{{ route('matters.instructions.show', $matter) }}">
                     <i class="mdi mdi-file-document-outline"></i>
                     <strong>Instructions / Documents</strong>
                     <span>Review or add instructions, file notes, and supporting documents.</span>
                 </a>
+                @endcan
 
                 @if ($isLitigation)
                     @can('litigation.create')
@@ -178,11 +213,13 @@
                     </a>
                 @endif
 
+                @can('matters.billing.show')
                 <a href="{{ route('matters.billing.show', $matter) }}">
                     <i class="mdi mdi-cash-register"></i>
                     <strong>Billing / Costs</strong>
                     <span>Create invoices and record costs, disbursements, taxation, or recovery follow-up.</span>
                 </a>
+                @endcan
             </div>
         </section>
 
@@ -217,7 +254,11 @@
                                     <td>{{ $event->case_number ?: '-' }}</td>
                                     <td>{{ $event->assignee?->name ?: '-' }}</td>
                                     <td><span class="kfms-status kfms-status-{{ $event->status }}">{{ $event->statusLabel() }}</span></td>
-                                    <td><a class="kfms-link-btn" href="{{ route('litigation.show', $event) }}">View</a></td>
+                                    <td>
+                                        @can('litigation.show')
+                                            <a class="kfms-link-btn" href="{{ route('litigation.show', $event) }}">View</a>
+                                        @endcan
+                                    </td>
                                 </tr>
                             @empty
                                 <tr>

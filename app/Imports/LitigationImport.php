@@ -34,10 +34,7 @@ class LitigationImport implements ToCollection, WithHeadingRow
                 continue;
             }
 
-            $matterQuery = Matter::where('reference_no', $matterRef);
-            if ($this->user && ! $this->user->canSeeAllBranches()) {
-                $matterQuery->forBranchOf($this->user);
-            }
+            $matterQuery = Matter::where('reference_no', $matterRef)->visibleTo($this->user);
             $matter = $matterQuery->first();
 
             if (! $matter) {

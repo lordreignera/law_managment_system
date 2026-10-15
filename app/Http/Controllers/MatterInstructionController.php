@@ -54,6 +54,6 @@ class MatterInstructionController extends Controller
 
     private function ensureVisible(Matter $matter, ?User $user): void
     {
-        abort_unless($user && Matter::forBranchOf($user)->whereKey($matter->getKey())->exists(), 404);
+        abort_unless($user && Matter::visibleTo($user)->whereKey($matter->getKey())->exists(), 404);
     }
 }

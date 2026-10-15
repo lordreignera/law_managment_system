@@ -21,7 +21,7 @@ class LitigationController extends Controller
         $filters = $this->filters($request);
 
         return Excel::download(
-            new LitigationExport($filters, $request->user()->id, $request->user()->branch_id, $request->user()->canSeeAllBranches()),
+            new LitigationExport($filters, $request->user()),
             'litigation-'.now()->format('Ymd-His').'.xlsx'
         );
     }
@@ -74,7 +74,7 @@ class LitigationController extends Controller
                 'This Week' => $this->scopedEvents($user)->open()->whereBetween('starts_at', [now()->startOfWeek(), now()->endOfWeek()])->count(),
                 'Overdue' => $this->scopedEvents($user)->where('status', 'scheduled')->where('starts_at', '<', now())->count(),
             ],
-            'lifecycle' => $this->litigationLifecycleSummary($litigationMatters),
+            'lifecycle' => $this->litigationLifecycleSummary($litigationMatters, $user),
             'myEvents' => $myEvents,
             'upcomingEvents' => $upcomingEvents,
             'nextSteps' => $nextSteps,
@@ -113,8 +113,8 @@ class LitigationController extends Controller
     public function create(Request $request)
     {
         return view('modules.litigation.create', [
-            'matters' => Matter::forBranchOf($request->user())->orderByDesc('id')->limit(300)->get(['id', 'reference_no', 'title']),
-            'courts' => Court::orderBy('name')->get(['id', 'name']),
+            'matters' => Matter::visibleTo($request->user())->orderByDesc('id')->limit(300)->get(['id', 'reference_no', 'title']),
+            'courts' => Court::where('is_active', true)->orderBy('name')->get(['id', 'name']),
             'judicialOfficers' => JudicialOfficer::where('is_active', true)->with('court')->orderBy('sort_order')->orderBy('name')->get(),
             'officers' => $this->staffOfficers(),
             'statuses' => CourtEvent::STATUSES,
@@ -155,9 +155,9 @@ class LitigationController extends Controller
 
         return view('modules.litigation.edit', [
             'event' => $litigation,
-            'matters' => Matter::forBranchOf(request()->user())->orderByDesc('id')->limit(300)->get(['id', 'reference_no', 'title']),
-            'courts' => Court::orderBy('name')->get(['id', 'name']),
-            'judicialOfficers' => JudicialOfficer::where('is_active', true)->with('court')->orderBy('sort_order')->orderBy('name')->get(),
+            'matters' => Matter::visibleTo(request()->user())->orderByDesc('id')->limit(300)->get(['id', 'reference_no', 'title']),
+            'courts' => Court::where('is_active', true)->orWhere('id', $litigation->court_id)->orderBy('name')->get(['id', 'name']),
+            'judicialOfficers' => JudicialOfficer::where('is_active', true)->orWhere('id', $litigation->judicial_officer_id)->with('court')->orderBy('sort_order')->orderBy('name')->get(),
             'officers' => $this->staffOfficers(),
             'statuses' => CourtEvent::STATUSES,
             'eventTypes' => CourtEvent::EVENT_TYPES,
@@ -217,7 +217,7 @@ class LitigationController extends Controller
             'attachment' => ['nullable', 'file', 'max:5120'],
         ]);
 
-        if (! Matter::forBranchOf($request->user())->whereKey($data['matter_id'])->exists()) {
+        if (! Matter::visibleTo($request->user())->whereKey($data['matter_id'])->exists()) {
             throw ValidationException::withMessages([
                 'matter_id' => 'Select a matter in your branch.',
             ]);
@@ -227,6 +227,15 @@ class LitigationController extends Controller
             throw ValidationException::withMessages([
                 'assigned_to' => 'Select an active internal staff member.',
             ]);
+        }
+
+        if (! empty($data['judicial_officer_id']) && ! empty($data['court_id'])) {
+            $officerCourtId = JudicialOfficer::whereKey($data['judicial_officer_id'])->value('court_id');
+            if ($officerCourtId && (int) $officerCourtId !== (int) $data['court_id']) {
+                throw ValidationException::withMessages([
+                    'judicial_officer_id' => 'Select a judicial officer attached to the chosen court.',
+                ]);
+            }
         }
 
         unset($data['attachment']);
@@ -261,7 +270,7 @@ class LitigationController extends Controller
 
     private function litigationMatterQuery(?User $user = null)
     {
-        return Matter::forBranchOf($user)
+        return Matter::visibleTo($user)
             ->where(function ($query) {
                 $query
                     ->whereHas('practiceArea', fn ($query) => $query->where('name', 'like', '%Litigation%'))
@@ -269,14 +278,14 @@ class LitigationController extends Controller
             });
     }
 
-    private function litigationLifecycleSummary($query): array
+    private function litigationLifecycleSummary($query, User $user): array
     {
         return [
             [
                 'stage' => 'Instructions & File Opening',
                 'description' => 'Instructions received, accepted, documents requested, and internal file opened.',
                 'count' => (clone $query)->whereIn('status', ['inquiry', 'consultation', 'conflict_check', 'file_pending'])->count(),
-                'route' => route('matters.index', ['status' => 'file_pending']),
+                'route' => route('matters.index', ['litigation_stage' => 'opening']),
                 'action' => 'Review Files',
                 'icon' => 'mdi-folder-open-outline',
                 'tone' => 'navy',
@@ -285,7 +294,7 @@ class LitigationController extends Controller
                 'stage' => 'Review, Opinion & Pleadings',
                 'description' => 'Facts reviewed, legal opinion prepared, pleadings drafted, and client approval sought.',
                 'count' => (clone $query)->whereIn('status', ['open', 'planning', 'waiting_for_client'])->count(),
-                'route' => route('matters.index', ['status' => 'planning']),
+                'route' => route('matters.index', ['litigation_stage' => 'review']),
                 'action' => 'Review Work',
                 'eventRoute' => route('litigation.create', ['event_type' => 'filing_deadline']),
                 'eventAction' => 'Add Filing Deadline',
@@ -295,7 +304,7 @@ class LitigationController extends Controller
             [
                 'stage' => 'Filing, Service & Court Process',
                 'description' => 'Court filing, summons/service, hearings, mentions, conferences, and submissions.',
-                'count' => CourtEvent::open()->count(),
+                'count' => LitigationQueryFilters::apply($this->scopedEvents($user), ['stage' => 'court_process'])->count(),
                 'route' => route('litigation.index', ['stage' => 'court_process']),
                 'exportRoute' => route('litigation.export', ['stage' => 'court_process']),
                 'action' => 'Open Cause List',
@@ -307,7 +316,7 @@ class LitigationController extends Controller
             [
                 'stage' => 'Judgment / Ruling',
                 'description' => 'Rulings and judgments delivered, with outcomes and next steps captured.',
-                'count' => CourtEvent::where('status', 'completed')->whereIn('event_type', ['judgment', 'ruling'])->count(),
+                'count' => LitigationQueryFilters::apply($this->scopedEvents($user), ['stage' => 'judgment_ruling'])->count(),
                 'route' => route('litigation.index', ['stage' => 'judgment_ruling']),
                 'exportRoute' => route('litigation.export', ['stage' => 'judgment_ruling']),
                 'action' => 'View Outcomes',
@@ -319,7 +328,7 @@ class LitigationController extends Controller
             [
                 'stage' => 'Taxation & Execution',
                 'description' => 'Bill of costs, pre-taxation, taxation, garnishee, attachment, or committal follow-up.',
-                'count' => CourtEvent::whereIn('event_type', LitigationQueryFilters::STAGES['taxation_execution']['event_types'])->count(),
+                'count' => LitigationQueryFilters::apply($this->scopedEvents($user), ['stage' => 'taxation_execution'])->count(),
                 'route' => route('litigation.index', ['stage' => 'taxation_execution']),
                 'exportRoute' => route('litigation.export', ['stage' => 'taxation_execution']),
                 'action' => 'Track Execution',
@@ -333,17 +342,11 @@ class LitigationController extends Controller
 
     private function scopedEvents(User $user)
     {
-        return CourtEvent::whereHas('matter', fn ($query) => $query->forBranchOf($user));
+        return CourtEvent::whereHas('matter', fn ($query) => $query->visibleTo($user));
     }
 
     private function ensureEventVisible(CourtEvent $event, ?User $user): void
     {
-        abort_unless($user && ($user->canSeeAllBranches() || $event->matter()->whereKey($event->matter_id)->where(function ($query) use ($user) {
-            $query->whereNull('branch_id');
-
-            if ($user->branch_id) {
-                $query->orWhere('branch_id', $user->branch_id);
-            }
-        })->exists()), 404);
+        abort_unless($user && Matter::visibleTo($user)->whereKey($event->matter_id)->exists(), 404);
     }
 }
