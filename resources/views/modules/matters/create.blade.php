@@ -119,6 +119,12 @@
                 </label>
 
                 <label>
+                    <span>Date of Instruction</span>
+                    <input type="date" name="instruction_date" value="{{ old('instruction_date') }}">
+                    @error('instruction_date') <small>{{ $message }}</small> @enderror
+                </label>
+
+                <label>
                     <span>Lifecycle Status</span>
                     <select name="status" required>
                         @foreach ($statuses as $value => $label)
@@ -164,6 +170,18 @@
                     <span>About the File</span>
                     <textarea name="description" rows="5" required>{{ old('description') }}</textarea>
                     @error('description') <small>{{ $message }}</small> @enderror
+                </label>
+
+                <label>
+                    <span>Next Action</span>
+                    <input type="text" name="next_action" value="{{ old('next_action') }}" maxlength="255">
+                    @error('next_action') <small>{{ $message }}</small> @enderror
+                </label>
+
+                <label>
+                    <span>Next Action Due</span>
+                    <input type="date" name="next_action_due" value="{{ old('next_action_due') }}">
+                    @error('next_action_due') <small>{{ $message }}</small> @enderror
                 </label>
             </div>
 

@@ -20,7 +20,7 @@ class LitigationController extends Controller
         $filters = $this->filters($request);
 
         return Excel::download(
-            new LitigationExport($filters, $request->user()->id),
+            new LitigationExport($filters, $request->user()->id, $request->user()->branch_id, $request->user()->canSeeAllBranches()),
             'litigation-'.now()->format('Ymd-His').'.xlsx'
         );
     }
@@ -31,7 +31,7 @@ class LitigationController extends Controller
             'file' => ['required', 'file', 'mimes:xlsx,xls,csv', 'max:10240'],
         ]);
 
-        $import = new LitigationImport();
+        $import = new LitigationImport($request->user());
         Excel::import($import, $request->file('file'));
 
         return redirect()
@@ -42,23 +42,23 @@ class LitigationController extends Controller
     public function dashboard(Request $request)
     {
         $user = $request->user();
-        $litigationMatters = $this->litigationMatterQuery();
+        $litigationMatters = $this->litigationMatterQuery($user);
 
-        $myEvents = CourtEvent::with(['matter', 'court'])
+        $myEvents = $this->scopedEvents($user)->with(['matter', 'court'])
             ->where('assigned_to', $user->id)
             ->open()
             ->orderBy('starts_at')
             ->limit(8)
             ->get();
 
-        $upcomingEvents = CourtEvent::with(['matter', 'court', 'assignee'])
+        $upcomingEvents = $this->scopedEvents($user)->with(['matter', 'court', 'assignee'])
             ->open()
             ->whereDate('starts_at', '>=', today())
             ->orderBy('starts_at')
             ->limit(8)
             ->get();
 
-        $nextSteps = CourtEvent::with(['matter', 'assignee'])
+        $nextSteps = $this->scopedEvents($user)->with(['matter', 'assignee'])
             ->whereNotNull('next_step')
             ->whereNotNull('next_step_due')
             ->whereIn('status', ['scheduled', 'adjourned', 'completed'])
@@ -68,10 +68,10 @@ class LitigationController extends Controller
 
         return view('modules.litigation.dashboard', [
             'stats' => [
-                'My Open Events' => CourtEvent::open()->where('assigned_to', $user->id)->count(),
-                'Today' => CourtEvent::open()->whereDate('starts_at', today())->count(),
-                'This Week' => CourtEvent::open()->whereBetween('starts_at', [now()->startOfWeek(), now()->endOfWeek()])->count(),
-                'Overdue' => CourtEvent::where('status', 'scheduled')->where('starts_at', '<', now())->count(),
+                'My Open Events' => $this->scopedEvents($user)->open()->where('assigned_to', $user->id)->count(),
+                'Today' => $this->scopedEvents($user)->open()->whereDate('starts_at', today())->count(),
+                'This Week' => $this->scopedEvents($user)->open()->whereBetween('starts_at', [now()->startOfWeek(), now()->endOfWeek()])->count(),
+                'Overdue' => $this->scopedEvents($user)->where('status', 'scheduled')->where('starts_at', '<', now())->count(),
             ],
             'lifecycle' => $this->litigationLifecycleSummary($litigationMatters),
             'myEvents' => $myEvents,
@@ -85,7 +85,7 @@ class LitigationController extends Controller
         $filters = $this->filters($request);
 
         $events = LitigationQueryFilters::apply(
-            CourtEvent::with(['matter', 'court', 'assignee']),
+            $this->scopedEvents($request->user())->with(['matter', 'court', 'assignee']),
             $filters,
             $request->user()->id
         )
@@ -101,10 +101,10 @@ class LitigationController extends Controller
             'stages' => LitigationQueryFilters::STAGES,
             'officers' => $this->staffOfficers(),
             'summary' => [
-                'Today' => CourtEvent::open()->whereDate('starts_at', today())->count(),
-                'This Week' => CourtEvent::open()->whereBetween('starts_at', [now()->startOfWeek(), now()->endOfWeek()])->count(),
-                'Overdue' => CourtEvent::where('status', 'scheduled')->where('starts_at', '<', now())->count(),
-                'Completed' => CourtEvent::where('status', 'completed')->count(),
+                'Today' => $this->scopedEvents($request->user())->open()->whereDate('starts_at', today())->count(),
+                'This Week' => $this->scopedEvents($request->user())->open()->whereBetween('starts_at', [now()->startOfWeek(), now()->endOfWeek()])->count(),
+                'Overdue' => $this->scopedEvents($request->user())->where('status', 'scheduled')->where('starts_at', '<', now())->count(),
+                'Completed' => $this->scopedEvents($request->user())->where('status', 'completed')->count(),
             ],
         ]);
     }
@@ -112,7 +112,7 @@ class LitigationController extends Controller
     public function create(Request $request)
     {
         return view('modules.litigation.create', [
-            'matters' => Matter::orderByDesc('id')->limit(300)->get(['id', 'reference_no', 'title']),
+            'matters' => Matter::forBranchOf($request->user())->orderByDesc('id')->limit(300)->get(['id', 'reference_no', 'title']),
             'courts' => Court::orderBy('name')->get(['id', 'name']),
             'officers' => $this->staffOfficers(),
             'statuses' => CourtEvent::STATUSES,
@@ -139,6 +139,8 @@ class LitigationController extends Controller
 
     public function show(CourtEvent $litigation)
     {
+        $this->ensureEventVisible($litigation, request()->user());
+
         return view('modules.litigation.show', [
             'event' => $litigation->load(['matter', 'court', 'assignee', 'attachments']),
             'statuses' => CourtEvent::STATUSES,
@@ -147,9 +149,11 @@ class LitigationController extends Controller
 
     public function edit(CourtEvent $litigation)
     {
+        $this->ensureEventVisible($litigation, request()->user());
+
         return view('modules.litigation.edit', [
             'event' => $litigation,
-            'matters' => Matter::orderByDesc('id')->limit(300)->get(['id', 'reference_no', 'title']),
+            'matters' => Matter::forBranchOf(request()->user())->orderByDesc('id')->limit(300)->get(['id', 'reference_no', 'title']),
             'courts' => Court::orderBy('name')->get(['id', 'name']),
             'officers' => $this->staffOfficers(),
             'statuses' => CourtEvent::STATUSES,
@@ -159,6 +163,8 @@ class LitigationController extends Controller
 
     public function update(Request $request, CourtEvent $litigation)
     {
+        $this->ensureEventVisible($litigation, $request->user());
+
         $data = $this->validateEvent($request);
 
         $litigation->update($data);
@@ -174,6 +180,8 @@ class LitigationController extends Controller
 
     public function recordOutcome(Request $request, CourtEvent $litigation)
     {
+        $this->ensureEventVisible($litigation, $request->user());
+
         $data = $request->validate([
             'status' => ['required', 'in:'.implode(',', array_keys(CourtEvent::STATUSES))],
             'outcome' => ['nullable', 'string', 'max:2000'],
@@ -204,6 +212,12 @@ class LitigationController extends Controller
             'next_step_due' => ['nullable', 'date'],
             'attachment' => ['nullable', 'file', 'max:5120'],
         ]);
+
+        if (! Matter::forBranchOf($request->user())->whereKey($data['matter_id'])->exists()) {
+            throw ValidationException::withMessages([
+                'matter_id' => 'Select a matter in your branch.',
+            ]);
+        }
 
         if (! empty($data['assigned_to']) && ! $this->staffOfficerQuery()->whereKey($data['assigned_to'])->exists()) {
             throw ValidationException::withMessages([
@@ -241,9 +255,9 @@ class LitigationController extends Controller
             ->whereHas('staffProfile', fn ($query) => $query->where('employment_status', 'active'));
     }
 
-    private function litigationMatterQuery()
+    private function litigationMatterQuery(?User $user = null)
     {
-        return Matter::query()
+        return Matter::forBranchOf($user)
             ->where(function ($query) {
                 $query
                     ->whereHas('practiceArea', fn ($query) => $query->where('name', 'like', '%Litigation%'))
@@ -311,5 +325,21 @@ class LitigationController extends Controller
                 'tone' => 'red',
             ],
         ];
+    }
+
+    private function scopedEvents(User $user)
+    {
+        return CourtEvent::whereHas('matter', fn ($query) => $query->forBranchOf($user));
+    }
+
+    private function ensureEventVisible(CourtEvent $event, ?User $user): void
+    {
+        abort_unless($user && ($user->canSeeAllBranches() || $event->matter()->whereKey($event->matter_id)->where(function ($query) use ($user) {
+            $query->whereNull('branch_id');
+
+            if ($user->branch_id) {
+                $query->orWhere('branch_id', $user->branch_id);
+            }
+        })->exists()), 404);
     }
 }

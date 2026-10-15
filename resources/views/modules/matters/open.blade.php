@@ -98,6 +98,12 @@
                 </label>
 
                 <label>
+                    <span>Date of Instruction</span>
+                    <input type="date" name="instruction_date" value="{{ old('instruction_date') }}">
+                    @error('instruction_date') <small>{{ $message }}</small> @enderror
+                </label>
+
+                <label>
                     <span>Shelf</span>
                     <select name="shelf_id">
                         <option value="">Select shelf</option>

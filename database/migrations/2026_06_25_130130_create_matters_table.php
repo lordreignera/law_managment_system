@@ -22,12 +22,15 @@ return new class extends Migration
             $table->string('reference_no')->unique();
             $table->string('title');
             $table->date('opened_on')->nullable();
+            $table->date('instruction_date')->nullable();
             $table->date('closed_on')->nullable();
             $table->string('privacy_status')->default('public');
             $table->string('opposite_counsel')->nullable();
             $table->string('status')->default('inquiry');
             $table->string('priority')->default('normal');
             $table->text('description')->nullable();
+            $table->string('next_action')->nullable();
+            $table->date('next_action_due')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });

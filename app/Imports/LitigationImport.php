@@ -15,6 +15,10 @@ class LitigationImport implements ToCollection, WithHeadingRow
     public int $imported = 0;
     public int $skipped = 0;
 
+    public function __construct(private ?User $user = null)
+    {
+    }
+
     public function collection(Collection $rows): void
     {
         foreach ($rows as $row) {
@@ -28,7 +32,11 @@ class LitigationImport implements ToCollection, WithHeadingRow
                 continue;
             }
 
-            $matter = Matter::where('reference_no', $matterRef)->first();
+            $matterQuery = Matter::where('reference_no', $matterRef);
+            if ($this->user && ! $this->user->canSeeAllBranches()) {
+                $matterQuery->forBranchOf($this->user);
+            }
+            $matter = $matterQuery->first();
 
             if (! $matter) {
                 $this->skipped++;

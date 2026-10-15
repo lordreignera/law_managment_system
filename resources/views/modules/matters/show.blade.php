@@ -69,6 +69,22 @@
                 <strong>{{ $matter->opened_on?->format('d M Y') ?: '-' }}</strong>
             </div>
             <div>
+                <span>Date of Instruction</span>
+                <strong>{{ $matter->instruction_date?->format('d M Y') ?: '-' }}</strong>
+            </div>
+            <div>
+                <span>Opposite Counsel</span>
+                <strong>{{ $matter->opposite_counsel ?: '-' }}</strong>
+            </div>
+            <div>
+                <span>Next Action</span>
+                <strong>{{ $matter->next_action ?: '-' }}</strong>
+            </div>
+            <div>
+                <span>Next Action Due</span>
+                <strong>{{ $matter->next_action_due?->format('d M Y') ?: '-' }}</strong>
+            </div>
+            <div>
                 <span>Responsible Team</span>
                 <strong>{{ $matter->assignments->count() }} assigned</strong>
             </div>

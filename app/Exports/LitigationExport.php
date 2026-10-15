@@ -11,17 +11,33 @@ use Maatwebsite\Excel\Concerns\WithTitle;
 
 class LitigationExport implements FromQuery, WithHeadings, WithMapping, WithTitle
 {
-    public function __construct(private array $filters = [], private ?int $currentUserId = null)
+    public function __construct(
+        private array $filters = [],
+        private ?int $currentUserId = null,
+        private ?int $branchId = null,
+        private bool $canSeeAllBranches = false,
+    )
     {
     }
 
     public function query()
     {
-        return LitigationQueryFilters::apply(
+        $query = LitigationQueryFilters::apply(
             CourtEvent::query()->with(['matter.client', 'court', 'assignee']),
             $this->filters,
             $this->currentUserId
-        )->latest('starts_at');
+        );
+
+        if (! $this->canSeeAllBranches) {
+            $query->whereHas('matter', function ($matterQuery) {
+                $matterQuery->whereNull('branch_id');
+                if ($this->branchId) {
+                    $matterQuery->orWhere('branch_id', $this->branchId);
+                }
+            });
+        }
+
+        return $query->latest('starts_at');
     }
 
     public function headings(): array

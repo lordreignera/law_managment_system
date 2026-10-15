@@ -35,7 +35,9 @@ class Matter extends Model
 
     protected $casts = [
         'opened_on' => 'date',
+        'instruction_date' => 'date',
         'closed_on' => 'date',
+        'next_action_due' => 'date',
     ];
 
     public function client()
