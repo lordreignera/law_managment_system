@@ -96,8 +96,12 @@ class CalendarFlowTest extends TestCase
 
         $this->actingAs($user)->get(route('calendar.create'))
             ->assertOk()
-            ->assertSee('data-assignee-select', false)
-            ->assertSee('data-assignee-select-all', false)
+            ->assertSee('id="calendar-branch-picker"', false)
+            ->assertSee('id="calendar-assignee-picker"', false)
+            ->assertSee('data-check-dependent-on="calendar-branch-picker"', false)
+            ->assertSee('data-check-all', false)
+            ->assertSee('Search branches')
+            ->assertSee('Search assigned to (optional)')
             ->assertSee('data-user-branch-id="'.$branchA->id.'"', false)
             ->assertSee('data-user-branch-id="'.$branchC->id.'"', false);
 

@@ -1404,8 +1404,8 @@ body.kfms-template {
     font-weight: 700;
 }
 
-.kfms-check-dropdown-select-all input,
-.kfms-check-dropdown-option input {
+.kfms-check-dropdown-select-all input[type="checkbox"],
+.kfms-check-dropdown-option input[type="checkbox"] {
     flex: 0 0 auto;
     margin: 3px 0 0;
     min-height: auto !important;
@@ -1427,6 +1427,22 @@ body.kfms-template {
 .kfms-check-dropdown-option small {
     color: #64748b !important;
     font-size: 11px;
+}
+
+.kfms-check-dropdown-order-option {
+    align-items: center;
+}
+
+.kfms-check-dropdown-order-option > span {
+    flex: 1 1 auto;
+}
+
+.kfms-check-dropdown-order {
+    flex: 0 0 76px;
+    margin: 0 0 0 auto !important;
+    min-height: 34px !important;
+    padding: 6px 8px !important;
+    width: 76px !important;
 }
 
 .kfms-check-dropdown-search {

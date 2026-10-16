@@ -161,16 +161,22 @@
                     @error('description') <small>{{ $message }}</small> @enderror
                 </label>
 
-                <label class="kfms-span-2">
-                    <span>Files to Link</span>
-                    <select name="file_ids[]" multiple>
-                        @foreach (($availableFiles ?? collect()) as $availableFile)
-                            <option value="{{ $availableFile->id }}" @selected(in_array((string) $availableFile->id, array_map('strval', old('file_ids', [])), true))>{{ $availableFile->file_number }} - {{ $availableFile->file_name }}</option>
-                        @endforeach
-                    </select>
-                    <small>Only the files selected here will be linked to this matter.</small>
-                    @error('file_ids') <small>{{ $message }}</small> @enderror
-                </label>
+                @include('partials.check-dropdown', [
+                    'id' => 'matter-file-picker',
+                    'name' => 'file_ids[]',
+                    'field' => 'file_ids',
+                    'label' => 'Files to Link',
+                    'placeholder' => 'Select files to link',
+                    'wrapperClass' => 'kfms-span-2',
+                    'options' => collect($availableFiles ?? [])->map(fn ($file) => [
+                        'value' => $file->id,
+                        'label' => $file->file_number.' - '.$file->file_name,
+                        'detail' => $file->client?->display_name,
+                    ])->all(),
+                    'selected' => old('file_ids', []),
+                    'hint' => 'Only the files selected here will be linked to this matter.',
+                    'emptyLabel' => 'No unlinked client files available.',
+                ])
                 <label>
                     <span>Next Action</span>
                     <input type="text" name="next_action" value="{{ old('next_action') }}" maxlength="255">

@@ -17,12 +17,15 @@
                 <label><span>Status</span><select name="status" required>@foreach (\App\Models\DocumentBundle::STATUSES as $value => $label)<option value="{{ $value }}" @selected(old('status', $bundle->status) === $value)>{{ $label }}</option>@endforeach</select></label>
                 <label class="kfms-span-2"><span>Description</span><textarea name="description" rows="3">{{ old('description', $bundle->description) }}</textarea></label>
             </div>
-            <div class="kfms-section-heading"><h3>Documents (select in order)</h3></div>
             @php($selected = old('attachment_ids', $bundle->items->sortBy('sort_order')->pluck('attachment_id')->all()))
             @php($sortOrders = old('sort_orders', $bundle->items->pluck('sort_order', 'attachment_id')->all()))
-            @foreach ($attachments as $attachment)
-                <label class="kfms-check-row"><input type="checkbox" name="attachment_ids[]" value="{{ $attachment->id }}" @checked(in_array($attachment->id, $selected))><span>{{ $attachment->title ?: $attachment->original_name }} (v{{ $attachment->version_number }})</span><input type="number" name="sort_orders[{{ $attachment->id }}]" value="{{ $sortOrders[$attachment->id] ?? $loop->iteration }}" min="1" max="9999" aria-label="Order for {{ $attachment->title ?: $attachment->original_name }}"></label>
-            @endforeach
+            @include('modules.document-bundles.partials.attachment-picker', [
+                'attachments' => $attachments,
+                'selected' => $selected,
+                'sortOrders' => $sortOrders,
+                'label' => 'Documents in Bundle',
+                'placeholder' => 'Select documents for this bundle',
+            ])
             <div class="kfms-form-actions"><a class="kfms-link-btn" href="{{ route('matters.bundles.show', [$matter, $bundle]) }}">Cancel</a><button class="kfms-btn" type="submit">Save Bundle</button></div>
         </form>
     </section>

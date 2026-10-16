@@ -128,6 +128,34 @@
 (function () {
     'use strict';
 
+    function refreshDependentDropdowns() {
+        document.querySelectorAll('[data-check-dropdown][data-check-dependent-on]').forEach(function (dropdown) {
+            var source = document.getElementById(dropdown.dataset.checkDependentOn);
+            var sourceValues = source
+                ? Array.prototype.slice.call(source.querySelectorAll('[data-check-option]:checked')).map(function (input) { return String(input.value); })
+                : [];
+            var rows = Array.prototype.slice.call(dropdown.querySelectorAll('[data-check-option-label]'));
+
+            rows.forEach(function (row) {
+                var input = row.querySelector('[data-check-option]');
+                var visible = sourceValues.indexOf(String(row.dataset.checkFilterValue || '')) !== -1;
+
+                row.dataset.checkDependencyVisible = visible ? '1' : '0';
+                input.disabled = !visible;
+                if (!visible) {
+                    input.checked = false;
+                }
+            });
+
+            if (typeof dropdown._checkFilterOptions === 'function') {
+                dropdown._checkFilterOptions();
+            }
+            if (typeof dropdown._checkUpdateSummary === 'function') {
+                dropdown._checkUpdateSummary();
+            }
+        });
+    }
+
     function setupDropdown(dropdown) {
         if (dropdown.dataset.checkBound === '1') {
             return;
@@ -142,7 +170,7 @@
         var optionRows = Array.prototype.slice.call(dropdown.querySelectorAll('[data-check-option-label]'));
 
         function updateSummary() {
-            var checked = options.filter(function (option) { return option.checked; });
+            var checked = options.filter(function (option) { return option.checked && !option.disabled; });
             var names = checked.map(function (option) {
                 var name = option.closest('label').querySelector('strong');
                 return name ? name.textContent.trim() : option.value;
@@ -161,17 +189,24 @@
             }
 
             if (selectAll) {
-                selectAll.checked = options.length > 0 && checked.length === options.length;
-                selectAll.indeterminate = checked.length > 0 && checked.length < options.length;
+                var availableCount = options.filter(function (option) { return !option.disabled; }).length;
+                selectAll.disabled = availableCount === 0;
+                selectAll.checked = availableCount > 0 && checked.length === availableCount;
+                selectAll.indeterminate = checked.length > 0 && checked.length < availableCount;
             }
         }
 
         function filterOptions() {
             var query = search ? search.value.trim().toLowerCase() : '';
             optionRows.forEach(function (row) {
-                row.hidden = query !== '' && (row.dataset.searchText || '').indexOf(query) === -1;
+                var dependencyVisible = row.dataset.checkDependencyVisible !== '0';
+                var searchVisible = query === '' || (row.dataset.searchText || '').indexOf(query) !== -1;
+                row.hidden = !dependencyVisible || !searchVisible;
             });
         }
+
+        dropdown._checkFilterOptions = filterOptions;
+        dropdown._checkUpdateSummary = updateSummary;
 
         if (toggle) {
             toggle.addEventListener('click', function (event) {
@@ -196,13 +231,21 @@
 
         if (selectAll) {
             selectAll.addEventListener('change', function () {
-                options.forEach(function (option) { option.checked = selectAll.checked; });
+                options.forEach(function (option) {
+                    if (!option.disabled) {
+                        option.checked = selectAll.checked;
+                    }
+                });
                 updateSummary();
+                refreshDependentDropdowns();
             });
         }
 
         options.forEach(function (option) {
-            option.addEventListener('change', updateSummary);
+            option.addEventListener('change', function () {
+                updateSummary();
+                refreshDependentDropdowns();
+            });
         });
 
         if (search) {
@@ -215,6 +258,7 @@
 
     document.addEventListener('DOMContentLoaded', function () {
         document.querySelectorAll('[data-check-dropdown]').forEach(setupDropdown);
+        refreshDependentDropdowns();
 
         document.addEventListener('click', function (event) {
             document.querySelectorAll('[data-check-dropdown].is-open').forEach(function (dropdown) {

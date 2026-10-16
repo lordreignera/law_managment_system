@@ -22,17 +22,13 @@
                 <label class="kfms-span-2"><span>Description</span><textarea name="description" rows="3">{{ old('description') }}</textarea></label>
             </div>
 
-            <div class="kfms-section-heading"><h3>Documents in Bundle</h3></div>
-            @forelse ($attachments as $attachment)
-                <label class="kfms-check-row">
-                    <input type="checkbox" name="attachment_ids[]" value="{{ $attachment->id }}" @checked(in_array((string) $attachment->id, array_map('strval', old('attachment_ids', [])), true))>
-                    <span>{{ $attachment->title ?: $attachment->original_name }} ({{ str($attachment->category ?: 'document')->headline() }}, v{{ $attachment->version_number }})</span>
-                    <input type="number" name="sort_orders[{{ $attachment->id }}]" value="{{ old('sort_orders.'.$attachment->id, $loop->iteration) }}" min="1" max="9999" aria-label="Order for {{ $attachment->title ?: $attachment->original_name }}">
-                </label>
-            @empty
-                <p class="kfms-muted-text">Upload current matter documents before creating a bundle.</p>
-            @endforelse
-            @error('attachment_ids')<small>{{ $message }}</small>@enderror
+            @include('modules.document-bundles.partials.attachment-picker', [
+                'attachments' => $attachments,
+                'selected' => old('attachment_ids', []),
+                'sortOrders' => old('sort_orders', []),
+                'label' => 'Documents in Bundle',
+                'placeholder' => 'Select documents for this bundle',
+            ])
 
             <div class="kfms-form-actions"><a class="kfms-link-btn" href="{{ route('matters.bundles.index', $matter) }}">Cancel</a><button class="kfms-btn" type="submit">Create Bundle</button></div>
         </form>

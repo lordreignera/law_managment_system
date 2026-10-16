@@ -153,6 +153,8 @@ class MatterDashboardTest extends TestCase
             ->assertSee('Select all associates')
             ->assertSee('Search partners')
             ->assertSee('Search associates')
+            ->assertSee('Select files to link')
+            ->assertSee('Search files to link')
             ->assertSee($user->name)
             ->assertSee('Advocate')
             ->assertSee('data-check-dropdown', false);

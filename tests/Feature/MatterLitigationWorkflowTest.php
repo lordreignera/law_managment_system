@@ -308,6 +308,12 @@ class MatterLitigationWorkflowTest extends TestCase
         $this->assertFalse($first->fresh()->is_current);
         $this->assertDatabaseHas('audit_logs', ['auditable_id' => $first->id, 'event' => 'superseded']);
 
+        $this->actingAs($user)->get(route('matters.bundles.create', $matter))
+            ->assertOk()
+            ->assertSee('Select documents for this bundle')
+            ->assertSee('Search documents')
+            ->assertSee('data-check-dropdown', false);
+
         $this->actingAs($user)->post(route('matters.bundles.store', $matter), [
             'name' => 'Filed Pleadings',
             'bundle_type' => 'pleadings',
