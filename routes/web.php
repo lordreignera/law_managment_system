@@ -350,6 +350,8 @@ Route::middleware([
         // Settings
         Route::get('/settings/system', [SystemSettingController::class, 'overview'])->name('settings.system.overview');
         Route::get('/settings/master-data', [MasterDataController::class, 'index'])->name('settings.master-data.index');
+        Route::get('/settings/master-data/{setting}/export', [MasterDataController::class, 'export'])
+            ->withoutMiddleware('route.permission')->name('settings.master-data.export');
         Route::get('/settings/master-data/{setting}/template', [MasterDataController::class, 'template'])->name('settings.master-data.template');
         Route::post('/settings/master-data/import', [MasterDataController::class, 'store'])->name('settings.master-data.store');
         Route::get('/settings/system/{setting}', [SystemSettingController::class, 'index'])->name('settings.system.index');

@@ -4,7 +4,7 @@
 @section('content')
 <section class="kfms-panel">
     <div class="kfms-panel-header">
-        <div><h2>Populate Master Data</h2><span>Load the firm’s approved lists before opening operational records.</span></div>
+        <div><h2>Populate Master Data</h2><span>Load the firm's approved lists before opening operational records.</span></div>
         <a class="kfms-link-btn" href="{{ route('settings.system.overview') }}">System Settings</a>
     </div>
     @if (session('status')) <div class="kfms-alert">{{ session('status') }}</div> @endif
@@ -25,10 +25,14 @@
     </form>
 </section>
 <section class="kfms-panel">
-    <div class="kfms-panel-header"><h2>Import Templates</h2></div>
-    <div class="kfms-table-wrap"><table class="kfms-table"><thead><tr><th>Reference List</th><th>Template</th></tr></thead><tbody>
+    <div class="kfms-panel-header"><div><h2>Templates and current data</h2><span>Download a blank template or export the records currently configured.</span></div></div>
+    <div class="kfms-table-wrap"><table class="kfms-table"><thead><tr><th>Reference List</th><th>Blank Template</th><th>Current Records</th></tr></thead><tbody>
     @foreach ($definitions as $slug => $definition)
-        <tr><td>{{ $definition['title'] }}</td><td><a class="kfms-link-btn" href="{{ route('settings.master-data.template', $slug) }}">Download CSV</a></td></tr>
+        <tr>
+            <td>{{ $definition['title'] }}</td>
+            <td><a class="kfms-link-btn" href="{{ route('settings.master-data.template', $slug) }}">Download template</a></td>
+            <td><a class="kfms-link-btn" href="{{ route('settings.master-data.export', $slug) }}">Export CSV</a></td>
+        </tr>
     @endforeach
     </tbody></table></div>
 </section>

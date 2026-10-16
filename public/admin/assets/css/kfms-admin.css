@@ -2465,6 +2465,17 @@ body.kfms-template {
     border-radius: 8px;
     box-shadow: 0 24px 70px rgba(15, 23, 42, 0.2);
     color: #071426;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* System-setting forms wrap the modal body. Make the wrapper a flex column so
+ * Bootstrap's modal-dialog-scrollable rule can give the body a real viewport. */
+.kfms-modal .modal-content > .kfms-form {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
     overflow: hidden;
 }
 
@@ -2489,6 +2500,10 @@ body.kfms-template {
 
 .kfms-modal .modal-body {
     background: #fff;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
     padding: 16px 18px;
 }
 
@@ -2608,6 +2623,16 @@ body.kfms-template {
     .kfms-action-dropdown,
     .kfms-notice-dropdown {
         min-width: min(280px, 92vw);
+    }
+
+    .kfms-modal .modal-dialog-scrollable {
+        height: calc(100% - 12px);
+        margin: 6px;
+    }
+
+    .kfms-modal .modal-header,
+    .kfms-modal .modal-body {
+        padding: 14px;
     }
 }
 .kfms-section-heading {

@@ -30,6 +30,7 @@
             <div class="kfms-header-actions">
                 @can('settings.master-data.index')
                     <a class="kfms-link-btn" href="{{ route('settings.master-data.index', ['setting' => $setting]) }}">Import / Template</a>
+                    <a class="kfms-link-btn" href="{{ route('settings.master-data.export', $setting) }}">Export CSV</a>
                 @endcan
                 <a class="kfms-link-btn" href="{{ route('settings.system.overview') }}">
                     <i class="mdi mdi-arrow-left"></i>

@@ -61,6 +61,89 @@ class MasterDataImports
         };
     }
 
+    /**
+     * Build a query for exporting the current approved reference data.
+     *
+     * The export uses the same column order as the import template, so an
+     * exported list can be reviewed, amended, and imported again.
+     */
+    public function exportQuery(string $setting)
+    {
+        $definition = $this->definitions()[$setting] ?? abort(404);
+
+        return match ($setting) {
+            'users' => User::query()->with(['branch', 'department', 'staffProfile', 'roles'])->orderBy('id'),
+            'roles' => Role::query()->with('permissions')->orderBy('name'),
+            default => $definition['model']::query()
+                ->with($this->exportRelations($definition['extra_fields'] ?? []))
+                ->orderBy('id'),
+        };
+    }
+
+    public function exportRow(string $setting, object $record): array
+    {
+        if ($setting === 'branches') {
+            return [$record->name, $record->city, $record->address, $record->is_active ? 1 : 0];
+        }
+
+        if ($setting === 'users') {
+            return [
+                $record->name,
+                $record->email,
+                '', // Never export password hashes; the import requires a new password.
+                $record->staffProfile?->phone,
+                $record->staffProfile?->job_title,
+                $record->branch?->name,
+                $record->department?->name,
+                $record->roles->pluck('name')->implode('|'),
+                optional($record->staffProfile?->joined_on)->format('Y-m-d'),
+            ];
+        }
+
+        if ($setting === 'roles') {
+            return [$record->name, $record->permissions->pluck('name')->implode('|')];
+        }
+
+        $definition = $this->definitions()[$setting];
+        $row = [$record->name];
+        foreach ($definition['extra_fields'] ?? [] as $field) {
+            if (isset(self::RELATIONS[$field])) {
+                $relation = match ($field) {
+                    'bank_id' => 'bank',
+                    'court_id' => 'court',
+                    'centenary_region_id' => 'region',
+                    'branch_id' => 'branch',
+                    'currency_type_id' => 'currencyType',
+                };
+                $row[] = $record->{$relation}?->{self::RELATIONS[$field][2]};
+            } elseif ($field === 'portfolio_types') {
+                $row[] = is_array($record->{$field}) ? implode('|', $record->{$field}) : $record->{$field};
+            } elseif (in_array($field, ['is_default', 'is_inclusive'], true)) {
+                $row[] = $record->{$field} ? 1 : 0;
+            } else {
+                $row[] = $record->{$field};
+            }
+        }
+
+        return array_merge($row, [
+            $record->description,
+            $record->sort_order,
+            $record->is_active ? 1 : 0,
+        ]);
+    }
+
+    private function exportRelations(array $fields): array
+    {
+        return collect($fields)->map(fn (string $field) => match ($field) {
+            'bank_id' => 'bank',
+            'court_id' => 'court',
+            'centenary_region_id' => 'region',
+            'branch_id' => 'branch',
+            'currency_type_id' => 'currencyType',
+            default => null,
+        })->filter()->unique()->values()->all();
+    }
+
     public function import(string $setting, Collection $rows, User $actor): int
     {
         $this->authorize($setting, $actor);

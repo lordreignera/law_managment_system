@@ -67,13 +67,31 @@ class PhaseOneMasterDataTest extends TestCase
         foreach (config('system_settings') as $slug => $definition) {
             $this->get(route('settings.system.index', ['setting' => $slug, 'search' => 'test']))->assertOk();
             $this->get(route('settings.master-data.template', $slug))->assertOk();
+            $this->get(route('settings.master-data.export', $slug))->assertOk();
         }
         foreach (['branches', 'users', 'roles'] as $slug) {
             $this->get(route('settings.master-data.template', $slug))->assertOk();
+            $this->get(route('settings.master-data.export', $slug))->assertOk();
         }
         foreach (['banks', 'bank_branches', 'judicial_officers', 'opposing_counsels', 'centenary_regions', 'centenary_branches', 'recovery_clients', 'clients', 'matters'] as $table) {
             $this->assertDatabaseCount($table, 0);
         }
+    }
+
+    public function test_master_data_export_uses_import_columns_and_does_not_export_password_hashes(): void
+    {
+        $admin = $this->staff();
+        Branch::create(['name' => 'Approved Office', 'city' => 'Kampala', 'is_active' => true]);
+
+        $this->actingAs($admin);
+        $branchExport = $this->get(route('settings.master-data.export', 'branches'))->assertOk();
+        $this->assertStringContainsString('name,city,address,is_active', $branchExport->streamedContent());
+
+        $userExport = $this->get(route('settings.master-data.export', 'users'))->assertOk();
+        $csv = $userExport->streamedContent();
+        $this->assertStringContainsString('name,email,password,phone,job_title,branch_name,department_name,role,joined_on', $csv);
+        $this->assertStringContainsString('Super Admin', $csv);
+        $this->assertStringNotContainsString('$2y$', $csv);
     }
 
     public function test_previously_mismatched_settings_can_save_and_edit_descriptions(): void

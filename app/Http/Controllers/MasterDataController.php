@@ -27,6 +27,20 @@ class MasterDataController extends Controller
         }, 'master-data-'.$setting.'.csv', ['Content-Type' => 'text/csv']);
     }
 
+    public function export(Request $request, string $setting, MasterDataImports $imports)
+    {
+        $imports->authorize($setting, $request->user());
+
+        return response()->streamDownload(function () use ($imports, $setting) {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, $imports->headings($setting));
+            foreach ($imports->exportQuery($setting)->cursor() as $record) {
+                fputcsv($handle, $imports->exportRow($setting, $record));
+            }
+            fclose($handle);
+        }, 'master-data-'.$setting.'-export.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
     public function store(Request $request, MasterDataImports $imports)
     {
         $data = $request->validate(['setting' => ['required', 'string'], 'file' => ['required', 'file', 'mimes:csv,xlsx,xls', 'max:5120']]);
