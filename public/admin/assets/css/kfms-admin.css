@@ -1422,10 +1422,43 @@ body.kfms-template {
 
 .kfms-check-dropdown-select-all input[type="checkbox"],
 .kfms-check-dropdown-option input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    align-items: center;
+    background: #fff;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    color: #fff;
+    display: inline-flex;
     flex: 0 0 auto;
+    height: 20px;
     margin: 3px 0 0;
     min-height: auto !important;
-    width: auto !important;
+    justify-content: center;
+    position: relative;
+    width: 20px !important;
+}
+
+.kfms-check-dropdown-select-all input[type="checkbox"]:checked,
+.kfms-check-dropdown-option input[type="checkbox"]:checked {
+    background: #2563eb;
+    border-color: #2563eb;
+}
+
+.kfms-check-dropdown-select-all input[type="checkbox"]:checked::after,
+.kfms-check-dropdown-option input[type="checkbox"]:checked::after {
+    border-bottom: 2px solid currentColor;
+    border-right: 2px solid currentColor;
+    content: '';
+    height: 10px;
+    transform: rotate(45deg) translate(-1px, -1px);
+    width: 5px;
+}
+
+.kfms-check-dropdown-select-all input[type="checkbox"]:focus-visible,
+.kfms-check-dropdown-option input[type="checkbox"]:focus-visible {
+    outline: 2px solid #93c5fd;
+    outline-offset: 2px;
 }
 
 .kfms-check-dropdown-option > span {

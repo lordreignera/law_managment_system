@@ -10,7 +10,6 @@
     <label><span>Rate (%)</span><input type="number" name="rate" step="0.0001" min="0" max="100" value="{{ old('rate', $component->rate) }}">@error('rate')<small>{{ $message }}</small>@enderror</label>
     <label class="kfms-span-2"><span>Formula (optional)</span><textarea name="formula" rows="3" placeholder="Use configured payroll variables when the calculation method is Custom Formula">{{ old('formula', $component->formula) }}</textarea>@error('formula')<small>{{ $message }}</small>@enderror</label>
     <label class="kfms-span-2"><span>Description</span><textarea name="description" rows="3">{{ old('description', $component->description) }}</textarea>@error('description')<small>{{ $message }}</small>@enderror</label>
-    <label><span>Sort Order</span><input type="number" name="sort_order" min="0" value="{{ old('sort_order', $component->sort_order ?? 0) }}"></label>
     @php
         $componentFlags = old('flags', collect(\App\Models\PayrollComponent::FLAGS)->filter(function ($label, $key) use ($component) {
             return match ($key) {
@@ -40,7 +39,7 @@
         'selected' => $componentFlags,
         'selectAllLabel' => 'Select all flags',
         'hint' => 'Choose the behaviors that apply. The list opens as a searchable, scrollable menu.',
-        'wrapperClass' => 'kfms-span-2',
     ])
+    <label><span>Sort Order</span><input type="number" name="sort_order" min="0" value="{{ old('sort_order', $component->sort_order ?? 0) }}"></label>
 </div>
 <div class="kfms-form-actions"><a class="kfms-link-btn" href="{{ route('payroll.components.index') }}">Cancel</a><button class="kfms-btn" type="submit">{{ $component->exists ? 'Update' : 'Create' }} Component</button></div>
