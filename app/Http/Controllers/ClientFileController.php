@@ -3,12 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Models\AdrResolution;
+use App\Models\AuditLog;
 use App\Models\BillingType;
 use App\Models\Client;
 use App\Models\File;
+use App\Models\Matter;
 use App\Support\MonthlyReferenceNumber;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class ClientFileController extends Controller
@@ -27,6 +30,7 @@ class ClientFileController extends Controller
             'fileNumber' => MonthlyReferenceNumber::make(File::class, 'file_number', 'FL'),
             'billingTypes' => BillingType::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
             'paymentSources' => File::RETAINER_PAYMENT_SOURCES,
+            'matters' => Matter::visibleTo($request->user())->where('client_id', $client->id)->latest()->get(['id', 'reference_no', 'title']),
         ]);
     }
 
@@ -34,6 +38,7 @@ class ClientFileController extends Controller
     {
         $data = $request->validate([
             'file_name' => ['required', 'string', 'max:191'],
+            'matter_id' => ['nullable', 'integer', 'exists:matters,id'],
             'adr_resolution_id' => ['nullable', 'integer', Rule::exists('adr_resolutions', 'id')->where('client_id', $client->id)],
             'billing_type_id' => ['required', 'exists:billing_types,id'],
             'agreed_fee_amount' => ['required', 'numeric', 'min:0'],
@@ -48,11 +53,18 @@ class ClientFileController extends Controller
             'notes' => ['nullable', 'string', 'max:3000'],
         ]);
 
+        if (! empty($data['matter_id']) && ! Matter::visibleTo($request->user())
+            ->where('client_id', $client->id)
+            ->whereKey($data['matter_id'])
+            ->exists()) {
+            return back()->withErrors(['matter_id' => 'Select a matter belonging to this client.'])->withInput();
+        }
+
         $file = DB::transaction(function () use ($data, $request, $client) {
             $file = File::create([
                 'client_id' => $client->id,
                 'adr_resolution_id' => $data['adr_resolution_id'] ?? null,
-                'matter_id' => $client->matter?->id,
+                'matter_id' => $data['matter_id'] ?? null,
                 'billing_type_id' => $data['billing_type_id'],
                 'created_by' => auth()->id(),
                 'file_number' => MonthlyReferenceNumber::make(File::class, 'file_number', 'FL'),
@@ -95,11 +107,38 @@ class ClientFileController extends Controller
         $data = $request->validate([
             'document' => ['required', 'file', 'max:10240'],
             'category' => ['nullable', 'string', 'max:100'],
+            'title' => ['nullable', 'string', 'max:191'],
+            'document_key' => ['nullable', 'string', 'max:191'],
+            'replace_document_id' => ['nullable', 'integer', 'exists:attachments,id'],
+            'is_client_visible' => ['nullable', 'boolean'],
         ]);
 
-        $file->addAttachment($request->file('document'), [
+        $replacement = null;
+        if (! empty($data['replace_document_id'])) {
+            $replacement = $file->attachments()->whereKey($data['replace_document_id'])->first();
+            abort_unless($replacement, 422, 'Select a document belonging to this file.');
+        }
+
+        $documentKey = $data['document_key']
+            ?? $replacement?->document_key
+            ?? Str::slug(pathinfo($request->file('document')->getClientOriginalName(), PATHINFO_FILENAME));
+        $version = ((int) $file->attachments()->where('document_key', $documentKey)->max('version_number')) + 1;
+        $previousVersions = $file->attachments()
+            ->where('document_key', $documentKey)
+            ->where('is_current', true)
+            ->get();
+        $previousVersions->each(fn ($attachment) => $attachment->update(['is_current' => false]));
+
+        $attachment = $file->addAttachment($request->file('document'), [
             'category' => $data['category'] ?: 'file-document',
+            'title' => $data['title'] ?? $request->file('document')->getClientOriginalName(),
+            'document_key' => $documentKey,
+            'version_number' => $version,
+            'is_current' => true,
+            'is_client_visible' => $request->boolean('is_client_visible'),
         ]);
+        AuditLog::recordFor($attachment, 'uploaded', [], ['version_number' => $version, 'document_key' => $documentKey]);
+        $previousVersions->each(fn ($previous) => AuditLog::recordFor($previous, 'superseded', ['is_current' => true], ['is_current' => false, 'replaced_by' => $attachment->id]));
 
         return redirect()
             ->route('clients.files.show', $file)

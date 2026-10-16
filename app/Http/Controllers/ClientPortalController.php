@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Attachment;
+use App\Models\AuditLog;
 use App\Models\Client;
 use App\Models\Conversation;
 use App\Models\LegalLetter;
@@ -188,6 +189,8 @@ class ClientPortalController extends Controller
 
         $matter = Matter::whereKey($attachment->attachable_id)->firstOrFail();
         $this->authorizeMatter($client, $matter);
+
+        AuditLog::recordFor($attachment, 'client_downloaded', [], ['action' => 'client_download']);
 
         return Storage::disk($attachment->disk)->download($attachment->path, $attachment->original_name);
     }

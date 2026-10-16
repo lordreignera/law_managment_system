@@ -241,6 +241,7 @@ class ClientIntakeFlowTest extends TestCase
                 'opened_on' => now()->toDateString(),
                 'privacy_status' => 'public',
                 'description' => 'Prepare matter for wrongful dismissal litigation.',
+                'file_ids' => [$file->id],
                 'partner_ids' => [$user->id],
             ])
             ->assertRedirect();

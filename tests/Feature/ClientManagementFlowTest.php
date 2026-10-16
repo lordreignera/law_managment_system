@@ -2,10 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Models\BillingType;
 use App\Models\Client;
 use App\Models\ContactPosition;
 use App\Models\Country;
-use App\Models\BillingType;
 use App\Models\PracticeArea;
 use App\Models\RelationshipType;
 use App\Models\Salutation;
@@ -153,6 +153,7 @@ class ClientManagementFlowTest extends TestCase
                 'opened_on' => now()->toDateString(),
                 'privacy_status' => 'public',
                 'description' => 'Prepare and review shareholder agreement.',
+                'file_ids' => [$file->id],
                 'partner_ids' => [$user->id],
             ])
             ->assertRedirect();

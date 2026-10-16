@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\MattersExport;
+use App\Imports\MattersImport;
 use App\Models\BusinessIndustry;
 use App\Models\Client;
 use App\Models\File;
@@ -12,8 +14,6 @@ use App\Models\OpposingCounsel;
 use App\Models\PracticeArea;
 use App\Models\Shelf;
 use App\Models\User;
-use App\Exports\MattersExport;
-use App\Imports\MattersImport;
 use App\Support\MonthlyReferenceNumber;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -188,6 +188,11 @@ class MatterController extends Controller
             'shelves' => Shelf::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
             'opposingCounsels' => OpposingCounsel::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
             'users' => $this->assignableUsers()->orderBy('name')->get(),
+            'availableFiles' => File::whereNull('matter_id')
+                ->whereHas('client', fn ($query) => $query->forBranchOf(request()->user()))
+                ->with('client')
+                ->orderBy('file_name')
+                ->get(),
             'statuses' => Matter::STATUSES,
         ]);
     }
@@ -195,16 +200,6 @@ class MatterController extends Controller
     public function createForClient(Client $client)
     {
         abort_unless(Client::forBranchOf(request()->user())->whereKey($client->id)->exists(), 404);
-
-        if ($client->matter) {
-            abort_unless(Matter::visibleTo(request()->user())->whereKey($client->matter->id)->exists(), 404);
-
-            return redirect()
-                ->route('matters.show', $client->matter)
-                ->with('status', 'This client already has a matter.');
-        }
-
-        abort_if($client->files()->doesntExist(), 422, 'Open a file for this client before opening a matter.');
 
         return view('modules.matters.open', [
             'client' => $client,
@@ -216,6 +211,7 @@ class MatterController extends Controller
             'shelves' => Shelf::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
             'opposingCounsels' => OpposingCounsel::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
             'users' => $this->assignableUsers()->orderBy('name')->get(),
+            'availableFiles' => $client->files()->whereNull('matter_id')->orderBy('file_name')->get(),
             'suggestedTitle' => $client->files()->latest()->value('file_name'),
         ]);
     }
@@ -234,6 +230,10 @@ class MatterController extends Controller
             'shelves' => Shelf::where('is_active', true)->orWhere('id', $matter->shelf_id)->orderBy('sort_order')->orderBy('name')->get(),
             'opposingCounsels' => OpposingCounsel::where('is_active', true)->orWhere('id', $matter->opposing_counsel_id)->orderBy('sort_order')->orderBy('name')->get(),
             'users' => $this->assignableUsers()->orderBy('name')->get(),
+            'availableFiles' => File::where('client_id', $matter->client_id)
+                ->where(fn ($query) => $query->whereNull('matter_id')->orWhere('matter_id', $matter->id))
+                ->orderBy('file_name')
+                ->get(),
             'statuses' => Matter::STATUSES,
         ]);
     }
@@ -258,8 +258,11 @@ class MatterController extends Controller
             'opposite_counsel' => ['nullable', 'string', 'max:191'],
             'opposing_counsel_id' => ['nullable', 'exists:opposing_counsels,id'],
             'description' => ['required', 'string', 'max:3000'],
+            'client_summary' => ['nullable', 'string', 'max:3000'],
             'next_action' => ['nullable', 'string', 'max:255'],
             'next_action_due' => ['nullable', 'date'],
+            'file_ids' => ['sometimes', 'nullable', 'array'],
+            'file_ids.*' => ['integer', 'distinct', 'exists:files,id'],
             'partner_ids' => ['required', 'array', 'min:1'],
             'partner_ids.*' => ['distinct', 'exists:users,id'],
             'associate_ids' => ['nullable', 'array'],
@@ -268,13 +271,18 @@ class MatterController extends Controller
 
         $this->validateUltimateClient($data, $request->user());
         $this->validateAssignableUsers($data);
+        $this->validateSelectedFiles($data['file_ids'] ?? null, $matter->client_id, $matter->id, $request->user());
 
         DB::transaction(function () use ($matter, $data) {
             $partnerIds = array_values(array_unique($data['partner_ids']));
             $associateIds = array_values(array_diff(array_unique($data['associate_ids'] ?? []), $partnerIds));
-            $matter->update(collect($data)->except(['partner_ids', 'associate_ids'])->toArray());
+            $matter->update(collect($data)->except(['partner_ids', 'associate_ids', 'file_ids'])->toArray());
 
-            $matter->assignments()->whereNotIn('user_id', array_merge($partnerIds, $associateIds))->delete();
+            $matter->assignments()
+                ->whereNotIn('user_id', array_merge($partnerIds, $associateIds))
+                ->get()
+                ->each
+                ->delete();
             foreach (['partner' => $partnerIds, 'associate' => $associateIds] as $role => $userIds) {
                 foreach ($userIds as $index => $userId) {
                     $matter->assignments()->updateOrCreate(
@@ -282,6 +290,15 @@ class MatterController extends Controller
                         ['assignment_role' => $role, 'assigned_on' => now()->toDateString(), 'is_lead' => $role === 'partner' && $index === 0]
                     );
                 }
+            }
+
+            if (array_key_exists('file_ids', $data)) {
+                $fileIds = array_values(array_unique($data['file_ids'] ?? []));
+                $matter->files()
+                    ->whereNotIn('id', $fileIds)
+                    ->get()
+                    ->each(fn (File $file) => $file->update(['matter_id' => null]));
+                File::whereIn('id', $fileIds)->get()->each(fn (File $file) => $file->update(['matter_id' => $matter->id]));
             }
         });
 
@@ -291,9 +308,6 @@ class MatterController extends Controller
     public function storeForClient(Request $request, Client $client)
     {
         abort_unless(Client::forBranchOf($request->user())->whereKey($client->id)->exists(), 404);
-
-        abort_if((bool) $client->matter, 422, 'This client already has a matter.');
-        abort_if($client->files()->doesntExist(), 422, 'Open a file for this client before opening a matter.');
 
         $data = $request->validate([
             'title' => ['required', 'string', 'max:191'],
@@ -308,8 +322,11 @@ class MatterController extends Controller
             'opposite_counsel' => ['nullable', 'string', 'max:191'],
             'opposing_counsel_id' => ['nullable', 'exists:opposing_counsels,id'],
             'description' => ['required', 'string', 'max:3000'],
+            'client_summary' => ['nullable', 'string', 'max:3000'],
             'next_action' => ['nullable', 'string', 'max:255'],
             'next_action_due' => ['nullable', 'date'],
+            'file_ids' => ['nullable', 'array'],
+            'file_ids.*' => ['integer', 'distinct', 'exists:files,id'],
             'partner_ids' => ['required', 'array', 'min:1'],
             'partner_ids.*' => ['distinct', 'exists:users,id'],
             'associate_ids' => ['nullable', 'array'],
@@ -317,13 +334,14 @@ class MatterController extends Controller
         ]);
 
         $this->validateAssignableUsers($data);
+        $this->validateSelectedFiles($data['file_ids'] ?? [], $client->id, null, $request->user());
 
         $matter = DB::transaction(function () use ($client, $data) {
             $partnerIds = $data['partner_ids'];
             $associateIds = $data['associate_ids'] ?? [];
 
             $matter = Matter::create(collect($data)
-                ->except(['partner_ids', 'associate_ids'])
+                ->except(['partner_ids', 'associate_ids', 'file_ids'])
                 ->merge([
                     'client_id' => $client->id,
                     'opened_by' => auth()->id(),
@@ -351,14 +369,14 @@ class MatterController extends Controller
                 ]);
             }
 
-            $client->files()->whereNull('matter_id')->update(['matter_id' => $matter->id]);
+            $this->linkSelectedFiles($matter, $data['file_ids'] ?? []);
 
             return $matter;
         });
 
         return redirect()
             ->route('matters.show', $matter)
-            ->with('status', 'Matter '.$matter->reference_no.' opened. All files for this client are now under it.');
+            ->with('status', 'Matter '.$matter->reference_no.' opened with the selected files.');
     }
 
     public function store(Request $request)
@@ -368,11 +386,6 @@ class MatterController extends Controller
             'client_id' => [
                 'required',
                 'exists:clients,id',
-                function ($attribute, $value, $fail) {
-                    if (Matter::where('client_id', $value)->exists()) {
-                        $fail('This client already has a matter. Add files to the existing matter instead.');
-                    }
-                },
             ],
             'ultimate_client_id' => ['nullable', 'exists:clients,id'],
             'practice_area_id' => ['required', 'exists:practice_areas,id'],
@@ -388,8 +401,11 @@ class MatterController extends Controller
             'opposite_counsel' => ['nullable', 'string', 'max:191'],
             'opposing_counsel_id' => ['nullable', 'exists:opposing_counsels,id'],
             'description' => ['required', 'string', 'max:3000'],
+            'client_summary' => ['nullable', 'string', 'max:3000'],
             'next_action' => ['nullable', 'string', 'max:255'],
             'next_action_due' => ['nullable', 'date'],
+            'file_ids' => ['nullable', 'array'],
+            'file_ids.*' => ['integer', 'distinct', 'exists:files,id'],
             'partner_ids' => ['required', 'array', 'min:1'],
             'partner_ids.*' => ['distinct', 'exists:users,id'],
             'associate_ids' => ['nullable', 'array'],
@@ -400,13 +416,14 @@ class MatterController extends Controller
         abort_unless($client, 422);
         $this->validateUltimateClient($data, $request->user());
         $this->validateAssignableUsers($data);
+        $this->validateSelectedFiles($data['file_ids'] ?? [], $client->id, null, $request->user());
 
         DB::transaction(function () use ($data, $client) {
             $partnerIds = $data['partner_ids'];
             $associateIds = $data['associate_ids'] ?? [];
 
             $matter = Matter::create(collect($data)
-                ->except(['partner_ids', 'associate_ids'])
+                ->except(['partner_ids', 'associate_ids', 'file_ids'])
                 ->merge([
                     'opened_by' => auth()->id(),
                     'branch_id' => $client->branch_id ?? auth()->user()->branch_id,
@@ -431,6 +448,8 @@ class MatterController extends Controller
                     'assigned_on' => now()->toDateString(),
                 ]);
             }
+
+            $this->linkSelectedFiles($matter, $data['file_ids'] ?? []);
         });
 
         return redirect()
@@ -460,4 +479,41 @@ class MatterController extends Controller
         }
     }
 
+    private function validateSelectedFiles(?array $fileIds, int $clientId, ?int $matterId, User $user): void
+    {
+        $fileIds = array_values(array_unique($fileIds ?? []));
+
+        if ($fileIds === []) {
+            return;
+        }
+
+        $count = File::query()
+            ->whereIn('id', $fileIds)
+            ->where('client_id', $clientId)
+            ->where(function ($query) use ($matterId) {
+                $query->whereNull('matter_id');
+                if ($matterId) {
+                    $query->orWhere('matter_id', $matterId);
+                }
+            })
+            ->whereHas('client', fn ($query) => $query->forBranchOf($user))
+            ->count();
+
+        if ($count !== count($fileIds)) {
+            throw ValidationException::withMessages([
+                'file_ids' => 'Select only unlinked files belonging to this client.',
+            ]);
+        }
+    }
+
+    private function linkSelectedFiles(Matter $matter, array $fileIds): void
+    {
+        $fileIds = array_values(array_unique($fileIds));
+        if ($fileIds !== []) {
+            File::whereIn('id', $fileIds)
+                ->where('client_id', $matter->client_id)
+                ->get()
+                ->each(fn (File $file) => $file->update(['matter_id' => $matter->id]));
+        }
+    }
 }

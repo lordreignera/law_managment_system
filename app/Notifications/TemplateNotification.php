@@ -18,6 +18,11 @@ abstract class TemplateNotification extends Notification
 
     abstract protected function context(): array;
 
+    public function notificationEventKey(): string
+    {
+        return $this->eventKey();
+    }
+
     protected function action(): ?array
     {
         return null;

@@ -79,7 +79,7 @@ class CalendarController extends Controller
         return view('modules.calendar.create', [
             'types' => CalendarEvent::TYPES,
             'branches' => Branch::where('is_active', true)->orderBy('name')->get(['id', 'name']),
-            'matters' => Matter::orderByDesc('id')->limit(300)->get(['id', 'reference_no', 'title']),
+            'matters' => Matter::visibleTo($request->user())->orderByDesc('id')->limit(300)->get(['id', 'reference_no', 'title']),
             'officers' => $this->calendarUsers(),
             'defaultBranchId' => $request->user()->branch_id,
             'defaultDate' => $request->filled('date') ? $request->string('date')->toString() : now()->toDateString(),
@@ -104,6 +104,8 @@ class CalendarController extends Controller
 
     public function show(CalendarEvent $calendar)
     {
+        $this->ensureVisible($calendar, request()->user());
+
         return view('modules.calendar.show', [
             'event' => $calendar->load(['matter', 'branch', 'branches', 'assignee', 'assignees', 'creator']),
         ]);
@@ -111,18 +113,22 @@ class CalendarController extends Controller
 
     public function edit(CalendarEvent $calendar)
     {
+        $this->ensureVisible($calendar, request()->user());
+
         return view('modules.calendar.edit', [
             'event' => $calendar->load(['branches', 'assignees']),
             'types' => CalendarEvent::TYPES,
             'statuses' => CalendarEvent::STATUSES,
             'branches' => Branch::where('is_active', true)->orderBy('name')->get(['id', 'name']),
-            'matters' => Matter::orderByDesc('id')->limit(300)->get(['id', 'reference_no', 'title']),
+            'matters' => Matter::visibleTo(request()->user())->orderByDesc('id')->limit(300)->get(['id', 'reference_no', 'title']),
             'officers' => $this->calendarUsers(),
         ]);
     }
 
     public function update(Request $request, CalendarEvent $calendar)
     {
+        $this->ensureVisible($calendar, $request->user());
+
         $data = $this->validateEvent($request, true);
         $branchIds = $this->resolveBranchIds($data, $request);
         $assigneeIds = $this->resolveAssigneeIds($data, $branchIds);
@@ -138,6 +144,8 @@ class CalendarController extends Controller
 
     public function destroy(CalendarEvent $calendar)
     {
+        $this->ensureVisible($calendar, request()->user());
+
         $calendar->delete();
 
         return redirect()
@@ -182,7 +190,22 @@ class CalendarController extends Controller
         $data = $request->validate($rules);
         $data['all_day'] = $request->boolean('all_day');
 
+        if (! empty($data['matter_id']) && ! Matter::visibleTo($request->user())->whereKey($data['matter_id'])->exists()) {
+            throw ValidationException::withMessages([
+                'matter_id' => 'Select a matter you are allowed to view.',
+            ]);
+        }
+
         return $data;
+    }
+
+    private function ensureVisible(CalendarEvent $calendar, User $user): void
+    {
+        abort_unless(
+            CalendarEvent::forBranchOf($user)->whereKey($calendar->id)->exists()
+            && (! $calendar->matter_id || Matter::visibleTo($user)->whereKey($calendar->matter_id)->exists()),
+            404
+        );
     }
 
     private function resolveBranchIds(array &$data, Request $request): array

@@ -42,6 +42,18 @@
                 </label>
 
                 <label>
+                    <span>Link to Matter (optional)</span>
+                    <select name="matter_id">
+                        <option value="">Keep unlinked</option>
+                        @foreach (($matters ?? collect()) as $matter)
+                            <option value="{{ $matter->id }}" @selected((string) old('matter_id') === (string) $matter->id)>{{ $matter->reference_no }} - {{ $matter->title }}</option>
+                        @endforeach
+                    </select>
+                    <small>Choose the matter deliberately. New files are not automatically attached.</small>
+                    @error('matter_id') <small>{{ $message }}</small> @enderror
+                </label>
+
+                <label>
                     <span>Billing Type</span>
                     <select name="billing_type_id" required>
                         <option value="">Select billing type</option>

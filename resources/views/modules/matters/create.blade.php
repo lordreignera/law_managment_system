@@ -194,9 +194,30 @@
                 </label>
 
                 <label class="kfms-span-2">
-                    <span>About the File</span>
+                    <span>Client-Visible Summary</span>
+                    <textarea name="client_summary" rows="4" placeholder="Safe progress summary that may be shared in the client portal">{{ old('client_summary', $matter?->client_summary) }}</textarea>
+                    <small>Keep internal instructions in the field below. This summary is safe for the client portal.</small>
+                    @error('client_summary') <small>{{ $message }}</small> @enderror
+                </label>
+
+                <label class="kfms-span-2">
+                    <span>Internal Instructions / File Summary</span>
                     <textarea name="description" rows="5" required>{{ old('description', $matter?->description) }}</textarea>
                     @error('description') <small>{{ $message }}</small> @enderror
+                </label>
+
+                <label class="kfms-span-2">
+                    <span>Files to Link</span>
+                    <select name="file_ids[]" multiple>
+                        @php($selectedFileIds = array_map('strval', old('file_ids', $editing ? $matter->files->pluck('id')->all() : [])))
+                        @foreach (($availableFiles ?? collect()) as $availableFile)
+                            <option value="{{ $availableFile->id }}" @selected(in_array((string) $availableFile->id, $selectedFileIds, true))>
+                                {{ $availableFile->file_number }} - {{ $availableFile->file_name }}{{ $availableFile->client?->display_name ? ' ('.$availableFile->client->display_name.')' : '' }}
+                            </option>
+                        @endforeach
+                    </select>
+                    <small>Only the files selected here will be linked to this matter.</small>
+                    @error('file_ids') <small>{{ $message }}</small> @enderror
                 </label>
 
                 <label>

@@ -43,6 +43,9 @@ class CourtEvent extends Model
         'starts_at' => 'datetime',
         'ends_at' => 'datetime',
         'next_step_due' => 'date',
+        'reminder_days_before' => 'integer',
+        'escalation_days_after' => 'integer',
+        'reminders_enabled' => 'boolean',
     ];
 
     public function matter()
@@ -63,6 +66,11 @@ class CourtEvent extends Model
     public function assignee()
     {
         return $this->belongsTo(User::class, 'assigned_to');
+    }
+
+    public function reminderLogs()
+    {
+        return $this->hasMany(CourtEventReminderLog::class);
     }
 
     public function statusLabel(): string

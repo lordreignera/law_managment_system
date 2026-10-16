@@ -53,15 +53,32 @@ return new class extends Migration
             $table->text('outcome')->nullable();
             $table->string('next_step')->nullable();
             $table->date('next_step_due')->nullable();
+            $table->unsignedTinyInteger('reminder_days_before')->default(1);
+            $table->unsignedTinyInteger('escalation_days_after')->default(0);
+            $table->boolean('reminders_enabled')->default(true);
             $table->timestamps();
             $table->softDeletes();
             $table->index(['status', 'starts_at']);
             $table->index('next_step_due');
         });
+
+        Schema::create('court_event_reminder_logs', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('court_event_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('recipient_id')->constrained('users')->cascadeOnDelete();
+            $table->string('reminder_type');
+            $table->dateTime('scheduled_for');
+            $table->string('channel')->nullable();
+            $table->timestamp('sent_at')->nullable();
+            $table->string('status')->default('pending');
+            $table->text('error_message')->nullable();
+            $table->timestamps();
+        });
     }
 
     public function down(): void
     {
+        Schema::dropIfExists('court_event_reminder_logs');
         Schema::dropIfExists('court_events');
         Schema::dropIfExists('judicial_officers');
         Schema::dropIfExists('courts');

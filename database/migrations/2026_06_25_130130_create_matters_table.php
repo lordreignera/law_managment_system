@@ -56,6 +56,7 @@ return new class extends Migration
             $table->string('status')->default('inquiry');
             $table->string('priority')->default('normal');
             $table->text('description')->nullable();
+            $table->text('client_summary')->nullable();
             $table->string('next_action')->nullable();
             $table->date('next_action_due')->nullable();
             $table->timestamps();

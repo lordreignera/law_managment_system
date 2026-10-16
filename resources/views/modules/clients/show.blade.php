@@ -34,14 +34,13 @@
                 @if ($client->matter)
                     <a class="kfms-btn" href="{{ route('matters.show', $client->matter) }}">
                         <i class="mdi mdi-briefcase-eye"></i>
-                        View Matter
-                    </a>
-                @elseif ($client->files->isNotEmpty())
-                    <a class="kfms-btn" href="{{ route('clients.matters.create', $client) }}">
-                        <i class="mdi mdi-briefcase-plus"></i>
-                        Open Matter
+                        View Latest Matter
                     </a>
                 @endif
+                <a class="kfms-btn" href="{{ route('clients.matters.create', $client) }}">
+                    <i class="mdi mdi-briefcase-plus"></i>
+                    Open Another Matter
+                </a>
             </div>
         </div>
 
@@ -128,7 +127,7 @@
                                     <a href="{{ route('clients.adr.show', $adr) }}">Review</a>
                                     @if (! $adrFile)
                                         <a href="{{ route('clients.files.create', ['client' => $client, 'adr' => $adr->id]) }}">Open File</a>
-                                    @elseif (! $client->matter)
+                                    @else
                                         <a href="{{ route('clients.matters.create', $client) }}">Open Matter</a>
                                     @endif
                                 </div>

@@ -11,9 +11,7 @@ use Maatwebsite\Excel\Concerns\WithTitle;
 
 class MattersExport implements FromQuery, WithHeadings, WithMapping, WithTitle
 {
-    public function __construct(private User $user)
-    {
-    }
+    public function __construct(private User $user) {}
 
     public function query()
     {
@@ -41,6 +39,7 @@ class MattersExport implements FromQuery, WithHeadings, WithMapping, WithTitle
             'Branch',
             'Files',
             'Description',
+            'Client Summary',
         ];
     }
 
@@ -64,6 +63,7 @@ class MattersExport implements FromQuery, WithHeadings, WithMapping, WithTitle
             $matter->branch?->name,
             $matter->files_count,
             $matter->description,
+            $matter->client_summary,
         ];
     }
 

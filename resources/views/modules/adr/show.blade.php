@@ -6,7 +6,7 @@
 @section('content')
     @php
         $file = $adr->file;
-        $matter = $adr->client?->matter;
+        $matter = $file?->matter;
         $courtRequired = $adr->response === 'court_required';
     @endphp
 

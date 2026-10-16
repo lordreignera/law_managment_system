@@ -71,7 +71,7 @@ class ExportImportFlowTest extends TestCase
         $this->assertSame(1, Client::count());
     }
 
-    public function test_matters_can_be_imported_one_per_client(): void
+    public function test_multiple_matters_can_be_imported_for_one_client(): void
     {
         $user = $this->operator();
         PracticeArea::create(['name' => 'Litigation', 'is_active' => true]);
@@ -85,7 +85,7 @@ class ExportImportFlowTest extends TestCase
 
         $csv = "client_no,title,practice_area,status\n"
             ."CL26070001,Imported Matter,Litigation,open\n"
-            ."CL26070001,Duplicate Matter,Litigation,open\n"; // skipped: client already has a matter
+            ."CL26070001,Second Matter,Litigation,open\n";
 
         $file = UploadedFile::fake()->createWithContent('matters.csv', $csv);
 
@@ -93,8 +93,9 @@ class ExportImportFlowTest extends TestCase
             ->post(route('matters.import'), ['file' => $file])
             ->assertRedirect(route('matters.index', absolute: false));
 
-        $this->assertSame(1, Matter::where('client_id', $client->id)->count());
+        $this->assertSame(2, Matter::where('client_id', $client->id)->count());
         $this->assertDatabaseHas('matters', ['title' => 'Imported Matter', 'client_id' => $client->id]);
+        $this->assertDatabaseHas('matters', ['title' => 'Second Matter', 'client_id' => $client->id]);
     }
 
     public function test_litigation_events_can_be_imported(): void

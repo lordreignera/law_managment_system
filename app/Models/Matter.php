@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Auditable;
 use App\Models\Concerns\BranchScoped;
 use App\Models\Concerns\HasAttachments;
 use Illuminate\Database\Eloquent\Builder;
@@ -11,9 +12,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Matter extends Model
 {
+    use Auditable;
     use BranchScoped;
-    use HasFactory;
     use HasAttachments;
+    use HasFactory;
     use SoftDeletes;
 
     public const STATUSES = [
@@ -49,6 +51,11 @@ class Matter extends Model
     public function branch()
     {
         return $this->belongsTo(Branch::class);
+    }
+
+    public function openedBy()
+    {
+        return $this->belongsTo(User::class, 'opened_by');
     }
 
     public function ultimateClient()
@@ -99,6 +106,11 @@ class Matter extends Model
     public function assignments()
     {
         return $this->hasMany(MatterAssignment::class);
+    }
+
+    public function documentBundles()
+    {
+        return $this->hasMany(DocumentBundle::class);
     }
 
     public function courtEvents()

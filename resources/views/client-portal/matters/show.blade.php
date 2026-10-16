@@ -19,7 +19,7 @@
                     <div><dt>Practice Area</dt><dd>{{ $matter->practiceArea?->name ?: '-' }}</dd></div>
                     <div><dt>Opened On</dt><dd>{{ $matter->opened_on?->format('d M Y') ?: '-' }}</dd></div>
                     <div><dt>Assigned Advocate</dt><dd>{{ $matter->assignments->firstWhere('is_lead', true)?->user?->name ?: $matter->assignments->first()?->user?->name ?: '-' }}</dd></div>
-                    <div><dt>Public Summary</dt><dd>{{ $matter->description ?: '-' }}</dd></div>
+                    <div><dt>Progress Summary</dt><dd>{{ $matter->client_summary ?: 'No progress summary shared yet.' }}</dd></div>
                 </dl>
             </div>
             <div>

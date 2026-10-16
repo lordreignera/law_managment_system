@@ -20,10 +20,10 @@
                         <i class="mdi mdi-briefcase-eye"></i>
                         View Matter
                     </a>
-                @elseif (! $file->client?->matter)
+                @else
                     <a class="kfms-btn" href="{{ route('clients.matters.create', $file->client) }}">
                         <i class="mdi mdi-briefcase-plus"></i>
-                        Open Matter
+                        Link to Matter
                     </a>
                 @endif
             </div>
@@ -66,6 +66,8 @@
                     <tr>
                         <th>Document</th>
                         <th>Category</th>
+                        <th>Version</th>
+                        <th>Visibility</th>
                         <th>Uploaded By</th>
                         <th>Size</th>
                         <th>Uploaded</th>
@@ -75,8 +77,10 @@
                 <tbody>
                     @forelse ($file->attachments as $attachment)
                         <tr>
-                            <td>{{ $attachment->original_name }}</td>
+                            <td>{{ $attachment->title ?: $attachment->original_name }}</td>
                             <td>{{ str($attachment->category ?: 'file-document')->headline() }}</td>
+                            <td>v{{ $attachment->version_number }} @if ($attachment->is_current)<span class="kfms-status kfms-status-approved">Current</span>@endif</td>
+                            <td>{{ $attachment->is_client_visible ? 'Client visible' : 'Internal' }}</td>
                             <td>{{ $attachment->uploader?->name ?: '-' }}</td>
                             <td>{{ number_format(($attachment->size ?? 0) / 1024, 1) }} KB</td>
                             <td>{{ $attachment->created_at?->format('d M Y, H:i') }}</td>
@@ -84,7 +88,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="kfms-empty">No documents uploaded for this file yet.</td>
+                            <td colspan="8" class="kfms-empty">No documents uploaded for this file yet.</td>
                         </tr>
                     @endforelse
                 </tbody>
@@ -105,6 +109,24 @@
                     <input type="text" name="category" value="{{ old('category') }}" placeholder="e.g. pleading, letter, evidence" data-no-money>
                     @error('category') <small>{{ $message }}</small> @enderror
                 </label>
+                <label>
+                    <span>Document Title</span>
+                    <input type="text" name="title" value="{{ old('title') }}" maxlength="191">
+                </label>
+                <label>
+                    <span>Document Key</span>
+                    <input type="text" name="document_key" value="{{ old('document_key') }}" placeholder="e.g. engagement-letter">
+                </label>
+                <label>
+                    <span>Replace Current Version</span>
+                    <select name="replace_document_id">
+                        <option value="">New document</option>
+                        @foreach ($file->attachments->where('is_current', true) as $currentDocument)
+                            <option value="{{ $currentDocument->id }}">{{ $currentDocument->title ?: $currentDocument->original_name }} (v{{ $currentDocument->version_number }})</option>
+                        @endforeach
+                    </select>
+                </label>
+                <label class="kfms-check-row"><input type="checkbox" name="is_client_visible" value="1" @checked(old('is_client_visible'))><span>Share current version with client</span></label>
             </div>
             <div class="kfms-form-actions">
                 <button type="submit"><i class="mdi mdi-upload"></i> Upload Document</button>

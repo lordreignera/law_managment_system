@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\LitigationExport;
+use App\Imports\LitigationImport;
 use App\Models\Court;
 use App\Models\CourtEvent;
 use App\Models\JudicialOfficer;
 use App\Models\Matter;
 use App\Models\User;
-use App\Exports\LitigationExport;
-use App\Imports\LitigationImport;
 use App\Support\Litigation\LitigationQueryFilters;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -144,7 +144,7 @@ class LitigationController extends Controller
         $this->ensureEventVisible($litigation, request()->user());
 
         return view('modules.litigation.show', [
-            'event' => $litigation->load(['matter', 'court', 'judicialOfficer', 'assignee', 'attachments']),
+            'event' => $litigation->load(['matter', 'court', 'judicialOfficer', 'assignee', 'attachments', 'reminderLogs.recipient']),
             'statuses' => CourtEvent::STATUSES,
         ]);
     }
@@ -214,8 +214,15 @@ class LitigationController extends Controller
             'notes' => ['nullable', 'string', 'max:2000'],
             'next_step' => ['nullable', 'string', 'max:255'],
             'next_step_due' => ['nullable', 'date'],
+            'reminder_days_before' => ['nullable', 'integer', 'min:0', 'max:30'],
+            'escalation_days_after' => ['nullable', 'integer', 'min:0', 'max:30'],
+            'reminders_enabled' => ['nullable', 'boolean'],
             'attachment' => ['nullable', 'file', 'max:5120'],
         ]);
+
+        $data['reminder_days_before'] = (int) ($data['reminder_days_before'] ?? 1);
+        $data['escalation_days_after'] = (int) ($data['escalation_days_after'] ?? 0);
+        $data['reminders_enabled'] = $request->has('reminders_enabled') ? $request->boolean('reminders_enabled') : true;
 
         if (! Matter::visibleTo($request->user())->whereKey($data['matter_id'])->exists()) {
             throw ValidationException::withMessages([

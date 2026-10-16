@@ -112,6 +112,23 @@
         @error('next_step_due') <small>{{ $message }}</small> @enderror
     </label>
 
+    <label>
+        <span>Remind (days before)</span>
+        <input type="number" name="reminder_days_before" min="0" max="30" value="{{ old('reminder_days_before', $event?->reminder_days_before ?? 1) }}" required>
+        @error('reminder_days_before') <small>{{ $message }}</small> @enderror
+    </label>
+
+    <label>
+        <span>Escalate (days after overdue)</span>
+        <input type="number" name="escalation_days_after" min="0" max="30" value="{{ old('escalation_days_after', $event?->escalation_days_after ?? 0) }}" required>
+        @error('escalation_days_after') <small>{{ $message }}</small> @enderror
+    </label>
+
+    <label class="kfms-check-row">
+        <input type="checkbox" name="reminders_enabled" value="1" @checked(old('reminders_enabled', $event?->reminders_enabled ?? true))>
+        <span>Enable reminders and escalation</span>
+    </label>
+
     <label class="kfms-span-2">
         <span>Notes</span>
         <textarea name="notes" rows="3" placeholder="Instructions or context for this appearance">{{ old('notes', $event?->notes) }}</textarea>

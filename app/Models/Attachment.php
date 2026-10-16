@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Auditable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -9,6 +10,7 @@ use Illuminate\Support\Facades\Storage;
 
 class Attachment extends Model
 {
+    use Auditable;
     use HasFactory;
     use SoftDeletes;
 
@@ -16,6 +18,8 @@ class Attachment extends Model
 
     protected $casts = [
         'size' => 'integer',
+        'version_number' => 'integer',
+        'is_current' => 'boolean',
         'is_client_visible' => 'boolean',
     ];
 

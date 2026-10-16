@@ -132,7 +132,9 @@
         <div class="kfms-section-heading">
             <h3>File Summary</h3>
         </div>
-        <p class="kfms-muted-text">{{ $matter->description ?: 'No description recorded.' }}</p>
+        <p class="kfms-muted-text">{{ $matter->description ?: 'No internal instructions recorded.' }}</p>
+        <div class="kfms-section-heading"><h3>Client-Visible Summary</h3></div>
+        <p class="kfms-muted-text">{{ $matter->client_summary ?: 'No client summary recorded.' }}</p>
 
         <div class="kfms-section-heading">
             <h3>Files Under This Matter</h3>
@@ -187,6 +189,14 @@
                     <i class="mdi mdi-file-document-outline"></i>
                     <strong>Instructions / Documents</strong>
                     <span>Review or add instructions, file notes, and supporting documents.</span>
+                </a>
+                @endcan
+
+                @can('matters.bundles.index')
+                <a href="{{ route('matters.bundles.index', $matter) }}">
+                    <i class="mdi mdi-package-variant-closed"></i>
+                    <strong>Pleadings / Document Bundles</strong>
+                    <span>Assemble ordered pleadings, evidence, and court records with version history.</span>
                 </a>
                 @endcan
 

@@ -2,10 +2,10 @@
 
 namespace App\Imports;
 
-use App\Models\CourtEvent;
 use App\Models\Court;
-use App\Models\Matter;
+use App\Models\CourtEvent;
 use App\Models\JudicialOfficer;
+use App\Models\Matter;
 use App\Models\User;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -15,11 +15,10 @@ use Maatwebsite\Excel\Concerns\WithHeadingRow;
 class LitigationImport implements ToCollection, WithHeadingRow
 {
     public int $imported = 0;
+
     public int $skipped = 0;
 
-    public function __construct(private ?User $user = null)
-    {
-    }
+    public function __construct(private ?User $user = null) {}
 
     public function collection(Collection $rows): void
     {
@@ -56,6 +55,11 @@ class LitigationImport implements ToCollection, WithHeadingRow
                     ->value('id');
             }
 
+            $eventType = $this->str($row['event_type'] ?? null);
+            $eventType = $eventType && array_key_exists($eventType, CourtEvent::EVENT_TYPES) ? $eventType : 'mention';
+            $status = $this->str($row['status'] ?? null);
+            $status = $status && array_key_exists($status, CourtEvent::STATUSES) ? $status : 'scheduled';
+
             CourtEvent::create([
                 'matter_id' => $matter->id,
                 'court_id' => Court::where('name', $courtName)->value('id'),
@@ -64,11 +68,16 @@ class LitigationImport implements ToCollection, WithHeadingRow
                 'court_name' => $courtName,
                 'case_number' => $this->str($row['case_number'] ?? null),
                 'judicial_officer' => $this->str($row['judicial_officer'] ?? null),
-                'event_type' => $this->str($row['event_type'] ?? null) ?: 'mention',
+                'event_type' => $eventType,
                 'starts_at' => $startsAt,
                 'ends_at' => $this->dateTime($row['ends_at'] ?? null),
-                'status' => $this->str($row['status'] ?? null) ?: 'scheduled',
+                'status' => $status,
                 'notes' => $this->str($row['notes'] ?? null),
+                'next_step' => $this->str($row['next_step'] ?? null),
+                'next_step_due' => $this->date($row['next_step_due'] ?? null),
+                'reminder_days_before' => $this->integer($row['reminder_days_before'] ?? null, 1),
+                'escalation_days_after' => $this->integer($row['escalation_days_after'] ?? null, 0),
+                'reminders_enabled' => $this->boolean($row['reminders_enabled'] ?? null, true),
             ]);
 
             $this->imported++;
@@ -95,5 +104,33 @@ class LitigationImport implements ToCollection, WithHeadingRow
         $value = is_null($value) ? '' : trim((string) $value);
 
         return $value === '' ? null : $value;
+    }
+
+    private function date($value): ?string
+    {
+        $value = $this->str($value);
+        if (! $value) {
+            return null;
+        }
+
+        try {
+            return Carbon::parse($value)->toDateString();
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    private function integer($value, int $default): int
+    {
+        return is_numeric($value) ? max(0, min(30, (int) $value)) : $default;
+    }
+
+    private function boolean($value, bool $default): bool
+    {
+        if ($value === null || $value === '') {
+            return $default;
+        }
+
+        return filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? $default;
     }
 }

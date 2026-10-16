@@ -47,6 +47,20 @@
                     @endforeach
                 </ul>
             @endif
+
+            @if ($event->reminderLogs->isNotEmpty())
+                <div class="kfms-panel-subheader"><h3>Reminder &amp; Escalation History</h3></div>
+                <div class="kfms-table-wrap">
+                    <table class="kfms-table">
+                        <thead><tr><th>Type</th><th>Recipient</th><th>Scheduled</th><th>Status</th><th>Sent</th></tr></thead>
+                        <tbody>
+                            @foreach ($event->reminderLogs->sortByDesc('scheduled_for') as $log)
+                                <tr><td>{{ str($log->reminder_type)->headline() }}</td><td>{{ $log->recipient?->name ?: '-' }}</td><td>{{ $log->scheduled_for?->format('d M Y') }}</td><td>{{ str($log->status)->headline() }}</td><td>{{ $log->sent_at?->format('d M Y H:i') ?: '-' }}</td></tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @endif
         </section>
 
         @can('litigation.outcome')

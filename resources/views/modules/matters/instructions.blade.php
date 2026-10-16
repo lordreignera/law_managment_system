@@ -18,6 +18,9 @@
                 <i class="mdi mdi-arrow-left"></i>
                 Back to Workspace
             </a>
+            @can('matters.bundles.index')
+                <a class="kfms-link-btn" href="{{ route('matters.bundles.index', $matter) }}"><i class="mdi mdi-package-variant-closed"></i> Bundles</a>
+            @endcan
         </div>
 
         <div class="kfms-detail-grid">
@@ -55,9 +58,14 @@
                 @method('PATCH')
                 <div class="kfms-form-grid">
                     <label class="kfms-span-2">
-                        <span>Instructions / File Summary</span>
+                        <span>Internal Instructions / File Summary</span>
                         <textarea name="description" rows="8" required>{{ old('description', $matter->description) }}</textarea>
                         @error('description') <small>{{ $message }}</small> @enderror
+                    </label>
+                    <label class="kfms-span-2">
+                        <span>Client-Visible Summary</span>
+                        <textarea name="client_summary" rows="5" placeholder="Safe progress summary for the client portal">{{ old('client_summary', $matter->client_summary) }}</textarea>
+                        @error('client_summary') <small>{{ $message }}</small> @enderror
                     </label>
                 </div>
                 <div class="kfms-form-actions">
@@ -97,9 +105,34 @@
                         @error('category') <small>{{ $message }}</small> @enderror
                     </label>
                     <label>
+                        <span>Document Title</span>
+                        <input type="text" name="title" value="{{ old('title') }}" maxlength="191">
+                        @error('title') <small>{{ $message }}</small> @enderror
+                    </label>
+                    <label>
+                        <span>Document Key</span>
+                        <input type="text" name="document_key" value="{{ old('document_key') }}" placeholder="e.g. plaint, witness-statement">
+                        <small>Use the same key when uploading a new version.</small>
+                        @error('document_key') <small>{{ $message }}</small> @enderror
+                    </label>
+                    <label>
+                        <span>Replace Current Version</span>
+                        <select name="replace_document_id">
+                            <option value="">New document</option>
+                            @foreach ($matter->attachments->where('is_current', true) as $currentDocument)
+                                <option value="{{ $currentDocument->id }}" @selected((string) old('replace_document_id') === (string) $currentDocument->id)>{{ $currentDocument->title ?: $currentDocument->original_name }} (v{{ $currentDocument->version_number }})</option>
+                            @endforeach
+                        </select>
+                        @error('replace_document_id') <small>{{ $message }}</small> @enderror
+                    </label>
+                    <label>
                         <span>File</span>
                         <input type="file" name="document" required>
                         @error('document') <small>{{ $message }}</small> @enderror
+                    </label>
+                    <label class="kfms-check-row">
+                        <input type="checkbox" name="is_client_visible" value="1" @checked(old('is_client_visible'))>
+                        <span>Share current version with client</span>
                     </label>
                 </div>
                 <div class="kfms-form-actions">
@@ -126,6 +159,8 @@
                     <tr>
                         <th>Document</th>
                         <th>Type</th>
+                        <th>Version</th>
+                        <th>Visibility</th>
                         <th>Uploaded By</th>
                         <th>Size</th>
                         <th>Date</th>
@@ -134,15 +169,17 @@
                 <tbody>
                     @forelse ($matter->attachments as $attachment)
                         <tr>
-                            <td><a href="{{ route('attachments.download', $attachment) }}">{{ $attachment->original_name }}</a></td>
+                            <td><a href="{{ route('attachments.download', $attachment) }}">{{ $attachment->title ?: $attachment->original_name }}</a></td>
                             <td>{{ str($attachment->category ?: 'matter-document')->headline() }}</td>
+                            <td>v{{ $attachment->version_number }} @if ($attachment->is_current)<span class="kfms-status kfms-status-approved">Current</span>@endif</td>
+                            <td>{{ $attachment->is_client_visible ? 'Client visible' : 'Internal' }}</td>
                             <td>{{ $attachment->uploader?->name ?: '-' }}</td>
                             <td>{{ number_format(($attachment->size ?? 0) / 1024, 1) }} KB</td>
                             <td>{{ $attachment->created_at?->format('d M Y, H:i') }}</td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="kfms-empty">No documents have been uploaded for this matter.</td>
+                            <td colspan="7" class="kfms-empty">No documents have been uploaded for this matter.</td>
                         </tr>
                     @endforelse
                 </tbody>

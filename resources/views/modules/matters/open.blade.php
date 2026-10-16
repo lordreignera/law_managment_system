@@ -21,7 +21,7 @@
             </a>
         </div>
 
-        <p class="kfms-muted-text">This is the single matter for {{ $client->display_name }}. Every file opened for this client is kept under it.</p>
+        <p class="kfms-muted-text">Open another matter for {{ $client->display_name }} and deliberately select which existing files belong to it.</p>
 
         <form class="kfms-form" method="POST" action="{{ route('clients.matters.store', $client) }}">
             @csrf
@@ -152,9 +152,26 @@
                 </label>
 
                 <label class="kfms-span-2">
-                    <span>About the Matter</span>
+                    <span>Client-Visible Summary</span>
+                    <textarea name="client_summary" rows="4" placeholder="Safe progress summary for the client portal">{{ old('client_summary') }}</textarea>
+                    @error('client_summary') <small>{{ $message }}</small> @enderror
+                </label>
+
+                <label class="kfms-span-2">
+                    <span>Internal Instructions / File Summary</span>
                     <textarea name="description" rows="5" required>{{ old('description') }}</textarea>
                     @error('description') <small>{{ $message }}</small> @enderror
+                </label>
+
+                <label class="kfms-span-2">
+                    <span>Files to Link</span>
+                    <select name="file_ids[]" multiple>
+                        @foreach (($availableFiles ?? collect()) as $availableFile)
+                            <option value="{{ $availableFile->id }}" @selected(in_array((string) $availableFile->id, array_map('strval', old('file_ids', [])), true))>{{ $availableFile->file_number }} - {{ $availableFile->file_name }}</option>
+                        @endforeach
+                    </select>
+                    <small>Only the files selected here will be linked to this matter.</small>
+                    @error('file_ids') <small>{{ $message }}</small> @enderror
                 </label>
                 <label>
                     <span>Next Action</span>

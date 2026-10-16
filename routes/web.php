@@ -13,6 +13,7 @@ use App\Http\Controllers\ClientPortalAuthController;
 use App\Http\Controllers\ClientPortalController;
 use App\Http\Controllers\CompanySettingController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DocumentBundleController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\FinanceController;
 use App\Http\Controllers\HrController;
@@ -155,6 +156,13 @@ Route::middleware([
         Route::get('/matters/{matter}/instructions', [MatterInstructionController::class, 'show'])->name('matters.instructions.show');
         Route::patch('/matters/{matter}/instructions', [MatterInstructionController::class, 'update'])->name('matters.instructions.update');
         Route::post('/matters/{matter}/documents', [MatterInstructionController::class, 'storeDocument'])->name('matters.documents.store');
+        Route::get('/matters/{matter}/bundles', [DocumentBundleController::class, 'index'])->name('matters.bundles.index');
+        Route::get('/matters/{matter}/bundles/create', [DocumentBundleController::class, 'create'])->name('matters.bundles.create');
+        Route::post('/matters/{matter}/bundles', [DocumentBundleController::class, 'store'])->name('matters.bundles.store');
+        Route::get('/matters/{matter}/bundles/{bundle}/download', [DocumentBundleController::class, 'download'])->name('matters.bundles.download');
+        Route::get('/matters/{matter}/bundles/{bundle}/edit', [DocumentBundleController::class, 'edit'])->name('matters.bundles.edit');
+        Route::put('/matters/{matter}/bundles/{bundle}', [DocumentBundleController::class, 'update'])->name('matters.bundles.update');
+        Route::get('/matters/{matter}/bundles/{bundle}', [DocumentBundleController::class, 'show'])->name('matters.bundles.show');
         Route::get('/matters/{matter}', [MatterController::class, 'show'])->name('matters.show');
 
         // Litigation (court diary)

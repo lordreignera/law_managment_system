@@ -15,9 +15,7 @@ class LitigationExport implements FromQuery, WithHeadings, WithMapping, WithTitl
     public function __construct(
         private array $filters,
         private User $user,
-    )
-    {
-    }
+    ) {}
 
     public function query()
     {
@@ -46,6 +44,11 @@ class LitigationExport implements FromQuery, WithHeadings, WithMapping, WithTitl
             'Status',
             'Assigned To',
             'Notes',
+            'Next Step',
+            'Next Step Due',
+            'Reminder Days Before',
+            'Escalation Days After',
+            'Reminders Enabled',
         ];
     }
 
@@ -66,6 +69,11 @@ class LitigationExport implements FromQuery, WithHeadings, WithMapping, WithTitl
             $event->status,
             $event->assignee?->name,
             $event->notes,
+            $event->next_step,
+            optional($event->next_step_due)->format('Y-m-d'),
+            $event->reminder_days_before,
+            $event->escalation_days_after,
+            $event->reminders_enabled ? 'yes' : 'no',
         ];
     }
 
