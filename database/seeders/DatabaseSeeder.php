@@ -97,6 +97,7 @@ class DatabaseSeeder extends Seeder
             'Securities Manager' => ['dashboard', 'messages', 'land-titles'],
             'Accountant' => ['dashboard', 'messages', 'finance', 'expenses', 'petty-cash', 'ledger', 'requisitions'],
             'HR Manager' => ['dashboard', 'messages', 'hr', 'staff', 'leave'],
+            'Payroll Officer' => ['dashboard', 'messages', 'payroll'],
             'Front Desk' => ['dashboard', 'messages', 'clients', 'intakes', 'letters'],
             'IT Manager' => ['dashboard', 'messages', 'access', 'settings', 'branches', 'holidays'],
         ];

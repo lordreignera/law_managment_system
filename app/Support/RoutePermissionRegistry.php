@@ -36,6 +36,7 @@ class RoutePermissionRegistry
         'expenses' => 'Expenses',
         'petty-cash' => 'Petty Cash',
         'ledger' => 'Ledger',
+        'payroll' => 'Payroll',
         'hr' => 'Human Resources',
         'staff' => 'Staff',
         'leave' => 'Leave Management',

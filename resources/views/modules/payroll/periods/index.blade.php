@@ -1,0 +1,12 @@
+@extends('layouts.admin')
+@section('title', 'Payroll Periods')
+@section('page-title', 'Payroll Periods')
+@section('content')
+<div class="kfms-stat-grid">@foreach($summary as $label => $value)<section class="kfms-card"><span class="kfms-card-label">{{ $label }}</span><strong class="kfms-stat">{{ number_format($value) }}</strong></section>@endforeach</div>
+<section class="kfms-panel"><div class="kfms-panel-header"><div><h2>Payroll Periods</h2><span>Open, process, approve, pay, and close each payroll period.</span></div><div class="kfms-toolbar-actions"><a class="kfms-link-btn" href="{{ route('payroll.dashboard') }}">Payroll Dashboard</a><a class="kfms-btn" href="{{ route('payroll.periods.create') }}"><i class="mdi mdi-calendar-plus"></i> Open Period</a></div></div>
+@if(session('status'))<div class="kfms-alert">{{ session('status') }}</div>@endif
+<form class="kfms-table-toolbar" method="GET" action="{{ route('payroll.periods.index') }}"><label class="kfms-search-box"><i class="mdi mdi-magnify"></i><input type="search" name="search" value="{{ $filters['search'] ?? '' }}" placeholder="Search period name or code"></label><label><span>Status</span><select name="status"><option value="">All Statuses</option>@foreach($statuses as $value => $label)<option value="{{ $value }}" @selected(($filters['status'] ?? '') === $value)>{{ $label }}</option>@endforeach</select></label><div></div><div class="kfms-toolbar-actions"><button class="kfms-link-btn" type="submit">Apply</button><a class="kfms-link-btn" href="{{ route('payroll.periods.index') }}">Reset</a></div></form>
+<div class="kfms-table-wrap"><table class="kfms-table"><thead><tr><th>Period</th><th>Payroll Dates</th><th>Payment Date</th><th>Run</th><th>Status</th><th>Action</th></tr></thead><tbody>
+@forelse($periods as $period)<tr><td><strong>{{ $period->name }}</strong><br><small>{{ $period->code }}</small></td><td>{{ $period->starts_on?->format('d M Y') }} - {{ $period->ends_on?->format('d M Y') }}</td><td>{{ $period->payment_on?->format('d M Y') ?: '-' }}</td><td>{{ $period->run ? $period->run->statusLabel() : 'Not opened' }}</td><td><span class="kfms-status">{{ $period->statusLabel() }}</span></td><td><a class="kfms-link-btn" href="{{ route('payroll.periods.show', $period) }}">View</a></td></tr>@empty<tr><td colspan="6" class="kfms-empty">No payroll periods have been opened.</td></tr>@endforelse
+</tbody></table></div>{{ $periods->links() }}</section>
+@endsection

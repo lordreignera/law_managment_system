@@ -1,0 +1,8 @@
+@extends('layouts.admin')
+@section('title', 'Open Payroll Period')
+@section('page-title', 'Open Payroll Period')
+@section('content')
+<section class="kfms-panel"><div class="kfms-panel-header"><div><h2>Open Payroll Period</h2><span>Create a controlled period before importing or reviewing payroll inputs.</span></div><a class="kfms-link-btn" href="{{ route('payroll.periods.index') }}">Back to Periods</a></div><form class="kfms-form" method="POST" action="{{ route('payroll.periods.store') }}">@csrf
+<div class="kfms-form-grid"><label><span>Period Code</span><input name="code" value="{{ old('code', $period->code) }}" maxlength="60" required>@error('code')<small>{{ $message }}</small>@enderror</label><label><span>Period Name</span><input name="name" value="{{ old('name', $period->name) }}" placeholder="October 2026 Payroll" required>@error('name')<small>{{ $message }}</small>@enderror</label><label><span>Starts On</span><input type="date" name="starts_on" value="{{ old('starts_on', $period->starts_on?->toDateString()) }}" required></label><label><span>Ends On</span><input type="date" name="ends_on" value="{{ old('ends_on', $period->ends_on?->toDateString()) }}" required></label><label><span>Planned Payment Date</span><input type="date" name="payment_on" value="{{ old('payment_on', $period->payment_on?->toDateString()) }}"></label><label class="kfms-span-2"><span>Notes</span><textarea name="notes" rows="4" placeholder="Cut-off notes, approved exceptions, or payment instructions">{{ old('notes', $period->notes) }}</textarea></label></div>
+<div class="kfms-form-actions"><a class="kfms-link-btn" href="{{ route('payroll.periods.index') }}">Cancel</a><button class="kfms-btn" type="submit">Create Period</button></div></form></section>
+@endsection

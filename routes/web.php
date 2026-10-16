@@ -31,6 +31,13 @@ use App\Http\Controllers\MatterController;
 use App\Http\Controllers\MatterInstructionController;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\PayrollComponentController;
+use App\Http\Controllers\PayrollController;
+use App\Http\Controllers\PayrollEmployeeController;
+use App\Http\Controllers\PayrollOutputController;
+use App\Http\Controllers\PayrollPeriodController;
+use App\Http\Controllers\PayrollRuleController;
+use App\Http\Controllers\PayrollRunController;
 use App\Http\Controllers\PettyCashController;
 use App\Http\Controllers\ProfileMediaController;
 use App\Http\Controllers\PublicHolidayController;
@@ -325,6 +332,50 @@ Route::middleware([
 
         // Expenditure ledger
         Route::get('/ledger', [LedgerController::class, 'index'])->name('ledger.index');
+
+        // Payroll (restricted HR / finance module)
+        Route::prefix('payroll')->name('payroll.')->group(function () {
+            Route::get('/dashboard', [PayrollController::class, 'dashboard'])->name('dashboard');
+
+            Route::get('/components', [PayrollComponentController::class, 'index'])->name('components.index');
+            Route::get('/components/create', [PayrollComponentController::class, 'create'])->name('components.create');
+            Route::post('/components', [PayrollComponentController::class, 'store'])->name('components.store');
+            Route::get('/components/{component}/edit', [PayrollComponentController::class, 'edit'])->name('components.edit');
+            Route::put('/components/{component}', [PayrollComponentController::class, 'update'])->name('components.update');
+            Route::delete('/components/{component}', [PayrollComponentController::class, 'destroy'])->name('components.destroy');
+
+            Route::get('/rules', [PayrollRuleController::class, 'index'])->name('rules.index');
+            Route::get('/rules/create', [PayrollRuleController::class, 'create'])->name('rules.create');
+            Route::post('/rules', [PayrollRuleController::class, 'store'])->name('rules.store');
+            Route::get('/rules/{rule}/edit', [PayrollRuleController::class, 'edit'])->name('rules.edit');
+            Route::put('/rules/{rule}', [PayrollRuleController::class, 'update'])->name('rules.update');
+            Route::delete('/rules/{rule}', [PayrollRuleController::class, 'destroy'])->name('rules.destroy');
+
+            Route::get('/employees', [PayrollEmployeeController::class, 'index'])->name('employees.index');
+            Route::get('/employees/create', [PayrollEmployeeController::class, 'create'])->name('employees.create');
+            Route::post('/employees', [PayrollEmployeeController::class, 'store'])->name('employees.store');
+            Route::get('/employees/{profile}', [PayrollEmployeeController::class, 'show'])->name('employees.show');
+            Route::get('/employees/{profile}/edit', [PayrollEmployeeController::class, 'edit'])->name('employees.edit');
+            Route::put('/employees/{profile}', [PayrollEmployeeController::class, 'update'])->name('employees.update');
+
+            Route::get('/periods', [PayrollPeriodController::class, 'index'])->name('periods.index');
+            Route::get('/periods/create', [PayrollPeriodController::class, 'create'])->name('periods.create');
+            Route::post('/periods', [PayrollPeriodController::class, 'store'])->name('periods.store');
+            Route::get('/periods/{period}', [PayrollPeriodController::class, 'show'])->name('periods.show');
+            Route::post('/periods/{period}/run', [PayrollPeriodController::class, 'createRun'])->name('periods.run.store');
+
+            Route::get('/runs/{run}', [PayrollRunController::class, 'show'])->name('runs.show');
+            Route::post('/runs/{run}/calculate', [PayrollRunController::class, 'calculate'])->name('runs.calculate');
+            Route::post('/runs/{run}/submit', [PayrollRunController::class, 'submit'])->name('runs.submit');
+            Route::patch('/runs/{run}/approve', [PayrollRunController::class, 'approve'])->name('runs.approve');
+            Route::patch('/runs/{run}/reject', [PayrollRunController::class, 'reject'])->name('runs.reject');
+            Route::get('/reports', [PayrollOutputController::class, 'reports'])->name('reports');
+            Route::get('/runs/{run}/exports/{format}', [PayrollOutputController::class, 'export'])->name('runs.export');
+            Route::get('/payslips/{payslip}', [PayrollOutputController::class, 'payslip'])->name('payslips.show');
+            Route::post('/runs/{run}/payment-batch', [PayrollOutputController::class, 'createPaymentBatch'])->name('runs.payment-batch.store');
+            Route::patch('/runs/{run}/paid', [PayrollOutputController::class, 'markPaid'])->name('runs.paid');
+            Route::post('/runs/{run}/statutory', [PayrollOutputController::class, 'storeStatutory'])->name('runs.statutory.store');
+        });
 
         // Access control
         Route::prefix('access-control')->name('access.')->group(function () {

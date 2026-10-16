@@ -113,6 +113,21 @@
             ],
             'permission_any' => ['hr.dashboard', 'staff.index', 'leave.index'],
         ],
+        [
+            'label' => 'Payroll',
+            'icon' => 'mdi-cash-register',
+            'route' => 'payroll.dashboard',
+            'active' => ['payroll.*'],
+            'children' => [
+                ['label' => 'Payroll Dashboard', 'route' => 'payroll.dashboard', 'active' => 'payroll.dashboard', 'permission' => 'payroll.dashboard'],
+                ['label' => 'Payroll Employees', 'route' => 'payroll.employees.index', 'active' => 'payroll.employees.*', 'permission' => 'payroll.employees.index'],
+                ['label' => 'Components', 'route' => 'payroll.components.index', 'active' => 'payroll.components.*', 'permission' => 'payroll.components.index'],
+                ['label' => 'Calculation Rules', 'route' => 'payroll.rules.index', 'active' => 'payroll.rules.*', 'permission' => 'payroll.rules.index'],
+                ['label' => 'Payroll Periods', 'route' => 'payroll.periods.index', 'active' => 'payroll.periods.*', 'permission' => 'payroll.periods.index'],
+                ['label' => 'Reports & Exports', 'route' => 'payroll.reports', 'active' => 'payroll.reports', 'permission' => 'payroll.reports'],
+            ],
+            'permission_any' => ['payroll.dashboard', 'payroll.employees.index', 'payroll.components.index', 'payroll.rules.index', 'payroll.periods.index', 'payroll.reports'],
+        ],
         ['label' => 'Requisitions', 'icon' => 'mdi-clipboard-text', 'route' => 'requisitions.index', 'active' => 'requisitions.*', 'permission' => 'requisitions.index'],
         [
             'label' => 'User Management',
