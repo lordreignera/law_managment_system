@@ -93,6 +93,7 @@ class MessageFlowTest extends TestCase
             ->get(route('messages.show', $conversation))
             ->assertOk()
             ->assertSee('kfms-chat-shell')
+            ->assertSee('message-recipient-users-picker')
             ->assertSee('Court diary update')
             ->assertSee('hearing-notes.pdf')
             ->assertSee('Please update all hearing notes before close of business.');

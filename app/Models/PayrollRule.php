@@ -24,6 +24,11 @@ class PayrollRule extends Model
         'formula' => 'Custom Formula',
     ];
 
+    public const FLAGS = [
+        'active' => 'Active',
+        'employer_cost' => 'Employer cost (do not deduct)',
+    ];
+
     protected $guarded = [];
 
     protected $casts = [

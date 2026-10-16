@@ -190,6 +190,22 @@ class UserGuideController extends Controller
                 'sections' => [$this->hrSection()],
             ],
             [
+                'title' => 'Payroll Guide',
+                'subtitle' => 'Configurable staff pay, approvals, payslips, and statutory exports.',
+                'icon' => 'mdi-cash-register',
+                'route' => 'payroll.dashboard',
+                'route_permission' => 'payroll.dashboard',
+                'permissions' => [
+                    'payroll.dashboard',
+                    'payroll.employees.index',
+                    'payroll.components.index',
+                    'payroll.rules.index',
+                    'payroll.periods.index',
+                    'payroll.reports',
+                ],
+                'sections' => [$this->payrollSection()],
+            ],
+            [
                 'title' => 'Messages Guide',
                 'subtitle' => 'Internal and client communication available to your account.',
                 'icon' => 'mdi-message-text-outline',
@@ -381,6 +397,24 @@ class UserGuideController extends Controller
                 'Confirm role, branch, department, phone, temporary password, and generated staff number.',
                 'Use Staff Register to review active and pending staff records.',
                 'Review submitted leave requests and keep upcoming leave visible from the HR dashboard.',
+            ],
+        ];
+    }
+
+    private function payrollSection(): array
+    {
+        return [
+            'id' => 'payroll',
+            'title' => 'Payroll Flow',
+            'subtitle' => 'Protected, configurable payroll from setup to filing.',
+            'steps' => [
+                'Payroll access is restricted to approved payroll permissions. Start from the Payroll Dashboard to see setup gaps, open periods, and pending approvals.',
+                'Configure Components with the Component flags dropdown. Select Taxable, NSSF liable, Employer cost, Recurring, and Active as appropriate for each pay item.',
+                'Configure Calculation Rules for PAYE, NSSF, and custom rules. Use effective dates and the Rule flags dropdown; custom formulas use the documented payroll variables.',
+                'Create an employee payroll profile with statutory identifiers, bank or payment details, an effective-dated salary, and the searchable Recurring components dropdown.',
+                'Open a payroll period, calculate its run, review the component snapshots and payslips, then submit it for approval. The person who prepared a run cannot approve the same run.',
+                'After approval, prepare the payment batch, export the bank register, payslips, and statutory files, then record the payment and PAYE or NSSF filing references.',
+                'For any multi-select field, open the field, search or scroll the list, use Select all where appropriate, tick the items, and close the menu. Selected items are summarized in the closed field; this pattern is also used for matter teams, calendar assignments, document bundles, and letter sharing.',
             ],
         ];
     }

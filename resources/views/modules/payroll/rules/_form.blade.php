@@ -12,6 +12,30 @@
     <label class="kfms-span-2"><span>Formula (optional)</span><textarea name="formula" rows="3">{{ old('formula', $rule->formula) }}</textarea>@error('formula')<small>{{ $message }}</small>@enderror</label>
     <label class="kfms-span-2"><span>Configuration JSON (optional)</span><textarea name="configuration" rows="8" placeholder='For tax bands, store a versioned JSON object such as {"bands": []}'>{{ old('configuration', $rule->configuration ? json_encode($rule->configuration, JSON_PRETTY_PRINT) : '') }}</textarea>@error('configuration')<small>{{ $message }}</small>@enderror</label>
     <label class="kfms-span-2"><span>Description</span><textarea name="description" rows="3">{{ old('description', $rule->description) }}</textarea></label>
-    <div class="kfms-check-row"><label><input type="checkbox" name="is_active" value="1" @checked(old('is_active', $rule->is_active))><span>Active</span></label><label><input type="checkbox" name="is_employer_cost" value="1" @checked(old('is_employer_cost', $rule->is_employer_cost ?? false))><span>Employer cost (do not deduct)</span></label></div>
+    @php
+        $ruleFlags = old('flags', collect(\App\Models\PayrollRule::FLAGS)->filter(function ($label, $key) use ($rule) {
+            return match ($key) {
+                'active' => (bool) $rule->is_active,
+                'employer_cost' => (bool) ($rule->is_employer_cost ?? false),
+                default => false,
+            };
+        })->keys()->all());
+        $ruleFlagOptions = [
+            ['value' => 'active', 'label' => 'Active', 'detail' => 'Use this rule in eligible payroll calculations.'],
+            ['value' => 'employer_cost', 'label' => 'Employer cost', 'detail' => 'Treat the result as a firm cost rather than an employee deduction.'],
+        ];
+    @endphp
+    @include('partials.check-dropdown', [
+        'id' => 'payroll-rule-flags-picker',
+        'name' => 'flags[]',
+        'field' => 'flags',
+        'label' => 'Rule flags',
+        'placeholder' => 'Select rule flags',
+        'options' => $ruleFlagOptions,
+        'selected' => $ruleFlags,
+        'selectAllLabel' => 'Select all flags',
+        'hint' => 'Choose the behaviors that apply to this rule.',
+        'wrapperClass' => 'kfms-span-2',
+    ])
 </div>
 <div class="kfms-form-actions"><a class="kfms-link-btn" href="{{ route('payroll.rules.index') }}">Cancel</a><button class="kfms-btn" type="submit">{{ $rule->exists ? 'Update' : 'Create' }} Rule</button></div>

@@ -33,6 +33,14 @@ class PayrollComponent extends Model
         'custom' => 'Custom / Formula',
     ];
 
+    public const FLAGS = [
+        'taxable' => 'Taxable',
+        'nssf_liable' => 'NSSF liable',
+        'employer_cost' => 'Employer cost',
+        'recurring' => 'Recurring',
+        'active' => 'Active',
+    ];
+
     protected $guarded = [];
 
     protected $casts = [

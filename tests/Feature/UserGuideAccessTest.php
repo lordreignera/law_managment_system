@@ -143,6 +143,7 @@ class UserGuideAccessTest extends TestCase
             ->assertSee('System User Guide')
             ->assertSee('Finance Guide')
             ->assertSee('Human Resources Guide')
+            ->assertSee('Payroll Guide')
             ->assertSee('Securities Guide');
     }
 

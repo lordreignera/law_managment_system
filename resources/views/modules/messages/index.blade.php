@@ -261,33 +261,24 @@
                         @error('audience_type') <small>{{ $message }}</small> @enderror
                     </label>
 
-                    <label class="kfms-span-2" data-message-target="users">
-                        <span>Individual User(s) <span class="kfms-required">*</span></span>
-                        <div class="kfms-recipient-list">
-                            @foreach ($users as $user)
-                                <label class="kfms-recipient-option">
-                                    <input type="checkbox" name="recipient_user_ids[]" value="{{ $user->id }}" @checked(in_array((string) $user->id, old('recipient_user_ids', []), true))>
-                                    <span>
-                                        <strong>{{ $user->name }}</strong>
-                                        <small>
-                                            {{ $user->email }}
-                                            @if ($user->roles->isNotEmpty())
-                                                &middot; {{ $user->roles->pluck('name')->join(', ') }}
-                                            @endif
-                                            @if ($user->branch)
-                                                &middot; {{ $user->branch->name }}
-                                            @endif
-                                            @if ($user->department)
-                                                &middot; {{ $user->department->name }}
-                                            @endif
-                                        </small>
-                                    </span>
-                                </label>
-                            @endforeach
-                        </div>
-                        @error('recipient_user_ids') <small>{{ $message }}</small> @enderror
-                        @error('recipient_user_ids.*') <small>{{ $message }}</small> @enderror
-                    </label>
+                    <div class="kfms-span-2" data-message-target="users">
+                        @include('partials.check-dropdown', [
+                            'id' => 'message-recipient-users-picker',
+                            'name' => 'recipient_user_ids[]',
+                            'field' => 'recipient_user_ids',
+                            'label' => 'Individual user(s) *',
+                            'placeholder' => 'Select individual users',
+                            'options' => $users->map(fn ($user) => [
+                                'value' => (string) $user->id,
+                                'label' => $user->name,
+                                'detail' => collect([$user->email, $user->roles->pluck('name')->join(', '), $user->branch?->name, $user->department?->name])->filter()->join(' · '),
+                                'search' => collect([$user->name, $user->email, $user->branch?->name, $user->department?->name])->filter()->join(' '),
+                            ])->all(),
+                            'selected' => old('recipient_user_ids', []),
+                            'selectAllLabel' => 'Select all users',
+                            'hint' => 'Search or scroll the list, then select one or more recipients.',
+                        ])
+                    </div>
 
                     <label class="kfms-span-2" data-message-target="department">
                         <span>Department <span class="kfms-required">*</span></span>

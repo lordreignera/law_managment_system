@@ -19,7 +19,7 @@
     <label><span>Profile Effective From</span><input type="date" name="effective_from" value="{{ old('effective_from', $profile->effective_from?->toDateString()) }}"></label>
     <label><span>Profile Effective To</span><input type="date" name="effective_to" value="{{ old('effective_to', $profile->effective_to?->toDateString()) }}"></label>
     <label class="kfms-span-2"><span>Profile Notes</span><textarea name="notes" rows="2">{{ old('notes', $profile->notes) }}</textarea></label>
-    <div class="kfms-check-row"><label><input type="checkbox" name="is_active" value="1" @checked(old('is_active', $profile->is_active))><span>Included in future payroll periods</span></label></div>
+    <label><span>Payroll status</span><select name="is_active"><option value="1" @selected((string) old('is_active', $profile->exists ? (int) $profile->is_active : 1) === '1')>Active — included in future payroll periods</option><option value="0" @selected((string) old('is_active', $profile->exists ? (int) $profile->is_active : 1) === '0')>Inactive — keep historical records only</option></select></label>
 </div>
 
 <div class="kfms-section-heading"><div><h3>Current salary record</h3><span>Salary versions are effective-dated so historical payroll can be reproduced.</span></div></div>
@@ -33,10 +33,31 @@
 </div>
 
 <div class="kfms-section-heading"><div><h3>Recurring components</h3><span>Choose the components used by this employee and override their amount or rate where required.</span></div></div>
-<div class="kfms-table-wrap"><table class="kfms-table"><thead><tr><th>Use</th><th>Component</th><th>Default calculation</th><th>Employee amount</th><th>Employee rate (%)</th></tr></thead><tbody>
+@php
+    $assignedComponentIds = old('component_ids', $assignedComponents->keys()->map(fn ($id) => (string) $id)->all());
+    $componentOptions = $components->map(fn ($component) => [
+        'value' => (string) $component->id,
+        'label' => $component->name,
+        'detail' => ($component->calculation_method === 'percentage' ? number_format((float) $component->rate, 4).'%' : number_format((float) $component->amount, 2)).' of '.str($component->calculation_basis)->headline(),
+        'search' => $component->name.' '.$component->code.' '.$component->typeLabel(),
+    ])->all();
+@endphp
+@include('partials.check-dropdown', [
+    'id' => 'payroll-employee-components-picker',
+    'name' => 'component_ids[]',
+    'field' => 'component_ids',
+    'label' => 'Assigned recurring components',
+    'placeholder' => 'Select salary components',
+    'options' => $componentOptions,
+    'selected' => $assignedComponentIds,
+    'selectAllLabel' => 'Select all components',
+    'hint' => 'Use the searchable, scrollable menu to choose the components that apply to this employee.',
+    'wrapperClass' => 'kfms-span-2',
+])
+<div class="kfms-table-wrap"><table class="kfms-table"><thead><tr><th>Component</th><th>Default calculation</th><th>Employee amount</th><th>Employee rate (%)</th></tr></thead><tbody>
 @forelse($components as $component)
     @php($assignment = $assignedComponents->get($component->id))
-    <tr><td><input type="checkbox" name="component_ids[]" value="{{ $component->id }}" @checked($assignment)></td><td><strong>{{ $component->name }}</strong><br><small>{{ $component->typeLabel() }}</small></td><td>{{ $component->calculation_method === 'percentage' ? number_format((float)$component->rate, 4).'%' : number_format((float)$component->amount, 2) }} of {{ str($component->calculation_basis)->headline() }}</td><td><input type="number" step="0.01" min="0" name="component_amounts[{{ $component->id }}]" value="{{ old('component_amounts.'.$component->id, $assignment?->amount) }}"></td><td><input type="number" step="0.0001" min="0" max="100" name="component_rates[{{ $component->id }}]" value="{{ old('component_rates.'.$component->id, $assignment?->rate) }}"></td></tr>
-@empty<tr><td colspan="5" class="kfms-empty">Configure payroll components before assigning them.</td></tr>@endforelse
+    <tr><td><strong>{{ $component->name }}</strong><br><small>{{ $component->typeLabel() }}</small></td><td>{{ $component->calculation_method === 'percentage' ? number_format((float)$component->rate, 4).'%' : number_format((float)$component->amount, 2) }} of {{ str($component->calculation_basis)->headline() }}</td><td><input type="number" step="0.01" min="0" name="component_amounts[{{ $component->id }}]" value="{{ old('component_amounts.'.$component->id, $assignment?->amount) }}"></td><td><input type="number" step="0.0001" min="0" max="100" name="component_rates[{{ $component->id }}]" value="{{ old('component_rates.'.$component->id, $assignment?->rate) }}"></td></tr>
+@empty<tr><td colspan="4" class="kfms-empty">Configure payroll components before assigning them.</td></tr>@endforelse
 </tbody></table></div>
 <div class="kfms-form-actions"><a class="kfms-link-btn" href="{{ route('payroll.employees.index') }}">Cancel</a><button class="kfms-btn" type="submit">{{ $profile->exists ? 'Update' : 'Create' }} Payroll Profile</button></div>

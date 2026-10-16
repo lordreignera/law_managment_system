@@ -104,6 +104,8 @@ class PayrollComponentController extends Controller
             'formula' => ['nullable', 'string', 'max:2000'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
             'description' => ['nullable', 'string', 'max:2000'],
+            'flags' => ['nullable', 'array'],
+            'flags.*' => [Rule::in(array_keys(PayrollComponent::FLAGS))],
             'is_taxable' => ['nullable', 'boolean'],
             'is_nssf_liable' => ['nullable', 'boolean'],
             'is_employer_cost' => ['nullable', 'boolean'],
@@ -113,9 +115,20 @@ class PayrollComponentController extends Controller
 
         $data['amount'] = $data['amount'] ?? 0;
         $data['sort_order'] = $data['sort_order'] ?? 0;
-        foreach (['is_taxable', 'is_nssf_liable', 'is_employer_cost', 'is_recurring', 'is_active'] as $field) {
-            $data[$field] = $request->boolean($field);
+        if ($request->has('flags')) {
+            $flags = array_fill_keys($request->input('flags', []), true);
+            $data['is_taxable'] = isset($flags['taxable']);
+            $data['is_nssf_liable'] = isset($flags['nssf_liable']);
+            $data['is_employer_cost'] = isset($flags['employer_cost']);
+            $data['is_recurring'] = isset($flags['recurring']);
+            $data['is_active'] = isset($flags['active']);
+        } else {
+            // Keep the old field names compatible with imports and API clients.
+            foreach (['is_taxable', 'is_nssf_liable', 'is_employer_cost', 'is_recurring', 'is_active'] as $field) {
+                $data[$field] = $request->boolean($field);
+            }
         }
+        unset($data['flags']);
 
         return $data;
     }

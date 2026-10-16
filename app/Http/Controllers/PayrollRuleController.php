@@ -80,13 +80,23 @@ class PayrollRuleController extends Controller
             'effective_to' => ['nullable', 'date', 'after_or_equal:effective_from'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
             'description' => ['nullable', 'string', 'max:2000'],
+            'flags' => ['nullable', 'array'],
+            'flags.*' => [Rule::in(array_keys(PayrollRule::FLAGS))],
             'is_active' => ['nullable', 'boolean'],
         ]);
 
         $data['configuration'] = filled($data['configuration'] ?? null) ? json_decode($data['configuration'], true, 512, JSON_THROW_ON_ERROR) : null;
         $data['sort_order'] = $data['sort_order'] ?? 0;
-        $data['is_active'] = $request->boolean('is_active');
-        $data['is_employer_cost'] = $request->boolean('is_employer_cost');
+        if ($request->has('flags')) {
+            $flags = array_fill_keys($request->input('flags', []), true);
+            $data['is_active'] = isset($flags['active']);
+            $data['is_employer_cost'] = isset($flags['employer_cost']);
+        } else {
+            // Keep the old field names compatible with imports and API clients.
+            $data['is_active'] = $request->boolean('is_active');
+            $data['is_employer_cost'] = $request->boolean('is_employer_cost');
+        }
+        unset($data['flags']);
 
         return $data;
     }

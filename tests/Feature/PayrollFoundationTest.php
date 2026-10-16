@@ -54,6 +54,9 @@ class PayrollFoundationTest extends TestCase
         foreach (['payroll.dashboard', 'payroll.components.index', 'payroll.rules.index', 'payroll.employees.index', 'payroll.periods.index', 'payroll.reports'] as $route) {
             $this->get(route($route))->assertOk();
         }
+        $this->get(route('payroll.components.create'))->assertOk()->assertSee('payroll-component-flags-picker');
+        $this->get(route('payroll.rules.create'))->assertOk()->assertSee('payroll-rule-flags-picker');
+        $this->get(route('payroll.employees.create'))->assertOk()->assertSee('payroll-employee-components-picker');
 
         $this->post(route('payroll.components.store'), [
             'code' => 'BASIC',
@@ -62,10 +65,12 @@ class PayrollFoundationTest extends TestCase
             'calculation_method' => 'fixed',
             'calculation_basis' => 'basic_salary',
             'amount' => 0,
-            'is_recurring' => 1,
-            'is_active' => 1,
+            'flags' => ['recurring', 'active'],
         ])->assertSessionHasNoErrors();
         $component = PayrollComponent::where('code', 'BASIC')->firstOrFail();
+        $this->assertTrue($component->is_recurring);
+        $this->assertTrue($component->is_active);
+        $this->assertFalse($component->is_taxable);
 
         $this->post(route('payroll.rules.store'), [
             'code' => 'NSSF-EMPLOYEE',
@@ -75,9 +80,9 @@ class PayrollFoundationTest extends TestCase
             'rate' => 5,
             'effective_from' => '2026-01-01',
             'configuration' => json_encode(['basis' => 'gross_pay']),
-            'is_active' => 1,
+            'flags' => ['active'],
         ])->assertSessionHasNoErrors();
-        $this->assertDatabaseHas('payroll_rules', ['code' => 'NSSF-EMPLOYEE', 'rate' => 5]);
+        $this->assertDatabaseHas('payroll_rules', ['code' => 'NSSF-EMPLOYEE', 'rate' => 5, 'is_active' => 1, 'is_employer_cost' => 0]);
 
         $employee = User::factory()->create(['name' => 'Payroll Staff']);
         StaffProfile::create(['user_id' => $employee->id, 'employment_status' => 'active', 'staff_no' => 'ST-KA-90001']);

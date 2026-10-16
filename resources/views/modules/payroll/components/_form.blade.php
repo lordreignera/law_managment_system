@@ -11,7 +11,36 @@
     <label class="kfms-span-2"><span>Formula (optional)</span><textarea name="formula" rows="3" placeholder="Use configured payroll variables when the calculation method is Custom Formula">{{ old('formula', $component->formula) }}</textarea>@error('formula')<small>{{ $message }}</small>@enderror</label>
     <label class="kfms-span-2"><span>Description</span><textarea name="description" rows="3">{{ old('description', $component->description) }}</textarea>@error('description')<small>{{ $message }}</small>@enderror</label>
     <label><span>Sort Order</span><input type="number" name="sort_order" min="0" value="{{ old('sort_order', $component->sort_order ?? 0) }}"></label>
-    <div class="kfms-check-row"><label><input type="checkbox" name="is_taxable" value="1" @checked(old('is_taxable', $component->is_taxable))><span>Taxable</span></label><label><input type="checkbox" name="is_nssf_liable" value="1" @checked(old('is_nssf_liable', $component->is_nssf_liable))><span>NSSF liable</span></label><label><input type="checkbox" name="is_employer_cost" value="1" @checked(old('is_employer_cost', $component->is_employer_cost))><span>Employer cost</span></label></div>
-    <div class="kfms-check-row"><label><input type="checkbox" name="is_recurring" value="1" @checked(old('is_recurring', $component->is_recurring))><span>Recurring</span></label><label><input type="checkbox" name="is_active" value="1" @checked(old('is_active', $component->is_active))><span>Active</span></label></div>
+    @php
+        $componentFlags = old('flags', collect(\App\Models\PayrollComponent::FLAGS)->filter(function ($label, $key) use ($component) {
+            return match ($key) {
+                'taxable' => (bool) $component->is_taxable,
+                'nssf_liable' => (bool) $component->is_nssf_liable,
+                'employer_cost' => (bool) $component->is_employer_cost,
+                'recurring' => (bool) $component->is_recurring,
+                'active' => (bool) $component->is_active,
+                default => false,
+            };
+        })->keys()->all());
+        $componentFlagOptions = [
+            ['value' => 'taxable', 'label' => 'Taxable', 'detail' => 'Include this earning in taxable pay.'],
+            ['value' => 'nssf_liable', 'label' => 'NSSF liable', 'detail' => 'Include this component in the NSSF basis.'],
+            ['value' => 'employer_cost', 'label' => 'Employer cost', 'detail' => 'Paid by the firm and excluded from employee deductions.'],
+            ['value' => 'recurring', 'label' => 'Recurring', 'detail' => 'Offer this component for recurring salary assignments.'],
+            ['value' => 'active', 'label' => 'Active', 'detail' => 'Make the component available for new payroll runs.'],
+        ];
+    @endphp
+    @include('partials.check-dropdown', [
+        'id' => 'payroll-component-flags-picker',
+        'name' => 'flags[]',
+        'field' => 'flags',
+        'label' => 'Component flags',
+        'placeholder' => 'Select component flags',
+        'options' => $componentFlagOptions,
+        'selected' => $componentFlags,
+        'selectAllLabel' => 'Select all flags',
+        'hint' => 'Choose the behaviors that apply. The list opens as a searchable, scrollable menu.',
+        'wrapperClass' => 'kfms-span-2',
+    ])
 </div>
 <div class="kfms-form-actions"><a class="kfms-link-btn" href="{{ route('payroll.components.index') }}">Cancel</a><button class="kfms-btn" type="submit">{{ $component->exists ? 'Update' : 'Create' }} Component</button></div>

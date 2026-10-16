@@ -155,14 +155,22 @@
                 @can('letters.share')
                     <form class="kfms-form" method="POST" action="{{ route('letters.share', $letter) }}">
                         @csrf
-                        <label>
-                            <span>Share Internally</span>
-                            <select name="user_ids[]" multiple required>
-                                @foreach ($staff as $user)
-                                    <option value="{{ $user->id }}">{{ $user->name }} - {{ $user->email }}</option>
-                                @endforeach
-                            </select>
-                        </label>
+                        @include('partials.check-dropdown', [
+                            'id' => 'letter-share-users-picker',
+                            'name' => 'user_ids[]',
+                            'field' => 'user_ids',
+                            'label' => 'Share internally',
+                            'placeholder' => 'Select staff members',
+                            'options' => $staff->map(fn ($user) => [
+                                'value' => (string) $user->id,
+                                'label' => $user->name,
+                                'detail' => $user->email,
+                                'search' => $user->name.' '.$user->email,
+                            ])->all(),
+                            'selected' => old('user_ids', []),
+                            'selectAllLabel' => 'Select all staff',
+                            'hint' => 'Select one or more staff members. The list is searchable and scrollable.',
+                        ])
                         <label>
                             <span>Message</span>
                             <textarea name="message" rows="3" placeholder="Optional note for the staff receiving this letter"></textarea>
