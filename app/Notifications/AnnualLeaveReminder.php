@@ -2,37 +2,22 @@
 
 namespace App\Notifications;
 
-use App\Support\Branding;
-use Illuminate\Bus\Queueable;
-use Illuminate\Notifications\Messages\MailMessage;
-use Illuminate\Notifications\Notification;
-
-class AnnualLeaveReminder extends Notification
+class AnnualLeaveReminder extends TemplateNotification
 {
-    use Queueable;
+    public function __construct(public int $year, public float $scheduledDays) {}
 
-    public function __construct(
-        public int $year,
-        public float $scheduledDays,
-    ) {
+    protected function eventKey(): string
+    {
+        return 'leave.annual.reminder';
     }
 
-    public function via(object $notifiable): array
+    protected function context(): array
     {
-        return ['mail'];
+        return ['year' => $this->year, 'scheduled_days' => $this->scheduledDays, 'remaining_days' => max(0, 21 - $this->scheduledDays)];
     }
 
-    public function toMail(object $notifiable): MailMessage
+    protected function action(): array
     {
-        $remaining = max(0, 21 - $this->scheduledDays);
-
-        return (new MailMessage)
-            ->subject('Annual leave reminder for '.$this->year)
-            ->greeting('Hello '.$notifiable->name.',')
-            ->line('Please schedule your '.$this->year.' annual leave plan of 21 days.')
-            ->line('Currently scheduled: '.$this->scheduledDays.' days. Remaining to schedule: '.$remaining.' days.')
-            ->line('Requests must pass department manager, HR/administrator, and superadmin/CEO review before the leave begins.')
-            ->action('Schedule annual leave', route('leave.create'))
-            ->salutation('Regards, '.Branding::companyName());
+        return ['label' => 'Schedule annual leave', 'url' => route('leave.create')];
     }
 }

@@ -7,6 +7,7 @@
     @php
         $extraFields = $definition['extra_fields'] ?? [];
         $tableColumns = 5
+            + (in_array('iso_code', $extraFields, true) ? 1 : 0)
             + (in_array('court_level', $extraFields, true) ? 2 : 0)
             + (in_array('symbol', $extraFields, true) ? 1 : 0)
             + (in_array('hourly_rate', $extraFields, true) ? 2 : 0)
@@ -27,6 +28,9 @@
                 <span>{{ $definition['description'] }}</span>
             </div>
             <div class="kfms-header-actions">
+                @can('settings.master-data.index')
+                    <a class="kfms-link-btn" href="{{ route('settings.master-data.index', ['setting' => $setting]) }}">Import / Template</a>
+                @endcan
                 <a class="kfms-link-btn" href="{{ route('settings.system.overview') }}">
                     <i class="mdi mdi-arrow-left"></i>
                     System Settings
@@ -67,6 +71,7 @@
                     <tr>
                         <th>Code</th>
                         <th>Name</th>
+                        @if (in_array('iso_code', $extraFields, true)) <th>ISO Code</th> @endif
                         @if (in_array('court_level', $extraFields, true))
                             <th>Level</th>
                             <th>Station</th>
@@ -123,6 +128,7 @@
                         <tr>
                             <td>{{ $record->code }}</td>
                             <td>{{ $record->name }}</td>
+                            @if (in_array('iso_code', $extraFields, true)) <td>{{ $record->iso_code }}</td> @endif
                             @if (in_array('court_level', $extraFields, true))
                                 <td>{{ $record->court_level ?: '-' }}</td>
                                 <td>{{ $record->station ?: '-' }}</td>

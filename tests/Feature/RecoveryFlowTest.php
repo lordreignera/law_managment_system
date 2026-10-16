@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\Attachment;
+use App\Models\Bank;
+use App\Models\BankBranch;
 use App\Models\Branch;
 use App\Models\RecoveryAccount;
 use App\Models\RecoveryActivity;
@@ -10,6 +12,7 @@ use App\Models\RecoveryClient;
 use App\Models\RecoveryImportBatch;
 use App\Models\StaffProfile;
 use App\Models\User;
+use Database\Seeders\CurrencyTypeSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -29,6 +32,9 @@ class RecoveryFlowTest extends TestCase
         parent::setUp();
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
+        $this->seed(CurrencyTypeSeeder::class);
+        $bank = Bank::create(['name' => 'Stanbic Bank']);
+        BankBranch::create(['bank_id' => $bank->id, 'name' => 'Kampala']);
     }
 
     private function activeUser(array $permissions, string $roleName, ?int $branchId = null): User

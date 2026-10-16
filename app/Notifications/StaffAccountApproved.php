@@ -2,49 +2,27 @@
 
 namespace App\Notifications;
 
-use App\Support\Branding;
-use Illuminate\Bus\Queueable;
-use Illuminate\Notifications\Messages\MailMessage;
-use Illuminate\Notifications\Notification;
-
-class StaffAccountApproved extends Notification
+class StaffAccountApproved extends TemplateNotification
 {
-    use Queueable;
+    public function __construct(private readonly string $roleName, private readonly ?string $temporaryPassword = null, private readonly bool $createdByAdmin = false) {}
 
-    public function __construct(
-        private readonly string $roleName,
-        private readonly ?string $temporaryPassword = null,
-        private readonly bool $createdByAdmin = false,
-    ) {
+    protected function eventKey(): string
+    {
+        return $this->createdByAdmin ? 'staff.account.created' : 'staff.account.approved';
     }
 
-    /**
-     * @return array<int, string>
-     */
-    public function via(object $notifiable): array
+    protected function context(): array
     {
-        return ['mail'];
+        return ['role_name' => $this->roleName];
     }
 
-    public function toMail(object $notifiable): MailMessage
+    protected function action(): array
     {
-        $company = Branding::companyName();
+        return ['label' => 'Sign in', 'url' => route('login')];
+    }
 
-        $message = (new MailMessage)
-            ->subject($this->createdByAdmin ? 'Your firm account is ready' : 'Your account has been approved')
-            ->greeting('Hello '.$notifiable->name.',')
-            ->line($this->createdByAdmin ? 'Your firm account has been created and activated.' : 'Your account has been approved and activated.')
-            ->line('Assigned role: '.$this->roleName)
-            ->line('You can now sign in and start using your firm workspace.');
-
-        if ($this->temporaryPassword) {
-            $message
-                ->line('Temporary password: '.$this->temporaryPassword)
-                ->line('Please change this password after signing in.');
-        }
-
-        return $message
-            ->action('Sign in', route('login'))
-            ->salutation('Regards, '.$company);
+    protected function additionalMailLines(): array
+    {
+        return $this->temporaryPassword ? ['Temporary password: '.$this->temporaryPassword, 'Please change this password after signing in.'] : [];
     }
 }

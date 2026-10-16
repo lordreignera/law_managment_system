@@ -112,7 +112,7 @@
                             <span>Position / Job Title <b>*</b></span>
                             <div>
                                 <i class="mdi mdi-briefcase-outline"></i>
-                                <input id="job_title" type="text" name="job_title" value="{{ old('job_title') }}" placeholder="e.g. Associate, Legal Officer, Secretary" required>
+                                <x-job-title-select id="job_title" />
                             </div>
                         </label>
 

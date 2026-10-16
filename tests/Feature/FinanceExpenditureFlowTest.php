@@ -13,7 +13,10 @@ use App\Models\Matter;
 use App\Models\PettyCashTransaction;
 use App\Models\Requisition;
 use App\Models\StaffProfile;
+use App\Models\TaxSetting;
 use App\Models\User;
+use Database\Seeders\CurrencyTypeSeeder;
+use Database\Seeders\PaymentModeSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -29,6 +32,8 @@ class FinanceExpenditureFlowTest extends TestCase
         parent::setUp();
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
+        $this->seed(CurrencyTypeSeeder::class);
+        $this->seed(PaymentModeSeeder::class);
     }
 
     private function activeUser(array $permissions, string $roleName): User
@@ -124,7 +129,8 @@ class FinanceExpenditureFlowTest extends TestCase
             'invoice_date' => '2026-09-05',
             'due_date' => '2026-09-30',
             'subtotal' => '1,000,000',
-            'tax' => '80,000',
+            'tax_setting_id' => TaxSetting::create(['name' => 'Configured VAT', 'rate' => 8, 'tax_type' => 'vat', 'is_active' => true])->id,
+            'currency' => 'UGX',
             'status' => 'sent',
             'from' => 'finance-dashboard',
         ])->assertRedirect(route('finance.dashboard'));
@@ -153,7 +159,7 @@ class FinanceExpenditureFlowTest extends TestCase
             'chart_account_id' => $bankAccount->id,
             'amount' => '200,000',
             'paid_on' => '2026-09-06',
-            'payment_method' => 'Bank',
+            'payment_method' => 'Bank Transfer',
             'reference' => 'RCPT-200',
             'from' => 'finance-dashboard',
         ])->assertRedirect(route('finance.dashboard'));

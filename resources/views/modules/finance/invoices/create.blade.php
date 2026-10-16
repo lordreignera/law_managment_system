@@ -82,11 +82,7 @@
                     @error('subtotal') <small>{{ $message }}</small> @enderror
                 </label>
 
-                <label>
-                    <span>Tax</span>
-                    <input type="number" step="0.01" min="0" name="tax" value="{{ old('tax', 0) }}">
-                    @error('tax') <small>{{ $message }}</small> @enderror
-                </label>
+                <x-invoice-tax-fields />
             </div>
 
             <div class="kfms-form-actions">

@@ -6,6 +6,7 @@ use App\Models\Expense;
 use App\Models\ExpenseCategory;
 use App\Models\Invoice;
 use App\Models\Matter;
+use App\Support\InvoiceTotals;
 use App\Support\MonthlyReferenceNumber;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -39,15 +40,13 @@ class MatterBillingController extends Controller
             'invoice_date' => ['required', 'date'],
             'due_date' => ['nullable', 'date', 'after_or_equal:invoice_date'],
             'subtotal' => ['required', 'numeric', 'min:0'],
-            'tax' => ['nullable', 'numeric', 'min:0'],
             'paid_amount' => ['nullable', 'numeric', 'min:0'],
             'status' => ['required', Rule::in(['draft', 'sent', 'part_paid', 'paid', 'void'])],
-        ]);
+        ] + InvoiceTotals::rules());
 
-        $subtotal = (float) $data['subtotal'];
-        $tax = (float) ($data['tax'] ?? 0);
+        $totals = InvoiceTotals::calculate($data);
         $paidAmount = (float) ($data['paid_amount'] ?? 0);
-        abort_if($paidAmount > $subtotal + $tax, 422, 'Paid amount cannot exceed the invoice total. Record payments through the finance payment workflow.');
+        abort_if($paidAmount > $totals['total'], 422, 'Paid amount cannot exceed the invoice total. Record payments through the finance payment workflow.');
 
         Invoice::create([
             'client_id' => $matter->client_id,
@@ -55,12 +54,9 @@ class MatterBillingController extends Controller
             'invoice_no' => MonthlyReferenceNumber::make(Invoice::class, 'invoice_no', 'INV'),
             'invoice_date' => $data['invoice_date'],
             'due_date' => $data['due_date'] ?? null,
-            'subtotal' => $subtotal,
-            'tax' => $tax,
-            'total' => $subtotal + $tax,
             'paid_amount' => $paidAmount,
             'status' => $data['status'],
-        ]);
+        ] + $totals);
 
         return redirect()
             ->route('matters.billing.show', $matter)

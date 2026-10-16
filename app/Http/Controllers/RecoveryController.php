@@ -11,7 +11,7 @@ use App\Models\RecoveryActivity;
 use App\Models\RecoveryClient;
 use App\Models\RecoveryImportBatch;
 use App\Models\User;
-use App\Support\Recoveries\RecoveryPortfolioMapper;
+use App\Support\Recoveries\RecoveryReferenceData;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -121,7 +121,7 @@ class RecoveryController extends Controller
             'collectionChart' => $this->mineCollectionChart($filteredCollections, $reportFilters['grain']),
             'bankChart' => $this->mineBankChart($filteredCollections),
             'reportFilters' => $reportFilters,
-            'clients' => RecoveryClient::where('is_active', true)->orderBy('name')->get(['id', 'name']),
+            'clients' => RecoveryClient::where('is_active', true)->orderBy('name')->get(),
             'filters' => $request->only(['search', 'status']),
             'activityTypes' => RecoveryActivity::TYPES,
         ]);
@@ -165,7 +165,7 @@ class RecoveryController extends Controller
     public function create(Request $request)
     {
         return view('modules.recoveries.create', [
-            'clients' => RecoveryClient::where('is_active', true)->orderBy('name')->get(['id', 'name']),
+            'clients' => RecoveryClient::where('is_active', true)->orderBy('name')->get(),
             'branches' => Branch::where('is_active', true)->orderBy('name')->get(['id', 'name']),
             'officers' => $this->recoveryOfficers(),
             'statuses' => RecoveryAccount::STATUSES,
@@ -177,15 +177,15 @@ class RecoveryController extends Controller
         return view('modules.recoveries.import', [
             'clients' => RecoveryClient::where('is_active', true)->orderBy('name')->get(),
             'officers' => $this->recoveryOfficers(),
-            'defaultPortfolioTypes' => RecoveryPortfolioMapper::DEFAULT_PORTFOLIOS,
+            'defaultPortfolioTypes' => [],
         ]);
     }
 
     public function importStore(Request $request)
     {
         $data = $request->validate([
-            'recovery_client_id' => ['required', 'exists:recovery_clients,id'],
-            'portfolio_type' => ['required', 'string', 'max:100'],
+            'recovery_client_id' => ['required', Rule::exists('recovery_clients', 'id')->where('is_active', true)],
+            'portfolio_type' => ['required', 'string', 'max:100', Rule::in(array_keys(RecoveryClient::find($request->integer('recovery_client_id'))?->portfolioOptions() ?? []))],
             'file' => ['required', 'file', 'mimes:xlsx,xls,csv', 'max:20480'],
             'assigned_to' => ['nullable', 'exists:users,id'],
             'match_collector' => ['nullable', 'boolean'],
@@ -212,7 +212,8 @@ class RecoveryController extends Controller
 
         return redirect()
             ->route('recoveries.batches.show', $batch)
-            ->with('status', "Imported {$import->imported} recovery account(s); skipped {$import->skipped}.");
+            ->with('status', "Imported {$import->imported} recovery account(s); skipped {$import->skipped}.")
+            ->with('import_errors', $import->errors);
     }
 
     public function storeClient(Request $request)
@@ -316,9 +317,11 @@ class RecoveryController extends Controller
 
     public function edit(RecoveryAccount $recovery)
     {
+        abort_unless(RecoveryAccount::forBranchOf(request()->user())->whereKey($recovery->id)->exists(), 403);
+
         return view('modules.recoveries.edit', [
             'account' => $recovery,
-            'clients' => RecoveryClient::where('is_active', true)->orderBy('name')->get(['id', 'name']),
+            'clients' => RecoveryClient::where('is_active', true)->orderBy('name')->get(),
             'branches' => Branch::where('is_active', true)->orderBy('name')->get(['id', 'name']),
             'officers' => $this->recoveryOfficers(),
             'statuses' => RecoveryAccount::STATUSES,
@@ -336,6 +339,7 @@ class RecoveryController extends Controller
 
     public function update(Request $request, RecoveryAccount $recovery)
     {
+        abort_unless(RecoveryAccount::forBranchOf($request->user())->whereKey($recovery->id)->exists(), 403);
         $data = $this->validateAccount($request, false);
 
         $recovery->update($data);
@@ -543,7 +547,7 @@ class RecoveryController extends Controller
     private function validateAccount(Request $request, bool $includeAssignment = true): array
     {
         $rules = [
-            'recovery_client_id' => ['required', 'exists:recovery_clients,id'],
+            'recovery_client_id' => ['required', Rule::exists('recovery_clients', 'id')->where('is_active', true)],
             'debtor_name' => ['required', 'string', 'max:191'],
             'account_number' => ['nullable', 'string', 'max:100'],
             'customer_number' => ['nullable', 'string', 'max:100'],
@@ -572,7 +576,9 @@ class RecoveryController extends Controller
             $rules['branch_id'] = ['nullable', 'exists:branches,id'];
         }
 
-        return $request->validate($rules);
+        $data = $request->validate($rules);
+
+        return RecoveryReferenceData::validate($data, RecoveryClient::findOrFail($data['recovery_client_id']));
     }
 
     private function filteredAccountsQuery(Request $request): Builder
@@ -602,7 +608,6 @@ class RecoveryController extends Controller
         return RecoveryClient::query()
             ->get(['portfolio_types'])
             ->flatMap(fn (RecoveryClient $client) => $client->portfolio_types ?: [])
-            ->merge(RecoveryPortfolioMapper::DEFAULT_PORTFOLIOS)
             ->unique()
             ->sort()
             ->values()

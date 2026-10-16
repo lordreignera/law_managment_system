@@ -3,41 +3,23 @@
 namespace App\Notifications;
 
 use App\Models\CalendarEvent;
-use App\Notifications\Channels\SmsChannel;
-use App\Support\Sms\SmsMessage;
-use Illuminate\Bus\Queueable;
-use Illuminate\Notifications\Notification;
 
-class CalendarEventReminder extends Notification
+class CalendarEventReminder extends TemplateNotification
 {
-    use Queueable;
+    public function __construct(public CalendarEvent $event) {}
 
-    public function __construct(public CalendarEvent $event)
+    protected function eventKey(): string
     {
+        return 'calendar.event.reminder';
     }
 
-    /**
-     * @return array<int, string>
-     */
-    public function via(object $notifiable): array
+    protected function context(): array
     {
-        return [SmsChannel::class];
+        return ['title' => $this->event->title, 'starts_at' => $this->event->starts_at?->format($this->event->all_day ? 'd M Y' : 'd M Y H:i'), 'location' => $this->event->location ?: '-'];
     }
 
-    public function toSms(object $notifiable): SmsMessage
+    protected function action(): array
     {
-        $event = $this->event;
-
-        $content = sprintf(
-            'Reminder: %s — %s on %s%s.',
-            $event->typeLabel(),
-            $event->title,
-            $event->all_day
-                ? $event->starts_at?->format('d M Y')
-                : $event->starts_at?->format('d M Y H:i'),
-            $event->location ? ' at '.$event->location : ''
-        );
-
-        return SmsMessage::make($content);
+        return ['label' => 'View event', 'url' => route('calendar.show', $this->event)];
     }
 }

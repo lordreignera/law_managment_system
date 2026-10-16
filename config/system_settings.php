@@ -6,23 +6,24 @@ use App\Models\BillableRate;
 use App\Models\BillingType;
 use App\Models\BudgetCategory;
 use App\Models\BusinessIndustry;
+use App\Models\CentenaryBranch;
+use App\Models\CentenaryRegion;
 use App\Models\ContactPosition;
 use App\Models\Country;
 use App\Models\Court;
 use App\Models\CurrencyType;
-use App\Models\CentenaryBranch;
-use App\Models\CentenaryRegion;
+use App\Models\Department;
 use App\Models\ExpenseCategory;
 use App\Models\InstructionType;
-use App\Models\JudicialOfficer;
 use App\Models\JobTitle;
+use App\Models\JudicialOfficer;
 use App\Models\LeaveType;
 use App\Models\Letterhead;
 use App\Models\MatterCategory;
+use App\Models\NotificationTemplate;
+use App\Models\OpposingCounsel;
 use App\Models\PaymentMode;
 use App\Models\PracticeArea;
-use App\Models\OpposingCounsel;
-use App\Models\NotificationTemplate;
 use App\Models\RecoveryClient;
 use App\Models\RelationshipType;
 use App\Models\RequisitionCategory;
@@ -183,7 +184,7 @@ return [
         'singular' => 'Currency Type',
         'model' => CurrencyType::class,
         'description' => 'Currencies used for billing, recoveries, and expenses.',
-        'extra_fields' => ['symbol'],
+        'extra_fields' => ['iso_code', 'symbol'],
     ],
     'tax-settings' => [
         'title' => 'Tax Settings',
@@ -228,7 +229,7 @@ return [
     'departments' => [
         'title' => 'Departments',
         'singular' => 'Department',
-        'model' => \App\Models\Department::class,
+        'model' => Department::class,
         'description' => 'Organizational departments within branches.',
         'extra_fields' => ['branch_id'],
     ],

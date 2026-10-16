@@ -4,6 +4,7 @@ namespace App\Actions\Fortify;
 
 use App\Models\StaffProfile;
 use App\Models\User;
+use App\Support\ReferenceData;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -25,7 +26,7 @@ class CreateNewUser implements CreatesNewUsers
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'phone' => ['required', 'string', 'max:60'],
-            'job_title' => ['required', 'string', 'max:191'],
+            'job_title' => ['required', 'string', 'max:191', ReferenceData::jobTitleRule()],
             'branch_id' => ['required', 'exists:branches,id'],
             'department_id' => ['required', 'exists:departments,id'],
             'requested_role' => [

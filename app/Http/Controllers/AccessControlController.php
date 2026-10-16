@@ -7,6 +7,7 @@ use App\Models\Department;
 use App\Models\StaffProfile;
 use App\Models\User;
 use App\Notifications\StaffAccountApproved;
+use App\Support\ReferenceData;
 use App\Support\RoutePermissionRegistry;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -16,9 +17,7 @@ use Spatie\Permission\Models\Role;
 
 class AccessControlController extends Controller
 {
-    public function __construct(private RoutePermissionRegistry $routeRegistry)
-    {
-    }
+    public function __construct(private RoutePermissionRegistry $routeRegistry) {}
 
     public function users(Request $request)
     {
@@ -123,7 +122,7 @@ class AccessControlController extends Controller
 
         $data = $request->validate([
             'phone' => ['required', 'string', 'max:60'],
-            'job_title' => ['required', 'string', 'max:191'],
+            'job_title' => ['required', 'string', 'max:191', ReferenceData::jobTitleRule($user->staffProfile?->job_title)],
             'branch_id' => ['required', 'exists:branches,id'],
             'department_id' => ['required', 'exists:departments,id'],
             'requested_role' => [

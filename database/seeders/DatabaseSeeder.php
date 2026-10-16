@@ -3,19 +3,12 @@
 namespace Database\Seeders;
 
 use App\Models\Branch;
-use App\Models\Client;
-use App\Models\ClientIntake;
 use App\Models\CompanySetting;
 use App\Models\Conversation;
 use App\Models\Department;
-use App\Models\File;
-use App\Models\Matter;
-use App\Models\PracticeArea;
 use App\Models\PublicHoliday;
-use App\Models\RecoveryClient;
 use App\Models\StaffProfile;
 use App\Models\User;
-use App\Support\MonthlyReferenceNumber;
 use App\Support\RoutePermissionRegistry;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Artisan;
@@ -174,8 +167,6 @@ class DatabaseSeeder extends Seeder
         Role::findByName('Recovery Officer')->givePermissionTo($recoveryOfficerSelfService);
 
         $kampala = Branch::firstOrCreate(['name' => 'Kampala'], ['city' => 'Kampala']);
-        Branch::firstOrCreate(['name' => 'Mbarara'], ['city' => 'Mbarara']);
-        Branch::firstOrCreate(['name' => 'Mbale'], ['city' => 'Mbale']);
 
         // Uganda fixed-date public holidays (recur every year). Movable feasts
         // such as Easter and the two Eids are added manually by an administrator.
@@ -210,19 +201,6 @@ class DatabaseSeeder extends Seeder
             Department::firstOrCreate(
                 ['name' => $department],
                 ['branch_id' => $kampala->id]
-            );
-        }
-
-        foreach ([
-            'Stanbic Bank' => ['Stanbic NPL', 'Stanbic Write Off'],
-            'DFCU Bank' => ['DFCU NPL', 'DFCU Write Off'],
-            'Bank of Africa' => ['BOA'],
-            'Uganda Development Bank' => ['UDB'],
-            'Centenary Bank' => ['NPL', 'Write Off'],
-        ] as $client => $portfolioTypes) {
-            RecoveryClient::updateOrCreate(
-                ['name' => $client],
-                ['portfolio_types' => $portfolioTypes, 'is_active' => true]
             );
         }
 
@@ -293,111 +271,5 @@ class DatabaseSeeder extends Seeder
             ['sent_at' => now()]
         );
 
-        $practiceArea = PracticeArea::where('name', 'Litigation')->first() ?? PracticeArea::first();
-
-        $pendingIntake = ClientIntake::firstOrCreate(
-            ['client_name' => 'Demo Pending Client', 'legal_issue' => 'Employment termination advice'],
-            [
-                'intake_no' => MonthlyReferenceNumber::make(ClientIntake::class, 'intake_no', 'CI'),
-                'client_type' => 'individual',
-                'email' => 'pending.client@example.test',
-                'phone' => '+256 700 100001',
-                'address' => 'Kampala',
-                'practice_area_id' => $practiceArea?->id,
-                'preferred_lawyer_id' => $admin->id,
-                'created_by' => $admin->id,
-                'urgency' => 'urgent',
-                'referral_source' => 'walk_in',
-                'referral_name' => 'Front Desk',
-                'referral_contact' => '+256 700 100001',
-                'summary' => 'Demo intake waiting for review decision.',
-                'status' => 'pending_review',
-                'review_decision' => 'pending',
-                'consultation_on' => now()->addDay()->toDateString(),
-                'consultation_at' => '10:00',
-            ]
-        );
-
-        $pendingIntake->conflictParties()->firstOrCreate(
-            ['name' => 'Demo Employer Ltd'],
-            ['relationship' => 'Opponent', 'contact' => '+256 700 200001', 'notes' => 'Former employer named in the employment dispute.']
-        );
-
-        $approvedClient = Client::firstOrCreate(
-            ['email' => 'approved.client@example.test'],
-            [
-                'client_no' => MonthlyReferenceNumber::make(Client::class, 'client_no', 'CL'),
-                'client_type' => 'individual',
-                'name' => 'Demo Approved Client',
-                'first_name' => 'Demo',
-                'last_name' => 'Approved Client',
-                'phone' => '+256 700 100002',
-                'address' => 'Kampala Road',
-                'client_in_charge_id' => $admin->id,
-                'status' => 'active',
-            ]
-        );
-
-        $approvedIntake = ClientIntake::firstOrCreate(
-            ['client_name' => 'Demo Approved Client', 'legal_issue' => 'Commercial contract review'],
-            [
-                'client_id' => $approvedClient->id,
-                'intake_no' => MonthlyReferenceNumber::make(ClientIntake::class, 'intake_no', 'CI'),
-                'client_type' => 'individual',
-                'email' => $approvedClient->email,
-                'phone' => $approvedClient->phone,
-                'address' => $approvedClient->address,
-                'practice_area_id' => $practiceArea?->id,
-                'preferred_lawyer_id' => $admin->id,
-                'created_by' => $admin->id,
-                'reviewed_by' => $superAdmin->id,
-                'urgency' => 'normal',
-                'referral_source' => 'existing_client',
-                'referral_name' => 'Demo Existing Client',
-                'referral_contact' => 'referrer@example.test',
-                'summary' => 'Demo approved intake. A file is opened from the approved client register.',
-                'status' => 'approved',
-                'review_decision' => 'approved',
-                'review_notes' => 'Demo intake approved for client registration.',
-                'reviewed_at' => now(),
-                'consultation_on' => now()->toDateString(),
-                'consultation_at' => '14:00',
-            ]
-        );
-
-        $demoMatter = Matter::firstOrCreate(
-            ['title' => 'Commercial contract review', 'client_id' => $approvedClient->id],
-            [
-                'practice_area_id' => $practiceArea?->id,
-                'opened_by' => $admin->id,
-                'branch_id' => $kampala->id,
-                'department_id' => $financeDepartmentId,
-                'reference_no' => MonthlyReferenceNumber::make(Matter::class, 'reference_no', 'MT'),
-                'opened_on' => now()->toDateString(),
-                'privacy_status' => 'public',
-                'status' => 'open',
-                'description' => 'Demo matter opened from a client file.',
-            ]
-        );
-
-        File::firstOrCreate(
-            ['matter_id' => $demoMatter->id],
-            [
-                'client_id' => $approvedClient->id,
-                'created_by' => $admin->id,
-                'file_number' => MonthlyReferenceNumber::make(File::class, 'file_number', 'FL'),
-                'file_name' => $demoMatter->title,
-                'agreed_fee_amount' => 2500000,
-            ]
-        );
-
-        $demoMatter->assignments()->firstOrCreate(
-            ['user_id' => $admin->id, 'assignment_role' => 'partner'],
-            ['assigned_on' => now()->toDateString(), 'is_lead' => true]
-        );
-
-        $approvedIntake->update([
-            'client_id' => $approvedClient->id,
-        ]);
     }
 }

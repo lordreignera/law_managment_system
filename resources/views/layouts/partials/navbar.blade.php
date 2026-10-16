@@ -76,22 +76,17 @@
             <li class="nav-item dropdown">
                 <button class="kfms-nav-icon" type="button" id="notificationDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Notifications">
                     <i class="mdi mdi-bell-outline"></i>
-                    <span class="kfms-nav-badge">3</span>
+                    @php
+                        $unreadCount = auth()->user()->unreadNotifications()->count();
+                    @endphp
+                    @if ($unreadCount)<span class="kfms-nav-badge">{{ $unreadCount }}</span>@endif
                 </button>
                 <div class="dropdown-menu dropdown-menu-end navbar-dropdown kfms-notice-dropdown" aria-labelledby="notificationDropdown">
                     <h6>Notifications</h6>
-                    @can('matters.index')
-                        <a class="dropdown-item" href="{{ route('matters.index') }}">Review open matters</a>
-                    @endcan
-                    @can('intakes.index')
-                        <a class="dropdown-item" href="{{ route('intakes.index') }}">Review intake conflicts</a>
-                    @endcan
-                    @can('recoveries.index')
-                        <a class="dropdown-item" href="{{ route('recoveries.index') }}">Check recovery assignments</a>
-                    @endcan
-                    @can('settings.company.edit')
-                        <a class="dropdown-item" href="{{ route('settings.company.edit') }}">Confirm company branding</a>
-                    @endcan
+                    @forelse (auth()->user()->unreadNotifications()->limit(5)->get() as $notification)
+                        <a class="dropdown-item" href="{{ route('notifications.index') }}">{{ $notification->data['subject'] ?? 'Notification' }}</a>
+                    @empty <span class="dropdown-item-text">No unread notifications</span> @endforelse
+                    <a class="dropdown-item" href="{{ route('notifications.index') }}">View all notifications</a>
                 </div>
             </li>
 

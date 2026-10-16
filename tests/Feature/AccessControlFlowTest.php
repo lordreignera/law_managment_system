@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Branch;
 use App\Models\Department;
+use App\Models\JobTitle;
 use App\Models\StaffProfile;
 use App\Models\User;
 use App\Notifications\StaffAccountApproved;
@@ -24,6 +25,9 @@ class AccessControlFlowTest extends TestCase
         parent::setUp();
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
+        foreach (['Legal Assistant', 'Accountant'] as $title) {
+            JobTitle::create(['name' => $title]);
+        }
     }
 
     public function test_pending_staff_are_redirected_to_pending_access_screen(): void

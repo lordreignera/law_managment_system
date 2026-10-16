@@ -3,37 +3,23 @@
 namespace App\Notifications;
 
 use App\Models\LeaveRequest;
-use App\Support\Branding;
-use Illuminate\Bus\Queueable;
-use Illuminate\Notifications\Messages\MailMessage;
-use Illuminate\Notifications\Notification;
 
-class LeaveApprovalRequested extends Notification
+class LeaveApprovalRequested extends TemplateNotification
 {
-    use Queueable;
+    public function __construct(public LeaveRequest $leave, public string $stageLabel) {}
 
-    public function __construct(
-        public LeaveRequest $leave,
-        public string $stageLabel,
-    ) {
+    protected function eventKey(): string
+    {
+        return 'leave.request.submitted';
     }
 
-    public function via(object $notifiable): array
+    protected function context(): array
     {
-        return ['mail'];
+        return ['user_name' => $this->leave->user?->name, 'reference_no' => $this->leave->leave_no, 'leave_type' => $this->leave->leaveType?->name, 'start_date' => $this->leave->start_date?->format('d M Y'), 'end_date' => $this->leave->end_date?->format('d M Y'), 'days' => $this->leave->days, 'stage' => $this->stageLabel];
     }
 
-    public function toMail(object $notifiable): MailMessage
+    protected function action(): array
     {
-        $leave = $this->leave->loadMissing(['user', 'leaveType']);
-
-        return (new MailMessage)
-            ->subject('Leave approval required: '.$leave->leave_no)
-            ->greeting('Hello '.$notifiable->name.',')
-            ->line($leave->user?->name.' submitted a leave request that needs your review.')
-            ->line('Approval stage: '.$this->stageLabel)
-            ->line('Leave: '.($leave->leaveType?->name ?: 'Leave').' from '.$leave->start_date?->format('d M Y').' to '.$leave->end_date?->format('d M Y').' ('.$leave->days.' days).')
-            ->action('Review leave request', route('leave.show', $leave))
-            ->salutation('Regards, '.Branding::companyName());
+        return ['label' => 'Review leave request', 'url' => route('leave.show', $this->leave)];
     }
 }

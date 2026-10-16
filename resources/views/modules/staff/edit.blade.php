@@ -85,7 +85,7 @@
 
                     <label>
                         <span>Job Title</span>
-                        <input type="text" name="job_title" value="{{ old('job_title', $staff->staffProfile?->job_title) }}">
+                        <x-job-title-select :value="$staff->staffProfile?->job_title" :required="false" />
                         @error('job_title')<small>{{ $message }}</small>@enderror
                     </label>
 

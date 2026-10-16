@@ -14,6 +14,8 @@ class Invoice extends Model
     protected $casts = [
         'invoice_date' => 'date',
         'due_date' => 'date',
+        'tax_inclusive' => 'boolean',
+        'tax_rate' => 'decimal:4',
     ];
 
     public function getBalanceAttribute(): float
@@ -39,5 +41,10 @@ class Invoice extends Model
     public function payments()
     {
         return $this->hasMany(InvoicePayment::class)->latest('paid_on');
+    }
+
+    public function taxSetting()
+    {
+        return $this->belongsTo(TaxSetting::class);
     }
 }

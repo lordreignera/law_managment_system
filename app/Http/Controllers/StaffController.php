@@ -7,6 +7,7 @@ use App\Models\Department;
 use App\Models\StaffProfile;
 use App\Models\User;
 use App\Notifications\StaffAccountApproved;
+use App\Support\ReferenceData;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
@@ -91,7 +92,7 @@ class StaffController extends Controller
             'email' => ['required', 'email', 'max:191', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
             'phone' => ['required', 'string', 'max:60'],
-            'job_title' => ['required', 'string', 'max:191'],
+            'job_title' => ['required', 'string', 'max:191', ReferenceData::jobTitleRule()],
             'branch_id' => ['required', 'exists:branches,id'],
             'department_id' => ['required', 'exists:departments,id'],
             'manager_id' => ['nullable', 'exists:users,id'],
@@ -175,7 +176,7 @@ class StaffController extends Controller
             'name' => ['required', 'string', 'max:191'],
             'email' => ['required', 'email', 'max:191', Rule::unique('users', 'email')->ignore($staff->id)],
             'phone' => ['nullable', 'string', 'max:60'],
-            'job_title' => ['nullable', 'string', 'max:191'],
+            'job_title' => ['nullable', 'string', 'max:191', ReferenceData::jobTitleRule($profile->job_title)],
             'branch_id' => ['nullable', 'exists:branches,id'],
             'department_id' => ['nullable', 'exists:departments,id'],
             'manager_id' => ['nullable', 'exists:users,id'],

@@ -27,6 +27,7 @@ return new class extends Migration
             $table->string('code', 40)->unique();
             $table->string('title')->nullable();
             $table->string('chambers')->nullable();
+            $table->text('description')->nullable();
             $table->string('email')->nullable();
             $table->string('phone')->nullable();
             $table->unsignedInteger('sort_order')->default(0);

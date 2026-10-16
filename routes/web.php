@@ -16,18 +16,20 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\FinanceController;
 use App\Http\Controllers\HrController;
+use App\Http\Controllers\ImportTemplateController;
 use App\Http\Controllers\InvoiceDocumentController;
 use App\Http\Controllers\LandTitleController;
-use App\Http\Controllers\LegalLetterController;
 use App\Http\Controllers\LeaveController;
 use App\Http\Controllers\LedgerController;
+use App\Http\Controllers\LegalLetterController;
 use App\Http\Controllers\LetterTemplateController;
 use App\Http\Controllers\LitigationController;
-use App\Http\Controllers\MatterController;
-use App\Http\Controllers\ImportTemplateController;
+use App\Http\Controllers\MasterDataController;
 use App\Http\Controllers\MatterBillingController;
+use App\Http\Controllers\MatterController;
 use App\Http\Controllers\MatterInstructionController;
 use App\Http\Controllers\MessageController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PettyCashController;
 use App\Http\Controllers\ProfileMediaController;
 use App\Http\Controllers\PublicHolidayController;
@@ -80,21 +82,23 @@ Route::middleware([
     // Pending users must always reach the pending screen, even without an
     // active staff profile and without any module permission.
     Route::view('/access-pending', 'auth.access-pending')->name('access.pending');
+    Route::get('/notifications', [NotificationController::class, 'index'])->middleware('active.staff')->name('notifications.index');
+    Route::post('/notifications/{notification}/read', [NotificationController::class, 'read'])->middleware('active.staff')->name('notifications.read');
 
-        // Document downloads from the storage bucket (auth + active staff, no per-route permission).
-        Route::get('/attachments/{attachment}/download', [AttachmentController::class, 'download'])
-            ->middleware('active.staff')
-            ->name('attachments.download');
-        Route::get('/attachments/{attachment}/view', [AttachmentController::class, 'view'])
-            ->middleware('active.staff')
-            ->name('attachments.view');
+    // Document downloads from the storage bucket (auth + active staff, no per-route permission).
+    Route::get('/attachments/{attachment}/download', [AttachmentController::class, 'download'])
+        ->middleware('active.staff')
+        ->name('attachments.download');
+    Route::get('/attachments/{attachment}/view', [AttachmentController::class, 'view'])
+        ->middleware('active.staff')
+        ->name('attachments.view');
 
-        Route::get('/user-guide', UserGuideController::class)
-            ->middleware('active.staff')
-            ->name('help.user-guide');
-        Route::get('/user-guide/download', [UserGuideController::class, 'download'])
-            ->middleware('active.staff')
-            ->name('help.user-guide.download');
+    Route::get('/user-guide', UserGuideController::class)
+        ->middleware('active.staff')
+        ->name('help.user-guide');
+    Route::get('/user-guide/download', [UserGuideController::class, 'download'])
+        ->middleware('active.staff')
+        ->name('help.user-guide.download');
 
     // `php artisan kfms:sync-route-permissions` to create a matching
     // permission record.
@@ -328,6 +332,9 @@ Route::middleware([
 
         // Settings
         Route::get('/settings/system', [SystemSettingController::class, 'overview'])->name('settings.system.overview');
+        Route::get('/settings/master-data', [MasterDataController::class, 'index'])->name('settings.master-data.index');
+        Route::get('/settings/master-data/{setting}/template', [MasterDataController::class, 'template'])->name('settings.master-data.template');
+        Route::post('/settings/master-data/import', [MasterDataController::class, 'store'])->name('settings.master-data.store');
         Route::get('/settings/system/{setting}', [SystemSettingController::class, 'index'])->name('settings.system.index');
         Route::get('/settings/system/{setting}/create', [SystemSettingController::class, 'create'])->name('settings.system.create');
         Route::post('/settings/system/{setting}', [SystemSettingController::class, 'store'])->name('settings.system.store');

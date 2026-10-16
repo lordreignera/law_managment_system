@@ -196,7 +196,7 @@
         <label>
             <span>Tax Type</span>
             <select name="tax_type">
-                @foreach (['vat' => 'VAT', 'withholding' => 'Withholding', 'other' => 'Other'] as $value => $label)
+                @foreach (['vat' => 'VAT', 'withholding' => 'Withholding'] as $value => $label)
                     <option value="{{ $value }}" @selected(old('tax_type', $record->tax_type ?: 'vat') === $value)>{{ $label }}</option>
                 @endforeach
             </select>
@@ -234,7 +234,11 @@
     @if (in_array('event_key', $extraFields, true))
         <label>
             <span>Event Key</span>
-            <input type="text" name="event_key" value="{{ old('event_key', $record->event_key) }}" required>
+            <select name="event_key" required>
+                @foreach (\App\Support\Notifications\NotificationCatalog::definitions() as $key => $event)
+                    <option value="{{ $key }}" @selected(old('event_key', $record->event_key) === $key)>{{ $event['name'] }}</option>
+                @endforeach
+            </select>
             @error('event_key') <small>{{ $message }}</small> @enderror
         </label>
     @endif
@@ -251,6 +255,12 @@
         <label class="kfms-span-2">
             <span>Template Body</span>
             <textarea name="body" rows="5" required>{{ old('body', $record->body) }}</textarea>
+            <small>Insert variables using @verbatim {{ variable }} @endverbatim. All events support recipient_name and company_name.</small>
+            <details><summary>Supported event variables</summary>
+                @foreach (\App\Support\Notifications\NotificationCatalog::definitions() as $event)
+                    <p>{{ $event['name'] }}: {{ implode(', ', $event['placeholders']) }}</p>
+                @endforeach
+            </details>
             @error('body') <small>{{ $message }}</small> @enderror
         </label>
     @endif
@@ -260,6 +270,9 @@
         <input type="number" min="0" name="sort_order" value="{{ old('sort_order', $record->sort_order ?? 0) }}">
         @error('sort_order') <small>{{ $message }}</small> @enderror
     </label>
+    @if (in_array('iso_code', $extraFields, true))
+        <label><span>Currency ISO Code</span><input type="text" name="iso_code" value="{{ old('iso_code', $record->iso_code) }}" minlength="3" maxlength="3" placeholder="UGX" required>@error('iso_code') <small>{{ $message }}</small> @enderror</label>
+    @endif
 
     <label class="kfms-span-2">
         <span>Description</span>

@@ -3,56 +3,23 @@
 namespace App\Notifications;
 
 use App\Models\LeaveRequest;
-use App\Support\Branding;
-use Illuminate\Bus\Queueable;
-use Illuminate\Notifications\Messages\MailMessage;
-use Illuminate\Notifications\Notification;
 
-class LeaveRequestStatusChanged extends Notification
+class LeaveRequestStatusChanged extends TemplateNotification
 {
-    use Queueable;
+    public function __construct(public LeaveRequest $leave, public string $decision, public ?string $nextStage = null, public ?string $reviewerName = null) {}
 
-    public function __construct(
-        public LeaveRequest $leave,
-        public string $decision,
-        public ?string $nextStage = null,
-        public ?string $reviewerName = null,
-    ) {
+    protected function eventKey(): string
+    {
+        return $this->decision === 'rejected' ? 'leave.request.rejected' : ($this->nextStage ? 'leave.request.progressed' : 'leave.request.approved');
     }
 
-    public function via(object $notifiable): array
+    protected function context(): array
     {
-        return ['mail'];
+        return ['reference_no' => $this->leave->leave_no, 'stage' => $this->nextStage ?? '', 'reviewer_name' => $this->reviewerName ?: 'the reviewer', 'review_notes' => $this->leave->review_notes ?? ''];
     }
 
-    public function toMail(object $notifiable): MailMessage
+    protected function action(): array
     {
-        $leave = $this->leave->loadMissing(['leaveType']);
-        $subject = $this->decision === 'rejected'
-            ? 'Leave request rejected: '.$leave->leave_no
-            : ($this->nextStage ? 'Leave request moved to '.$this->nextStage.': '.$leave->leave_no : 'Leave request approved: '.$leave->leave_no);
-
-        $message = (new MailMessage)
-            ->subject($subject)
-            ->greeting('Hello '.$notifiable->name.',');
-
-        if ($this->decision === 'rejected') {
-            $message->line('Your leave request has been rejected by '.($this->reviewerName ?: 'the reviewer').'.');
-            if ($leave->review_notes) {
-                $message->line('Reviewer notes: '.$leave->review_notes);
-            }
-            $message->action('Reschedule leave', route('leave.reschedule.edit', $leave));
-        } elseif ($this->nextStage) {
-            $message
-                ->line('Your leave request passed the previous approval stage.')
-                ->line('It is now awaiting: '.$this->nextStage.'.')
-                ->action('View leave request', route('leave.show', $leave));
-        } else {
-            $message
-                ->line('Your leave request has received all required approvals.')
-                ->action('View leave request', route('leave.show', $leave));
-        }
-
-        return $message->salutation('Regards, '.Branding::companyName());
+        return ['label' => $this->decision === 'rejected' ? 'Reschedule leave' : 'View leave request', 'url' => route($this->decision === 'rejected' ? 'leave.reschedule.edit' : 'leave.show', $this->leave)];
     }
 }

@@ -1,15 +1,18 @@
 @php
     $account = $account ?? null;
     $includeAssignment = $includeAssignment ?? true;
+    $centenaryRegions = \App\Models\CentenaryRegion::where('is_active', true)->orderBy('name')->get();
+    $centenaryBranches = \App\Models\CentenaryBranch::where('is_active', true)->with('region')->orderBy('name')->get();
+    $bankBranches = \App\Models\BankBranch::where('is_active', true)->with('bank')->orderBy('name')->get();
 @endphp
 
-<div class="kfms-form-grid">
+<div class="kfms-form-grid" data-recovery-reference-form>
     <label>
         <span>Bank / Client</span>
         <select name="recovery_client_id" required>
             <option value="">Select bank/client</option>
             @foreach ($clients as $client)
-                <option value="{{ $client->id }}" @selected(old('recovery_client_id', $account?->recovery_client_id) == $client->id)>{{ $client->name }}</option>
+                <option value="{{ $client->id }}" data-bank="{{ $client->name }}" data-centenary="{{ str($client->name)->contains('Centenary', true) ? '1' : '0' }}" @selected(old('recovery_client_id', $account?->recovery_client_id) == $client->id)>{{ $client->name }}</option>
             @endforeach
         </select>
         @error('recovery_client_id') <small>{{ $message }}</small> @enderror
@@ -27,7 +30,15 @@
 
     <label>
         <span>Portfolio Type</span>
-        <input type="text" name="portfolio_type" value="{{ old('portfolio_type', $account?->portfolio_type) }}" maxlength="100" placeholder="NPL, Write Off, BOA, UDB">
+        <select name="portfolio_type">
+            <option value="">Select configured portfolio</option>
+            @foreach ($clients as $client)
+                @foreach ($client->portfolioOptions() as $value => $label)
+                    <option value="{{ $value }}" data-client="{{ $client->id }}" @selected(old('recovery_client_id', $account?->recovery_client_id) == $client->id && old('portfolio_type', $account?->portfolio_type) === $value)>{{ $label }}</option>
+                @endforeach
+            @endforeach
+        </select>
+        <small>Configure portfolio choices for each recovery client in System Settings.</small>
         @error('portfolio_type') <small>{{ $message }}</small> @enderror
     </label>
 
@@ -69,8 +80,27 @@
 
     <label>
         <span>Region</span>
-        <input type="text" name="region" value="{{ old('region', $account?->region) }}" maxlength="191">
+        <select name="region" data-centenary-region>
+            <option value="">Select Centenary region</option>
+            @foreach ($centenaryRegions as $region)
+                <option value="{{ $region->name }}" @selected(old('region', $account?->region) === $region->name)>{{ $region->name }}</option>
+            @endforeach
+        </select>
+        <input type="text" name="region" data-other-region value="{{ old('region', $account?->region) }}" maxlength="191">
         @error('region') <small>{{ $message }}</small> @enderror
+    </label>
+    <label>
+        <span>Bank Branch</span>
+        <select name="branch_name">
+            <option value="">Select bank branch</option>
+            @foreach ($bankBranches as $bankBranch)
+                <option value="{{ $bankBranch->name }}" data-bank="{{ $bankBranch->bank?->name }}" @selected(old('branch_name', $account?->branch_name) === $bankBranch->name)>{{ $bankBranch->name }}</option>
+            @endforeach
+            @foreach ($centenaryBranches as $bankBranch)
+                <option value="{{ $bankBranch->name }}" data-centenary="1" data-region="{{ $bankBranch->region?->name }}" @selected(old('branch_name', $account?->branch_name) === $bankBranch->name)>{{ $bankBranch->name }}</option>
+            @endforeach
+        </select>
+        @error('branch_name') <small>{{ $message }}</small> @enderror
     </label>
 
     <label>
@@ -117,7 +147,11 @@
 
     <label>
         <span>Currency</span>
-        <input type="text" name="currency" value="{{ old('currency', $account?->currency ?? 'UGX') }}" maxlength="10">
+        <select name="currency" required>
+            @foreach (\App\Models\CurrencyType::where('is_active', true)->orderBy('sort_order')->get() as $currency)
+                <option value="{{ $currency->iso_code }}" @selected(old('currency', $account?->currency ?? 'UGX') === $currency->iso_code)>{{ $currency->iso_code }} — {{ $currency->name }}</option>
+            @endforeach
+        </select>
         @error('currency') <small>{{ $message }}</small> @enderror
     </label>
 
@@ -163,3 +197,32 @@
     </label>
     @endif
 </div>
+<script>
+(() => {
+    const grid = document.currentScript.previousElementSibling;
+    const client = grid.querySelector('[name="recovery_client_id"]');
+    const portfolio = grid.querySelector('[name="portfolio_type"]');
+    const branch = grid.querySelector('[name="branch_name"]');
+    const region = grid.querySelector('[data-centenary-region]');
+    const otherRegion = grid.querySelector('[data-other-region]');
+    const filter = (select, predicate) => {
+        const currentValue = select.value;
+        Array.from(select.options).forEach(option => { option.hidden = option.disabled = !!option.value && !predicate(option); });
+        const validIndex = Array.from(select.options).findIndex(option => option.value === currentValue && !option.disabled);
+        select.selectedIndex = validIndex >= 0 ? validIndex : 0;
+    };
+    const refresh = () => {
+        const option = client.selectedOptions[0];
+        const centenary = option?.dataset.centenary === '1';
+        region.hidden = region.disabled = !centenary;
+        otherRegion.hidden = otherRegion.disabled = centenary;
+        filter(portfolio, item => item.dataset.client === client.value);
+        filter(branch, item => centenary
+            ? item.dataset.centenary === '1' && item.dataset.region === region.value
+            : !item.dataset.centenary && item.dataset.bank === option?.dataset.bank);
+    };
+    client.addEventListener('change', refresh);
+    region.addEventListener('change', refresh);
+    refresh();
+})();
+</script>

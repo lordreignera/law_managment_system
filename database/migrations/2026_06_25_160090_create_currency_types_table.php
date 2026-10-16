@@ -12,6 +12,7 @@ return new class extends Migration
             $table->id();
             $table->string('name')->unique();
             $table->string('code', 40)->unique();
+            $table->string('iso_code', 3);
             $table->string('symbol', 10)->nullable();
             $table->text('description')->nullable();
             $table->unsignedInteger('sort_order')->default(0);

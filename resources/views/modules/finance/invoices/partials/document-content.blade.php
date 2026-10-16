@@ -1,7 +1,7 @@
 @php
     $client = $invoice->client;
     $matter = $invoice->matter;
-    $currency = 'UGX';
+    $currency = $invoice->currency ?: 'UGX';
     $balance = max((float) $invoice->total - (float) $invoice->paid_amount, 0);
     $lineDescription = $documentType === 'fee-note'
         ? 'Professional fee note for legal services'
@@ -85,9 +85,12 @@
             </tr>
             @if ((float) $invoice->tax > 0)
                 <tr>
-                    <td>Tax</td>
+                    <td>{{ $invoice->tax_name ?: 'Tax' }}{{ $invoice->tax_name ? ' ('.(float) $invoice->tax_rate.'%)' : '' }}</td>
                     <td class="is-money">{{ $currency }} {{ number_format((float) $invoice->tax, 2) }}</td>
                 </tr>
+            @endif
+            @if ((float) $invoice->withholding_tax > 0)
+                <tr><td>{{ $invoice->tax_name ?: 'Withholding Tax' }} ({{ (float) $invoice->tax_rate }}%)</td><td class="is-money">-{{ $currency }} {{ number_format((float) $invoice->withholding_tax, 2) }}</td></tr>
             @endif
         </tbody>
         <tfoot>

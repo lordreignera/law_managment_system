@@ -6,17 +6,25 @@ use App\Models\RecoveryAccount;
 use App\Models\RecoveryImportBatch;
 use App\Models\User;
 use App\Support\Recoveries\RecoveryPortfolioMapper;
+use App\Support\Recoveries\RecoveryReferenceData;
 use Illuminate\Support\Collection;
+use Illuminate\Validation\ValidationException;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 
 class RecoveryAccountsImport implements ToCollection, WithHeadingRow
 {
     public int $imported = 0;
+
     public int $skipped = 0;
+
     public float $principal = 0;
+
     public float $outstanding = 0;
+
     public int $assigned = 0;
+
+    public array $errors = [];
 
     private array $collectorOfficerMap;
 
@@ -48,6 +56,16 @@ class RecoveryAccountsImport implements ToCollection, WithHeadingRow
             $data['recovery_client_id'] = $this->batch->recovery_client_id;
             $data['recovery_import_batch_id'] = $this->batch->id;
             $data['branch_id'] = $this->user->branch_id;
+            try {
+                $data = RecoveryReferenceData::validate($data, $this->batch->client);
+            } catch (ValidationException $exception) {
+                $this->skipped++;
+                if (count($this->errors) < 20) {
+                    $this->errors[] = 'Row '.($index + 2).': '.collect($exception->errors())->flatten()->join(' ');
+                }
+
+                continue;
+            }
 
             $assignee = $this->assignedTo ? User::find($this->assignedTo) : null;
             if (! $assignee && $this->matchCollector && $data['collector_name']) {

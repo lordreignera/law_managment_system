@@ -6,10 +6,14 @@ use App\Models\Expense;
 use App\Models\Matter;
 use App\Models\Requisition;
 use App\Models\RequisitionCategory;
+use App\Models\User;
+use App\Notifications\RequisitionDecided;
+use App\Notifications\RequisitionSubmitted;
 use App\Services\ApprovalService;
 use App\Support\MonthlyReferenceNumber;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
 
 class RequisitionController extends Controller
 {
@@ -102,6 +106,12 @@ class RequisitionController extends Controller
             ? route('finance.dashboard')
             : route('requisitions.show', $requisition);
 
+        $reviewers = User::where(fn ($query) => $query
+            ->whereHas('roles.permissions', fn ($query) => $query->where('name', 'requisitions.approve'))
+            ->orWhereHas('permissions', fn ($query) => $query->where('name', 'requisitions.approve')))
+            ->whereHas('staffProfile', fn ($query) => $query->where('employment_status', 'active'))->get();
+        Notification::send($reviewers, new RequisitionSubmitted($requisition));
+
         return redirect($route)
             ->with('status', 'Requisition '.$requisition->reference_no.' submitted for approval.');
     }
@@ -166,6 +176,7 @@ class RequisitionController extends Controller
             'reviewed_at' => now(),
             'review_notes' => $data['review_notes'] ?? null,
         ]);
+        $requisition->requester?->notify(new RequisitionDecided($requisition));
 
         // An approved requisition becomes an expenditure record so it flows
         // straight into the finance ledger. Guard against duplicates.

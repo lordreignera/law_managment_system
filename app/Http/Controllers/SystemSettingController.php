@@ -2,14 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Branch;
 use App\Models\Bank;
-use App\Models\CurrencyType;
+use App\Models\Branch;
 use App\Models\CentenaryRegion;
 use App\Models\Court;
+use App\Models\CurrencyType;
+use App\Models\Letterhead;
+use App\Support\MasterDataValidator;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 class SystemSettingController extends Controller
 {
@@ -55,6 +56,9 @@ class SystemSettingController extends Controller
 
                     if (in_array('contact_person', $extraFields, true)) {
                         $query->orWhere('contact_person', 'like', "%{$search}%");
+                    }
+                    if (in_array('iso_code', $extraFields, true)) {
+                        $query->orWhere('iso_code', 'like', "%{$search}%");
                     }
                 });
             })
@@ -157,151 +161,7 @@ class SystemSettingController extends Controller
 
     private function validatedData(Request $request, array $definition, ?Model $record = null): array
     {
-        $table = (new $definition['model'])->getTable();
-        $ignore = $record?->id;
-        $extraFields = $definition['extra_fields'] ?? [];
-
-        $rules = [
-            'name' => ['required', 'string', 'max:191', Rule::unique($table, 'name')->ignore($ignore)],
-            'description' => ['nullable', 'string', 'max:1000'],
-            'sort_order' => ['nullable', 'integer', 'min:0'],
-            'is_active' => ['nullable', 'boolean'],
-        ];
-
-        if (in_array('court_level', $extraFields, true)) {
-            $rules['court_level'] = ['nullable', 'string', 'max:120'];
-        }
-
-        if (in_array('station', $extraFields, true)) {
-            $rules['station'] = ['nullable', 'string', 'max:120'];
-        }
-
-        if (in_array('symbol', $extraFields, true)) {
-            $rules['symbol'] = ['nullable', 'string', 'max:10'];
-        }
-
-        if (in_array('contact_person', $extraFields, true)) {
-            $rules['contact_person'] = ['nullable', 'string', 'max:191'];
-        }
-
-        if (in_array('email', $extraFields, true)) {
-            $rules['email'] = ['nullable', 'email', 'max:191'];
-        }
-
-        if (in_array('phone', $extraFields, true)) {
-            $rules['phone'] = ['nullable', 'string', 'max:50'];
-        }
-
-        if (in_array('firm_name', $extraFields, true)) {
-            $rules['firm_name'] = ['nullable', 'string', 'max:191'];
-        }
-
-        if (in_array('title', $extraFields, true)) {
-            $rules['title'] = ['nullable', 'string', 'max:191'];
-        }
-
-        if (in_array('chambers', $extraFields, true)) {
-            $rules['chambers'] = ['nullable', 'string', 'max:191'];
-        }
-
-        if (in_array('court_id', $extraFields, true)) {
-            $rules['court_id'] = ['nullable', 'exists:courts,id'];
-        }
-
-        if (in_array('centenary_region_id', $extraFields, true)) {
-            $rules['centenary_region_id'] = ['required', 'exists:centenary_regions,id'];
-        }
-
-        if (in_array('portfolio_types', $extraFields, true)) {
-            $rules['portfolio_types'] = ['nullable', 'string', 'max:3000'];
-        }
-
-        if (in_array('header_text', $extraFields, true)) {
-            $rules['header_text'] = ['nullable', 'string', 'max:2000'];
-        }
-
-        if (in_array('footer_text', $extraFields, true)) {
-            $rules['footer_text'] = ['nullable', 'string', 'max:2000'];
-        }
-
-        if (in_array('is_default', $extraFields, true)) {
-            $rules['is_default'] = ['nullable', 'boolean'];
-        }
-
-        if (in_array('hourly_rate', $extraFields, true)) {
-            $rules['hourly_rate'] = ['required', 'numeric', 'min:0'];
-        }
-
-        if (in_array('currency_type_id', $extraFields, true)) {
-            $rules['currency_type_id'] = ['nullable', 'exists:currency_types,id'];
-        }
-
-        if (in_array('branch_id', $extraFields, true)) {
-            $rules['branch_id'] = ['nullable', 'exists:branches,id'];
-        }
-
-        if (in_array('bank_id', $extraFields, true)) {
-            $rules['bank_id'] = ['required', 'exists:banks,id'];
-        }
-
-        if (in_array('office_location', $extraFields, true)) {
-            $rules['office_location'] = ['nullable', 'string', 'max:500'];
-        }
-
-        if (in_array('districts_covered', $extraFields, true)) {
-            $rules['districts_covered'] = ['nullable', 'string', 'max:3000'];
-        }
-
-        if (in_array('tax_type', $extraFields, true)) {
-            $rules['tax_type'] = ['required', 'string', 'max:40'];
-        }
-
-        if (in_array('rate', $extraFields, true)) {
-            $rules['rate'] = ['required', 'numeric', 'min:0', 'max:100'];
-        }
-
-        if (in_array('is_inclusive', $extraFields, true)) {
-            $rules['is_inclusive'] = ['nullable', 'boolean'];
-        }
-
-        if (in_array('channel', $extraFields, true)) {
-            $rules['channel'] = ['required', 'in:database,email,sms'];
-        }
-
-        if (in_array('event_key', $extraFields, true)) {
-            $rules['event_key'] = ['required', 'string', 'max:120', Rule::unique($table, 'event_key')->ignore($ignore)];
-        }
-
-        if (in_array('subject', $extraFields, true)) {
-            $rules['subject'] = ['nullable', 'string', 'max:191'];
-        }
-
-        if (in_array('body', $extraFields, true)) {
-            $rules['body'] = ['required', 'string', 'max:5000'];
-        }
-
-        $data = $request->validate($rules);
-
-        $data['sort_order'] = $data['sort_order'] ?? 0;
-        $data['is_active'] = $request->boolean('is_active');
-
-        if (in_array('is_default', $extraFields, true)) {
-            $data['is_default'] = $request->boolean('is_default');
-        }
-
-        if (in_array('is_inclusive', $extraFields, true)) {
-            $data['is_inclusive'] = $request->boolean('is_inclusive');
-        }
-
-        if (in_array('portfolio_types', $extraFields, true)) {
-            $data['portfolio_types'] = collect(preg_split('/\r\n|\r|\n/', (string) ($data['portfolio_types'] ?? '')))
-                ->map(fn ($type) => trim($type))
-                ->filter()
-                ->values()
-                ->all();
-        }
-
-        return $data;
+        return app(MasterDataValidator::class)->validate($request->all(), $definition, $record);
     }
 
     private function newRecord(array $definition): Model
@@ -317,7 +177,7 @@ class SystemSettingController extends Controller
 
     private function syncDefaultLetterhead(array $definition, Model $record, array $data): void
     {
-        if (($definition['model'] !== \App\Models\Letterhead::class) || empty($data['is_default'])) {
+        if (($definition['model'] !== Letterhead::class) || empty($data['is_default'])) {
             return;
         }
 

@@ -97,7 +97,7 @@
 
                     <label>
                         <span>Job Title *</span>
-                        <input type="text" name="job_title" value="{{ old('job_title') }}" required>
+                        <x-job-title-select />
                         @error('job_title')<small>{{ $message }}</small>@enderror
                     </label>
 

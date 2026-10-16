@@ -74,11 +74,7 @@
                         <input type="number" step="0.01" min="0" name="subtotal" value="{{ old('subtotal') }}" required>
                         @error('subtotal') <small>{{ $message }}</small> @enderror
                     </label>
-                    <label>
-                        <span>Tax</span>
-                        <input type="number" step="0.01" min="0" name="tax" value="{{ old('tax', 0) }}">
-                        @error('tax') <small>{{ $message }}</small> @enderror
-                    </label>
+                    <x-invoice-tax-fields />
                     <label>
                         <span>Paid Amount</span>
                         <input type="number" step="0.01" min="0" name="paid_amount" value="{{ old('paid_amount', 0) }}">
@@ -207,8 +203,8 @@
                             <tr>
                                 <td>{{ $invoice->invoice_no }}</td>
                                 <td>{{ $invoice->invoice_date?->format('d M Y') }}</td>
-                                <td>{{ number_format($invoice->total, 2) }}</td>
-                                <td>{{ number_format($invoice->paid_amount, 2) }}</td>
+                                <td>{{ $invoice->currency }} {{ number_format($invoice->total, 2) }}<br><small>{{ $invoice->tax_name ?: 'No tax' }}{{ $invoice->tax_name ? ' ('.(float) $invoice->tax_rate.'%)' : '' }}</small></td>
+                                <td>{{ $invoice->currency }} {{ number_format($invoice->paid_amount, 2) }}</td>
                                 <td>{{ str($invoice->status)->headline() }}</td>
                                 <td>
                                     <div class="kfms-table-actions">

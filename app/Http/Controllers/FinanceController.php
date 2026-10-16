@@ -2,14 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Expense;
 use App\Models\ChartAccount;
 use App\Models\Client;
+use App\Models\Expense;
 use App\Models\Invoice;
 use App\Models\InvoicePayment;
 use App\Models\Matter;
 use App\Models\PettyCashTransaction;
 use App\Models\Requisition;
+use App\Support\InvoiceTotals;
 use App\Support\MonthlyReferenceNumber;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -44,7 +45,6 @@ class FinanceController extends Controller
     {
         $request->merge([
             'subtotal' => $this->moneyInput($request->input('subtotal')),
-            'tax' => $this->moneyInput($request->input('tax')),
         ]);
 
         $data = $request->validate([
@@ -53,10 +53,9 @@ class FinanceController extends Controller
             'invoice_date' => ['required', 'date'],
             'due_date' => ['nullable', 'date', 'after_or_equal:invoice_date'],
             'subtotal' => ['required', 'numeric', 'min:0'],
-            'tax' => ['nullable', 'numeric', 'min:0'],
             'status' => ['required', Rule::in(array_keys($this->invoiceStatuses()))],
             'from' => ['nullable', 'string'],
-        ]);
+        ] + InvoiceTotals::rules());
 
         if (! empty($data['matter_id'])) {
             $matter = Matter::findOrFail($data['matter_id']);
@@ -66,8 +65,7 @@ class FinanceController extends Controller
             }
         }
 
-        $subtotal = (float) $data['subtotal'];
-        $tax = (float) ($data['tax'] ?? 0);
+        $totals = InvoiceTotals::calculate($data);
 
         Invoice::create([
             'client_id' => $data['client_id'],
@@ -75,12 +73,9 @@ class FinanceController extends Controller
             'invoice_no' => MonthlyReferenceNumber::make(Invoice::class, 'invoice_no', 'INV'),
             'invoice_date' => $data['invoice_date'],
             'due_date' => $data['due_date'] ?? null,
-            'subtotal' => $subtotal,
-            'tax' => $tax,
-            'total' => $subtotal + $tax,
             'paid_amount' => 0,
             'status' => $data['status'],
-        ]);
+        ] + $totals);
 
         return $this->financeRedirect($request, 'Invoice recorded.');
     }
@@ -124,7 +119,7 @@ class FinanceController extends Controller
             'chart_account_id' => ['required', 'exists:chart_accounts,id'],
             'amount' => ['required', 'numeric', 'min:0.01'],
             'paid_on' => ['required', 'date'],
-            'payment_method' => ['nullable', 'string', 'max:100'],
+            'payment_method' => ['nullable', 'string', 'max:100', Rule::exists('payment_modes', 'name')->where('is_active', true)],
             'reference' => ['nullable', 'string', 'max:191'],
             'notes' => ['nullable', 'string', 'max:2000'],
             'from' => ['nullable', 'string'],

@@ -72,7 +72,7 @@
                 </label>
                 <label>
                     <span>Job Title <span class="kfms-required">*</span></span>
-                    <input type="text" name="job_title" value="{{ old('job_title', $profile->job_title) }}" required>
+                    <x-job-title-select :value="$profile->job_title" />
                     @error('job_title') <small>{{ $message }}</small> @enderror
                 </label>
                 <label>

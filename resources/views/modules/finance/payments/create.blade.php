@@ -52,7 +52,7 @@
 
                 <label>
                     <span>Payment Method</span>
-                    <input type="text" name="payment_method" value="{{ old('payment_method') }}" maxlength="100" placeholder="Bank, cash, mobile money">
+                    <x-payment-mode-select />
                     @error('payment_method') <small>{{ $message }}</small> @enderror
                 </label>
 

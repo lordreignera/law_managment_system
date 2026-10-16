@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Branch;
 use App\Models\Department;
+use App\Models\JobTitle;
 use App\Models\User;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -48,6 +49,7 @@ class RegistrationTest extends TestCase
         $branch = Branch::create(['name' => 'Kampala', 'code' => 'KLA']);
         $department = Department::create(['name' => 'Litigation', 'code' => 'LIT', 'branch_id' => $branch->id]);
         $role = Role::create(['name' => 'Advocate']);
+        JobTitle::create(['name' => 'Associate']);
 
         Notification::fake();
 

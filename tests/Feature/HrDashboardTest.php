@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Branch;
 use App\Models\Department;
+use App\Models\JobTitle;
 use App\Models\StaffProfile;
 use App\Models\User;
 use App\Notifications\StaffAccountApproved;
@@ -24,6 +25,9 @@ class HrDashboardTest extends TestCase
         parent::setUp();
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
+        foreach (['HR Officer', 'Advocate', 'Accountant'] as $title) {
+            JobTitle::create(['name' => $title]);
+        }
     }
 
     private function activeUser(array $permissions, string $roleName = 'HR Manager'): User

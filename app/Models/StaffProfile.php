@@ -32,6 +32,11 @@ class StaffProfile extends Model
         return $this->belongsTo(Department::class);
     }
 
+    public function jobTitle()
+    {
+        return $this->belongsTo(JobTitle::class, 'job_title', 'name');
+    }
+
     protected static function booted(): void
     {
         static::creating(function (StaffProfile $profile) {

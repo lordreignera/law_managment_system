@@ -15,6 +15,12 @@ return new class extends Migration
             $table->string('invoice_no')->unique();
             $table->date('invoice_date');
             $table->date('due_date')->nullable();
+            $table->string('currency', 3)->default('UGX');
+            $table->unsignedBigInteger('tax_setting_id')->nullable();
+            $table->string('tax_name')->nullable();
+            $table->decimal('tax_rate', 8, 4)->default(0);
+            $table->boolean('tax_inclusive')->default(false);
+            $table->decimal('withholding_tax', 18, 2)->default(0);
             $table->decimal('subtotal', 18, 2)->default(0);
             $table->decimal('tax', 18, 2)->default(0);
             $table->decimal('total', 18, 2)->default(0);

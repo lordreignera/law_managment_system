@@ -3,40 +3,23 @@
 namespace App\Notifications;
 
 use App\Models\CourtEvent;
-use App\Notifications\Channels\SmsChannel;
-use App\Support\Sms\SmsMessage;
-use Illuminate\Bus\Queueable;
-use Illuminate\Notifications\Notification;
 
-class CourtEventReminder extends Notification
+class CourtEventReminder extends TemplateNotification
 {
-    use Queueable;
+    public function __construct(public CourtEvent $event) {}
 
-    public function __construct(public CourtEvent $event)
+    protected function eventKey(): string
     {
+        return 'litigation.court_event.reminder';
     }
 
-    /**
-     * @return array<int, string>
-     */
-    public function via(object $notifiable): array
+    protected function context(): array
     {
-        return [SmsChannel::class];
+        return ['event_type' => $this->event->eventTypeLabel(), 'starts_at' => $this->event->starts_at?->format('d M Y H:i'), 'court_name' => $this->event->court?->name ?: ($this->event->court_name ?: 'Court'), 'case_number' => $this->event->case_number ?: '-', 'matter_reference' => $this->event->matter?->reference_no ?: '-'];
     }
 
-    public function toSms(object $notifiable): SmsMessage
+    protected function action(): array
     {
-        $event = $this->event;
-
-        $content = sprintf(
-            'Reminder: %s on %s — %s%s. Matter %s.',
-            $event->eventTypeLabel(),
-            $event->starts_at?->format('d M Y H:i'),
-            $event->court?->name ?: $event->court_name ?: 'court',
-            $event->case_number ? ' ('.$event->case_number.')' : '',
-            $event->matter?->reference_no ?: '-'
-        );
-
-        return SmsMessage::make($content);
+        return ['label' => 'View court event', 'url' => route('litigation.show', $this->event)];
     }
 }

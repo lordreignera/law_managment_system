@@ -10,6 +10,9 @@
                 <h2>System Settings</h2>
                 <span>Master data used before matters, finance, HR, billing, and documents are created.</span>
             </div>
+            @can('settings.master-data.index')
+                <a class="kfms-btn" href="{{ route('settings.master-data.index') }}">Import Master Data</a>
+            @endcan
         </div>
 
         <div class="kfms-settings-grid">

@@ -7,6 +7,11 @@
     @if (session('status'))
         <div class="kfms-alert">{{ session('status') }}</div>
     @endif
+    @if (session('import_errors'))
+        <div class="kfms-alert"><strong>Rows requiring correction</strong><ul>
+            @foreach (session('import_errors') as $message) <li>{{ $message }}</li> @endforeach
+        </ul></div>
+    @endif
 
     <section class="kfms-panel">
         <div class="kfms-panel-header">
