@@ -78,6 +78,26 @@ class PhaseOneMasterDataTest extends TestCase
         }
     }
 
+    public function test_system_settings_overview_can_search_and_modal_markup_is_scrollable(): void
+    {
+        $this->actingAs($this->staff());
+
+        $response = $this->get(route('settings.system.overview', ['search' => 'court']))
+            ->assertOk()
+            ->assertViewHas('search', 'court')
+            ->assertSee('Courts');
+
+        $this->get(route('settings.system.index', 'judicial-officers'))
+            ->assertOk()
+            ->assertSee('modal-dialog-scrollable', false)
+            ->assertSee('class="kfms-form"', false);
+
+        $response->assertViewHas('settings', function ($settings) {
+            return $settings->pluck('title')->contains('Courts')
+                && ! $settings->pluck('title')->contains('Practice Areas');
+        });
+    }
+
     public function test_master_data_export_uses_import_columns_and_does_not_export_password_hashes(): void
     {
         $admin = $this->staff();

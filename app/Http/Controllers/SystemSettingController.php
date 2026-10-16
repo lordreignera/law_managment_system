@@ -14,17 +14,26 @@ use Illuminate\Http\Request;
 
 class SystemSettingController extends Controller
 {
-    public function overview()
+    public function overview(Request $request)
     {
+        $search = trim($request->string('search')->toString());
+        $searchTerm = mb_strtolower($search);
         $settings = collect(config('system_settings'))->map(function ($setting, $slug) {
             $setting['slug'] = $slug;
             $setting['count'] = $setting['model']::count();
 
             return $setting;
-        });
+        })->filter(function (array $setting) use ($searchTerm) {
+            if ($searchTerm === '') {
+                return true;
+            }
+
+            return str_contains(mb_strtolower($setting['title'].' '.$setting['description']), $searchTerm);
+        })->values();
 
         return view('modules.system-settings.overview', [
             'settings' => $settings,
+            'search' => $search,
         ]);
     }
 

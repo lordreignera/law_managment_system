@@ -770,6 +770,22 @@ a.kfms-stat-card:hover {
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
 
+.kfms-settings-search {
+    align-items: end;
+    background: #fbfdff;
+    border: 1px solid #dfe7ef;
+    border-radius: 8px;
+    display: grid;
+    gap: 12px;
+    grid-template-columns: minmax(260px, 1fr) auto;
+    margin-bottom: 18px;
+    padding: 14px;
+}
+
+.kfms-settings-search .kfms-toolbar-actions {
+    justify-content: flex-end;
+}
+
 .kfms-settings-card {
     border: 1px solid #eef1f5;
     color: #263247;
@@ -2599,6 +2615,10 @@ body.kfms-template {
     .kfms-header-actions,
     .kfms-toolbar-actions {
         width: 100%;
+    }
+
+    .kfms-settings-search {
+        grid-template-columns: 1fr;
     }
 
     .kfms-header-actions > *,
