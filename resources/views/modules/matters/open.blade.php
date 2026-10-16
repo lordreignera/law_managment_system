@@ -71,25 +71,23 @@
                     @error('matter_category_id') <small>{{ $message }}</small> @enderror
                 </label>
 
-                <label>
-                    <span>Partners</span>
-                    <select name="partner_ids[]" multiple required>
-                        @foreach ($users as $user)
-                            <option value="{{ $user->id }}" @selected(in_array((string) $user->id, $oldPartners, true))>{{ $user->name }}</option>
-                        @endforeach
-                    </select>
-                    @error('partner_ids') <small>{{ $message }}</small> @enderror
-                </label>
+                @include('modules.matters.partials.assignment-picker', [
+                    'name' => 'partner_ids[]',
+                    'field' => 'partner_ids',
+                    'label' => 'Partners',
+                    'placeholder' => 'Select partners',
+                    'users' => $users,
+                    'selected' => $oldPartners,
+                ])
 
-                <label>
-                    <span>Associates</span>
-                    <select name="associate_ids[]" multiple>
-                        @foreach ($users as $user)
-                            <option value="{{ $user->id }}" @selected(in_array((string) $user->id, $oldAssociates, true))>{{ $user->name }}</option>
-                        @endforeach
-                    </select>
-                    @error('associate_ids') <small>{{ $message }}</small> @enderror
-                </label>
+                @include('modules.matters.partials.assignment-picker', [
+                    'name' => 'associate_ids[]',
+                    'field' => 'associate_ids',
+                    'label' => 'Associates',
+                    'placeholder' => 'Select associates',
+                    'users' => $users,
+                    'selected' => $oldAssociates,
+                ])
 
                 <label>
                     <span>Date Opened</span>

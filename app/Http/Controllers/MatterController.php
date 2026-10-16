@@ -187,7 +187,7 @@ class MatterController extends Controller
             'matterCategories' => MatterCategory::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
             'shelves' => Shelf::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
             'opposingCounsels' => OpposingCounsel::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
-            'users' => $this->assignableUsers()->orderBy('name')->get(),
+            'users' => $this->assignableUsers()->with('roles')->orderBy('name')->get(),
             'availableFiles' => File::whereNull('matter_id')
                 ->whereHas('client', fn ($query) => $query->forBranchOf(request()->user()))
                 ->with('client')
@@ -210,7 +210,7 @@ class MatterController extends Controller
             'matterCategories' => MatterCategory::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
             'shelves' => Shelf::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
             'opposingCounsels' => OpposingCounsel::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
-            'users' => $this->assignableUsers()->orderBy('name')->get(),
+            'users' => $this->assignableUsers()->with('roles')->orderBy('name')->get(),
             'availableFiles' => $client->files()->whereNull('matter_id')->orderBy('file_name')->get(),
             'suggestedTitle' => $client->files()->latest()->value('file_name'),
         ]);
@@ -229,7 +229,7 @@ class MatterController extends Controller
             'matterCategories' => MatterCategory::where('is_active', true)->orWhere('id', $matter->matter_category_id)->orderBy('sort_order')->orderBy('name')->get(),
             'shelves' => Shelf::where('is_active', true)->orWhere('id', $matter->shelf_id)->orderBy('sort_order')->orderBy('name')->get(),
             'opposingCounsels' => OpposingCounsel::where('is_active', true)->orWhere('id', $matter->opposing_counsel_id)->orderBy('sort_order')->orderBy('name')->get(),
-            'users' => $this->assignableUsers()->orderBy('name')->get(),
+            'users' => $this->assignableUsers()->with('roles')->orderBy('name')->get(),
             'availableFiles' => File::where('client_id', $matter->client_id)
                 ->where(fn ($query) => $query->whereNull('matter_id')->orWhere('matter_id', $matter->id))
                 ->orderBy('file_name')

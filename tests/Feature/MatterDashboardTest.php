@@ -142,6 +142,22 @@ class MatterDashboardTest extends TestCase
         }
     }
 
+    public function test_matter_forms_render_role_aware_assignment_checklists(): void
+    {
+        $user = $this->activeUser(['matters.create'], 'Advocate');
+
+        $this->actingAs($user)
+            ->get(route('matters.create'))
+            ->assertOk()
+            ->assertSee('Select all partners')
+            ->assertSee('Select all associates')
+            ->assertSee('Search partners')
+            ->assertSee('Search associates')
+            ->assertSee($user->name)
+            ->assertSee('Advocate')
+            ->assertSee('data-check-dropdown', false);
+    }
+
     private function activeUser(array $permissions, string $roleName): User
     {
         $role = Role::findOrCreate($roleName);
