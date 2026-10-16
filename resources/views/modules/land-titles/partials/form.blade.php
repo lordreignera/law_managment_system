@@ -32,15 +32,76 @@
     </label>
 
     <label>
+        <span>Security Type <span class="kfms-required">*</span></span>
+        <select name="security_type" required>
+            @foreach (['land_title' => 'Land Title', 'mortgage' => 'Mortgage', 'discharge' => 'Discharge', 'consent' => 'Consent', 'other' => 'Other'] as $value => $label)
+                <option value="{{ $value }}" @selected(old('security_type', $title->security_type ?? 'land_title') === $value)>{{ $label }}</option>
+            @endforeach
+        </select>
+        @error('security_type') <small>{{ $message }}</small> @enderror
+    </label>
+
+    <label>
+        <span>Movement Direction <span class="kfms-required">*</span></span>
+        <select name="movement_direction" required>
+            <option value="incoming" @selected(old('movement_direction', $title->movement_direction ?? 'incoming') === 'incoming')>Incoming</option>
+            <option value="outgoing" @selected(old('movement_direction', $title->movement_direction ?? 'incoming') === 'outgoing')>Outgoing</option>
+        </select>
+        @error('movement_direction') <small>{{ $message }}</small> @enderror
+    </label>
+
+    <label>
         <span>Borrower Name <span class="kfms-required">*</span></span>
         <input type="text" name="borrower_name" value="{{ old('borrower_name', $title->borrower_name) }}" required>
         @error('borrower_name') <small>{{ $message }}</small> @enderror
     </label>
 
     <label>
+        <span>Borrower Contact</span>
+        <input type="text" name="borrower_contact" value="{{ old('borrower_contact', $title->borrower_contact) }}">
+        @error('borrower_contact') <small>{{ $message }}</small> @enderror
+    </label>
+
+    <label>
+        <span>Title Number</span>
+        <input type="text" name="title_number" value="{{ old('title_number', $title->title_number) }}">
+        @error('title_number') <small>{{ $message }}</small> @enderror
+    </label>
+
+    <label>
+        <span>Land / Property Reference</span>
+        <input type="text" name="land_reference" value="{{ old('land_reference', $title->land_reference) }}" placeholder="Plot, block, volume, folio">
+        @error('land_reference') <small>{{ $message }}</small> @enderror
+    </label>
+
+    <label>
+        <span>Tenure</span>
+        <input type="text" name="tenure" value="{{ old('tenure', $title->tenure) }}" placeholder="Mailo, leasehold, freehold">
+        @error('tenure') <small>{{ $message }}</small> @enderror
+    </label>
+
+    <label>
+        <span>District</span>
+        <input type="text" name="district" value="{{ old('district', $title->district) }}">
+        @error('district') <small>{{ $message }}</small> @enderror
+    </label>
+
+    <label>
+        <span>Facility / Account Number</span>
+        <input type="text" name="facility_account_no" value="{{ old('facility_account_no', $title->facility_account_no) }}">
+        @error('facility_account_no') <small>{{ $message }}</small> @enderror
+    </label>
+
+    <label>
         <span>Instruction Type</span>
         <input type="text" name="instruction_type" value="{{ old('instruction_type', $title->instruction_type) }}" placeholder="Mortgage, release, custody, transfer">
         @error('instruction_type') <small>{{ $message }}</small> @enderror
+    </label>
+
+    <label class="kfms-span-2">
+        <span>Instruction Details</span>
+        <textarea name="instruction_details" rows="3">{{ old('instruction_details', $title->instruction_details) }}</textarea>
+        @error('instruction_details') <small>{{ $message }}</small> @enderror
     </label>
 
     <label>
@@ -119,9 +180,27 @@
 
     @if ($showDispatchedAt)
         <label>
+            <span>Dispatched To</span>
+            <input type="text" name="dispatched_to" value="{{ old('dispatched_to', $title->dispatched_to) }}" placeholder="Recipient, bank, MZO, or office">
+            @error('dispatched_to') <small>{{ $message }}</small> @enderror
+        </label>
+    @endif
+
+    @if ($showDispatchedAt)
+        <label>
             <span>Date &amp; Time Dispatched</span>
             <input type="datetime-local" name="dispatched_at" value="{{ old('dispatched_at', $title->dispatched_at?->format('Y-m-d\TH:i')) }}">
             @error('dispatched_at') <small>{{ $message }}</small> @enderror
+        </label>
+        <label>
+            <span>Dispatch Acknowledged By</span>
+            <input type="text" name="dispatch_acknowledged_by" value="{{ old('dispatch_acknowledged_by', $title->dispatch_acknowledged_by) }}">
+            @error('dispatch_acknowledged_by') <small>{{ $message }}</small> @enderror
+        </label>
+        <label>
+            <span>Dispatch Acknowledged At</span>
+            <input type="datetime-local" name="dispatch_acknowledged_at" value="{{ old('dispatch_acknowledged_at', $title->dispatch_acknowledged_at?->format('Y-m-d\TH:i')) }}">
+            @error('dispatch_acknowledged_at') <small>{{ $message }}</small> @enderror
         </label>
     @endif
 

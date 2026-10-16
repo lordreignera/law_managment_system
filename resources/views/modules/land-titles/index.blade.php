@@ -63,7 +63,7 @@
                 <thead>
                     <tr>
                         <th>Reference</th>
-                        <th>Borrower</th>
+                        <th>Borrower / Title</th>
                         <th>Institution / Branch</th>
                         <th>MZO</th>
                         <th>Instruction</th>
@@ -77,7 +77,7 @@
                     @forelse ($titles as $title)
                         <tr>
                             <td>{{ $title->reference_no }}</td>
-                            <td>{{ $title->borrower_name }}</td>
+                            <td>{{ $title->borrower_name }}<br><span class="kfms-muted">{{ $title->title_number ?: $title->land_reference ?: '-' }}</span></td>
                             <td>
                                 {{ $title->bank?->name ?: '-' }}<br>
                                 <span class="kfms-muted">{{ $title->bankBranch?->name ?: $title->received_from ?: '-' }}</span>

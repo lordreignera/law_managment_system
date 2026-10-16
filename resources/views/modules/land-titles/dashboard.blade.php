@@ -53,7 +53,28 @@
             <span class="kfms-stat-icon"><i class="mdi mdi-calendar-month-outline"></i></span>
             <span class="kfms-stat-body"><span class="kfms-card-label">Received This Month</span><strong class="kfms-stat">{{ number_format($summary['received_this_month']) }}</strong></span>
         </section>
+        <section class="kfms-card kfms-stat-card">
+            <span class="kfms-stat-icon"><i class="mdi mdi-alert-circle-outline"></i></span>
+            <span class="kfms-stat-body"><span class="kfms-card-label">Overdue Milestones</span><strong class="kfms-stat">{{ number_format($summary['overdue_milestones']) }}</strong></span>
+        </section>
+        <section class="kfms-card kfms-stat-card">
+            <span class="kfms-stat-icon"><i class="mdi mdi-calendar-clock-outline"></i></span>
+            <span class="kfms-stat-body"><span class="kfms-card-label">Upcoming Milestones</span><strong class="kfms-stat">{{ number_format($summary['upcoming_milestones']) }}</strong></span>
+        </section>
     </div>
+
+    <section class="kfms-panel">
+        <div class="kfms-panel-header">
+            <div><h2>Milestone Queue</h2><span>Upcoming and overdue security work requiring attention.</span></div>
+        </div>
+        <div class="kfms-table-wrap"><table class="kfms-table"><thead><tr><th>Security</th><th>Milestone</th><th>Due</th><th>Status</th><th>Handler</th></tr></thead><tbody>
+            @forelse ($milestoneQueue as $milestone)
+                <tr><td><a href="{{ route('land-titles.show', $milestone->landTitle) }}">{{ $milestone->landTitle?->reference_no }}</a></td><td>{{ $milestone->name }}</td><td>{{ $milestone->due_at?->format('d M Y, H:i') ?: '-' }}</td><td>{{ $milestone->statusLabel() }}</td><td>{{ $milestone->landTitle?->handler?->name ?: '-' }}</td></tr>
+            @empty
+                <tr><td colspan="5" class="kfms-empty">No pending milestones.</td></tr>
+            @endforelse
+        </tbody></table></div>
+    </section>
 
     <div class="kfms-grid-two">
         <section class="kfms-panel">

@@ -250,6 +250,13 @@ Route::middleware([
         Route::put('/land-titles/{landTitle}', [LandTitleController::class, 'update'])->name('land-titles.update');
         Route::get('/land-titles/{landTitle}/return', [LandTitleController::class, 'returnForm'])->name('land-titles.return.form');
         Route::patch('/land-titles/{landTitle}/return', [LandTitleController::class, 'returnSecurity'])->name('land-titles.return');
+        Route::post('/land-titles/{landTitle}/movements', [LandTitleController::class, 'storeMovement'])->name('land-titles.movements.store');
+        Route::post('/land-titles/{landTitle}/checklist', [LandTitleController::class, 'storeChecklistItem'])->name('land-titles.checklist.store');
+        Route::patch('/land-titles/{landTitle}/checklist/{item}', [LandTitleController::class, 'updateChecklistItem'])->name('land-titles.checklist.update');
+        Route::delete('/land-titles/{landTitle}/checklist/{item}', [LandTitleController::class, 'destroyChecklistItem'])->name('land-titles.checklist.destroy');
+        Route::post('/land-titles/{landTitle}/milestones', [LandTitleController::class, 'storeMilestone'])->name('land-titles.milestones.store');
+        Route::patch('/land-titles/{landTitle}/milestones/{milestone}', [LandTitleController::class, 'updateMilestone'])->name('land-titles.milestones.update');
+        Route::delete('/land-titles/{landTitle}/milestones/{milestone}', [LandTitleController::class, 'destroyMilestone'])->name('land-titles.milestones.destroy');
         Route::delete('/land-titles/{landTitle}', [LandTitleController::class, 'destroy'])->name('land-titles.destroy');
         Route::get('/finance/dashboard', [FinanceController::class, 'dashboard'])->name('finance.dashboard');
         Route::get('/finance/invoices/create', [FinanceController::class, 'createInvoice'])->name('finance.invoices.create');

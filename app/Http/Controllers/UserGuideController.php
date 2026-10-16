@@ -343,9 +343,11 @@ class UserGuideController extends Controller
             'subtitle' => 'Custody movement from receipt to return.',
             'steps' => [
                 'Register each security when it is received and attach the supporting document.',
-                'Capture financial institution, branch, MZO or zonal office, handler, and received date.',
-                'Dispatch details should be recorded only when the security is actually dispatched.',
-                'Use return actions and the dashboard to track pending, dispatched, returned, and custody records.',
+                'Capture the title number, land reference, borrower, financial institution, branch, MZO or zonal office, handler, and instruction details.',
+                'Record every receipt, dispatch, return, or transfer in the custody movement history with acknowledgement details.',
+                'Use the documentation checklist to sign off required documents before closing a security.',
+                'Add due milestones; the system reminds the handler before a due date and flags overdue work.',
+                'Use return actions and the dashboard to track pending, dispatched, returned, closed, and custody records.',
             ],
         ];
     }
