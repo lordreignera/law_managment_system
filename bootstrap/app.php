@@ -1,12 +1,13 @@
 <?php
 
-use App\Http\Middleware\EnsureRoutePermission;
 use App\Http\Middleware\EnsureClientPortalAccount;
+use App\Http\Middleware\EnsureRoutePermission;
 use App\Http\Middleware\EnsureStaffIsActive;
+use App\Http\Middleware\PreventBrowserCaching;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
-use Illuminate\Console\Scheduling\Schedule;
 use Spatie\Permission\Middleware\PermissionMiddleware;
 use Spatie\Permission\Middleware\RoleMiddleware;
 use Spatie\Permission\Middleware\RoleOrPermissionMiddleware;
@@ -20,7 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        $middleware->web(prepend: [\App\Http\Middleware\PreventBrowserCaching::class]);
+        $middleware->web(prepend: [PreventBrowserCaching::class]);
         $middleware->alias([
             'active.staff' => EnsureStaffIsActive::class,
             'client.portal' => EnsureClientPortalAccount::class,
@@ -34,6 +35,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $schedule->command('kfms:leave-reminders')->yearlyOn(1, 2, '08:00');
         $schedule->command('kfms:calendar-reminders')->dailyAt('07:00')->withoutOverlapping();
         $schedule->command('kfms:court-reminders')->dailyAt('07:05')->withoutOverlapping();
+        $schedule->command('kfms:security-reminders')->dailyAt('07:10')->withoutOverlapping();
+        $schedule->command('kfms:recovery-reminders')->dailyAt('08:00')->withoutOverlapping();
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

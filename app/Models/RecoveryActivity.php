@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Auditable;
 use App\Models\Concerns\HasAttachments;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class RecoveryActivity extends Model
 {
+    use Auditable;
     use HasAttachments;
     use HasFactory;
 
@@ -51,6 +53,11 @@ class RecoveryActivity extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function promiseReminderLogs()
+    {
+        return $this->hasMany(RecoveryPromiseReminderLog::class)->latest('scheduled_for');
     }
 
     public function typeLabel(): string

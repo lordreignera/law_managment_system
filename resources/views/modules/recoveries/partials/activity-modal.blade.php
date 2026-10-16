@@ -92,6 +92,12 @@
                             @error('promised_on') <small>{{ $message }}</small> @enderror
                         </label>
 
+                        <label>
+                            <span>Next Follow-up</span>
+                            <input type="datetime-local" name="next_follow_up_at" value="{{ old('next_follow_up_at') }}">
+                            @error('next_follow_up_at') <small>{{ $message }}</small> @enderror
+                        </label>
+
                         <label class="kfms-span-2">
                             <span>Response Notes</span>
                             <textarea name="notes" rows="4" maxlength="2000" required>{{ old('notes') }}</textarea>

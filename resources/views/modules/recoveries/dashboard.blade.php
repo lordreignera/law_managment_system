@@ -21,6 +21,12 @@
             @can('recoveries.index')
                 <a class="kfms-link-btn" href="{{ route('recoveries.index') }}"><i class="mdi mdi-format-list-bulleted"></i> Register</a>
             @endcan
+            @can('recoveries.reminders.send')
+                <form method="POST" action="{{ route('recoveries.reminders.send') }}">
+                    @csrf
+                    <button class="kfms-link-btn" type="submit"><i class="mdi mdi-message-text-clock-outline"></i> Send Due SMS</button>
+                </form>
+            @endcan
             @can('recoveries.clients.store')
                 <button class="kfms-link-btn" type="button" data-bs-toggle="modal" data-bs-target="#recovery-client-modal">
                     <i class="mdi mdi-bank-plus"></i>
@@ -118,6 +124,30 @@
             </div>
         </section>
     </div>
+
+    <section class="kfms-panel">
+        <div class="kfms-panel-header">
+            <div>
+                <h2>Recovery Pipeline</h2>
+                <span>Work in progress by stage, with high-priority exposure highlighted.</span>
+            </div>
+            @can('recoveries.reports')
+                <a class="kfms-link-btn" href="{{ route('recoveries.reports', ['view' => 'pipeline']) }}"><i class="mdi mdi-chart-timeline-variant"></i> Open Pipeline Report</a>
+            @endcan
+        </div>
+        <div class="kfms-table-wrap">
+            <table class="kfms-table">
+                <thead><tr><th>Stage</th><th>Accounts</th><th>Net Outstanding</th><th>High Priority</th></tr></thead>
+                <tbody>
+                    @forelse ($pipelineRows as $row)
+                        <tr><td>{{ $row['label'] }}</td><td>{{ number_format($row['accounts']) }}</td><td>{{ number_format($row['outstanding']) }}</td><td>{{ number_format($row['priority']) }}</td></tr>
+                    @empty
+                        <tr><td colspan="4" class="kfms-empty">No pipeline accounts yet.</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </section>
 
     <section class="kfms-panel">
         <div class="kfms-panel-header">

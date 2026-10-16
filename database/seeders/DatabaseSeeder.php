@@ -93,7 +93,7 @@ class DatabaseSeeder extends Seeder
             'Advocate' => ['dashboard', 'messages', 'clients', 'intakes', 'matters', 'litigation', 'letters'],
             'Paralegal' => ['dashboard', 'messages', 'intakes', 'matters', 'litigation', 'letters'],
             'Recoveries Manager' => ['dashboard', 'messages', 'recoveries'],
-            'Recovery Officer' => ['dashboard', 'messages'],
+            'Recovery Officer' => ['dashboard', 'messages', 'recoveries'],
             'Securities Manager' => ['dashboard', 'messages', 'land-titles'],
             'Accountant' => ['dashboard', 'messages', 'finance', 'expenses', 'petty-cash', 'ledger', 'requisitions'],
             'HR Manager' => ['dashboard', 'messages', 'hr', 'staff', 'leave'],

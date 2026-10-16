@@ -14,6 +14,7 @@
             'date_to' => $reportFilters['date_to'],
             'client' => $reportFilters['client'],
             'officer' => $reportFilters['officer'],
+            'pipeline_stage' => $reportFilters['pipeline_stage'],
         ];
     @endphp
 
@@ -36,6 +37,8 @@
                             <a class="dropdown-item" href="{{ route('recoveries.export', array_merge($reportQuery, ['type' => 'officers', 'format' => 'pdf'])) }}"><i class="mdi mdi-file-pdf-box"></i> Officers - PDF</a>
                             <a class="dropdown-item" href="{{ route('recoveries.export', array_merge($reportQuery, ['type' => 'clients', 'format' => 'xlsx'])) }}"><i class="mdi mdi-file-excel-outline"></i> Bank / Client - Excel</a>
                             <a class="dropdown-item" href="{{ route('recoveries.export', array_merge($reportQuery, ['type' => 'clients', 'format' => 'pdf'])) }}"><i class="mdi mdi-file-pdf-box"></i> Bank / Client - PDF</a>
+                            <a class="dropdown-item" href="{{ route('recoveries.export', array_merge($reportQuery, ['type' => 'pipeline', 'format' => 'xlsx'])) }}"><i class="mdi mdi-file-excel-outline"></i> Pipeline - Excel</a>
+                            <a class="dropdown-item" href="{{ route('recoveries.export', array_merge($reportQuery, ['type' => 'pipeline', 'format' => 'pdf'])) }}"><i class="mdi mdi-file-pdf-box"></i> Pipeline - PDF</a>
                         </div>
                     </details>
                 @endcan
@@ -104,6 +107,23 @@
                     @foreach ($officers as $officer)
                         <option value="{{ $officer->id }}" @selected($reportFilters['officer'] == $officer->id)>{{ $officer->name }}</option>
                     @endforeach
+                </select>
+            </label>
+            <label>
+                <span>Pipeline Stage</span>
+                <select name="pipeline_stage">
+                    <option value="">All stages</option>
+                    @foreach ($pipelineStages as $stage => $label)
+                        <option value="{{ $stage }}" @selected($reportFilters['pipeline_stage'] === $stage)>{{ $label }}</option>
+                    @endforeach
+                </select>
+            </label>
+            <label>
+                <span>Collection Grain</span>
+                <select name="grain">
+                    <option value="daily" @selected($reportFilters['grain'] === 'daily')>Daily</option>
+                    <option value="weekly" @selected($reportFilters['grain'] === 'weekly')>Weekly</option>
+                    <option value="monthly" @selected($reportFilters['grain'] === 'monthly')>Monthly</option>
                 </select>
             </label>
             <div class="kfms-toolbar-actions">
@@ -254,6 +274,24 @@
                         </tr>
                     @empty
                         <tr><td colspan="4" class="kfms-empty">No data.</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="kfms-panel" data-recovery-report-section="pipeline">
+        <div class="kfms-panel-header">
+            <div><h2>Pipeline Report</h2><span>Workload and exposure by recovery stage</span></div>
+        </div>
+        <div class="kfms-table-wrap">
+            <table class="kfms-table">
+                <thead><tr><th>Stage</th><th>Accounts</th><th>Outstanding</th><th>Recovered</th></tr></thead>
+                <tbody>
+                    @forelse ($byPipeline as $row)
+                        <tr><td>{{ $row['label'] }}</td><td>{{ number_format($row['accounts']) }}</td><td>{{ number_format($row['outstanding'], 2) }}</td><td>{{ number_format($row['recovered'], 2) }}</td></tr>
+                    @empty
+                        <tr><td colspan="4" class="kfms-empty">No pipeline data.</td></tr>
                     @endforelse
                 </tbody>
             </table>

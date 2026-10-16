@@ -74,6 +74,15 @@
                     <option value="written_off" @selected(($filters['status'] ?? '') === 'written_off')>Written Off</option>
                 </select>
             </label>
+            <label>
+                <span>Pipeline</span>
+                <select name="pipeline_stage">
+                    <option value="">All stages</option>
+                    @foreach ($pipelineStages as $stage => $label)
+                        <option value="{{ $stage }}" @selected(($filters['pipeline_stage'] ?? '') === $stage)>{{ $label }}</option>
+                    @endforeach
+                </select>
+            </label>
             <div class="kfms-toolbar-actions">
                 <button class="kfms-link-btn" type="submit">Apply Filters</button>
                 <a class="kfms-link-btn" href="{{ route('recoveries.index') }}">Reset</a>
@@ -90,6 +99,8 @@
                         <th>Account</th>
                         <th>Officer</th>
                         <th>Portfolio</th>
+                        <th>Pipeline</th>
+                        <th>Priority</th>
                         <th>Net Outstanding</th>
                         <th>Recovered</th>
                         <th>Status</th>
@@ -105,6 +116,8 @@
                             <td>{{ $account->account_number ?: '-' }}</td>
                             <td>{{ $account->assignee?->name ?: 'Unassigned' }}</td>
                             <td>{{ $account->portfolio_type ?: $account->bucket ?: '-' }}</td>
+                            <td>{{ $account->pipelineStageLabel() }}</td>
+                            <td>{{ $account->priorityLabel() }}</td>
                             <td>{{ number_format($account->net_outstanding_balance) }}</td>
                             <td>{{ number_format($account->amount_recovered) }}</td>
                             <td><span class="kfms-status kfms-status-{{ $account->status }}">{{ $account->statusLabel() }}</span></td>
@@ -149,7 +162,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="10" class="kfms-empty">No recovery accounts yet.</td>
+                            <td colspan="12" class="kfms-empty">No recovery accounts yet.</td>
                         </tr>
                     @endforelse
                 </tbody>

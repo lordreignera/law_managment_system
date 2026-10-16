@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Auditable;
 use App\Models\Concerns\BranchScoped;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -9,6 +10,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class RecoveryAccount extends Model
 {
+    use Auditable;
     use BranchScoped;
     use HasFactory;
     use SoftDeletes;
@@ -17,6 +19,34 @@ class RecoveryAccount extends Model
         'active' => 'Active',
         'closed' => 'Closed',
         'written_off' => 'Written Off',
+    ];
+
+    public const PIPELINE_STAGES = [
+        'new' => 'New',
+        'contact_pending' => 'Contact Pending',
+        'engaged' => 'Engaged',
+        'promise_to_pay' => 'Promise to Pay',
+        'field_visit' => 'Field Visit',
+        'legal_review' => 'Legal Review',
+        'recovered' => 'Recovered',
+        'untraceable' => 'Untraceable',
+        'closed' => 'Closed',
+    ];
+
+    public const PRIORITIES = [
+        'low' => 'Low',
+        'normal' => 'Normal',
+        'high' => 'High',
+        'urgent' => 'Urgent',
+    ];
+
+    public const SKIP_TRACE_STATUSES = [
+        'not_started' => 'Not Started',
+        'pending' => 'Pending',
+        'in_progress' => 'In Progress',
+        'found' => 'Found',
+        'not_found' => 'Not Found',
+        'failed' => 'Failed',
     ];
 
     protected $guarded = [];
@@ -32,6 +62,10 @@ class RecoveryAccount extends Model
         'amount_recovered' => 'decimal:2',
         'opening_recovered_amount' => 'decimal:2',
         'settled_externally_at' => 'datetime',
+        'last_contact_at' => 'datetime',
+        'next_follow_up_at' => 'datetime',
+        'skip_trace_checked_at' => 'datetime',
+        'sms_opt_in' => 'boolean',
     ];
 
     public function client()
@@ -62,6 +96,16 @@ class RecoveryAccount extends Model
     public function activities()
     {
         return $this->hasMany(RecoveryActivity::class)->latest('activity_at');
+    }
+
+    public function skipTraceChecks()
+    {
+        return $this->hasMany(RecoverySkipTraceCheck::class)->latest('checked_at');
+    }
+
+    public function promiseReminderLogs()
+    {
+        return $this->hasMany(RecoveryPromiseReminderLog::class)->latest('scheduled_for');
     }
 
     public function getNetOutstandingBalanceAttribute(): float
@@ -110,5 +154,20 @@ class RecoveryAccount extends Model
     public function statusLabel(): string
     {
         return self::STATUSES[$this->status] ?? ucfirst((string) $this->status);
+    }
+
+    public function pipelineStageLabel(): string
+    {
+        return self::PIPELINE_STAGES[$this->pipeline_stage] ?? str($this->pipeline_stage)->headline()->toString();
+    }
+
+    public function priorityLabel(): string
+    {
+        return self::PRIORITIES[$this->priority] ?? str($this->priority)->headline()->toString();
+    }
+
+    public function skipTraceStatusLabel(): string
+    {
+        return self::SKIP_TRACE_STATUSES[$this->skip_trace_status] ?? str($this->skip_trace_status)->headline()->toString();
     }
 }

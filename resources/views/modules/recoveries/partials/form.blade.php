@@ -29,6 +29,26 @@
     </label>
 
     <label>
+        <span>Pipeline Stage</span>
+        <select name="pipeline_stage" required>
+            @foreach (\App\Models\RecoveryAccount::PIPELINE_STAGES as $value => $label)
+                <option value="{{ $value }}" @selected(old('pipeline_stage', $account?->pipeline_stage ?? 'new') === $value)>{{ $label }}</option>
+            @endforeach
+        </select>
+        @error('pipeline_stage') <small>{{ $message }}</small> @enderror
+    </label>
+
+    <label>
+        <span>Priority</span>
+        <select name="priority" required>
+            @foreach (\App\Models\RecoveryAccount::PRIORITIES as $value => $label)
+                <option value="{{ $value }}" @selected(old('priority', $account?->priority ?? 'normal') === $value)>{{ $label }}</option>
+            @endforeach
+        </select>
+        @error('priority') <small>{{ $message }}</small> @enderror
+    </label>
+
+    <label>
         <span>Portfolio Type</span>
         <select name="portfolio_type">
             <option value="">Select configured portfolio</option>
@@ -67,6 +87,18 @@
     </label>
 
     <label>
+        <span>Alternate Phone</span>
+        <input type="text" name="alternate_phone" value="{{ old('alternate_phone', $account?->alternate_phone) }}" maxlength="50">
+        @error('alternate_phone') <small>{{ $message }}</small> @enderror
+    </label>
+
+    <label>
+        <span>WhatsApp Number</span>
+        <input type="text" name="whatsapp_number" value="{{ old('whatsapp_number', $account?->whatsapp_number) }}" maxlength="50">
+        @error('whatsapp_number') <small>{{ $message }}</small> @enderror
+    </label>
+
+    <label>
         <span>Email</span>
         <input type="email" name="email" value="{{ old('email', $account?->email) }}" maxlength="191">
         @error('email') <small>{{ $message }}</small> @enderror
@@ -76,6 +108,24 @@
         <span>Employer</span>
         <input type="text" name="employer" value="{{ old('employer', $account?->employer) }}" maxlength="191">
         @error('employer') <small>{{ $message }}</small> @enderror
+    </label>
+
+    <label>
+        <span>NIN</span>
+        <input type="text" name="nin" value="{{ old('nin', $account?->nin) }}" maxlength="100">
+        @error('nin') <small>{{ $message }}</small> @enderror
+    </label>
+
+    <label>
+        <span>NSSF Number</span>
+        <input type="text" name="nssf_number" value="{{ old('nssf_number', $account?->nssf_number) }}" maxlength="100">
+        @error('nssf_number') <small>{{ $message }}</small> @enderror
+    </label>
+
+    <label>
+        <span>CRB Reference</span>
+        <input type="text" name="crb_reference" value="{{ old('crb_reference', $account?->crb_reference) }}" maxlength="100">
+        @error('crb_reference') <small>{{ $message }}</small> @enderror
     </label>
 
     <label>
@@ -119,6 +169,12 @@
         <span>Days Past Due</span>
         <input type="number" min="0" name="days_past_due" value="{{ old('days_past_due', $account?->days_past_due) }}">
         @error('days_past_due') <small>{{ $message }}</small> @enderror
+    </label>
+
+    <label>
+        <span>Next Follow-up</span>
+        <input type="datetime-local" name="next_follow_up_at" value="{{ old('next_follow_up_at', $account?->next_follow_up_at?->format('Y-m-d\\TH:i')) }}">
+        @error('next_follow_up_at') <small>{{ $message }}</small> @enderror
     </label>
 
     <label>
@@ -171,6 +227,31 @@
         <span>Cause of Default / Comments</span>
         <textarea name="cause_of_default" rows="3">{{ old('cause_of_default', $account?->cause_of_default) }}</textarea>
         @error('cause_of_default') <small>{{ $message }}</small> @enderror
+    </label>
+
+    <label>
+        <span>Skip-trace Status</span>
+        <select name="skip_trace_status" required>
+            @foreach (\App\Models\RecoveryAccount::SKIP_TRACE_STATUSES as $value => $label)
+                <option value="{{ $value }}" @selected(old('skip_trace_status', $account?->skip_trace_status ?? 'not_started') === $value)>{{ $label }}</option>
+            @endforeach
+        </select>
+        @error('skip_trace_status') <small>{{ $message }}</small> @enderror
+    </label>
+
+    <label>
+        <span>SMS reminders</span>
+        <select name="sms_opt_in">
+            <option value="1" @selected(old('sms_opt_in', $account?->sms_opt_in ?? true))>Allowed</option>
+            <option value="0" @selected(! old('sms_opt_in', $account?->sms_opt_in ?? true))>Do not send</option>
+        </select>
+        @error('sms_opt_in') <small>{{ $message }}</small> @enderror
+    </label>
+
+    <label class="kfms-span-2">
+        <span>Skip-trace Notes</span>
+        <textarea name="skip_trace_notes" rows="2" maxlength="2000">{{ old('skip_trace_notes', $account?->skip_trace_notes) }}</textarea>
+        @error('skip_trace_notes') <small>{{ $message }}</small> @enderror
     </label>
 
     @if ($includeAssignment)

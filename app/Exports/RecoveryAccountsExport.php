@@ -32,6 +32,7 @@ class RecoveryAccountsExport implements FromQuery, WithHeadings, WithMapping, Wi
             ->when($this->filters['client'] ?? null, fn (Builder $query, $client) => $query->where('recovery_client_id', $client))
             ->when($this->filters['officer'] ?? null, fn (Builder $query, $officer) => $query->where('assigned_to', $officer))
             ->when($this->filters['portfolio_type'] ?? null, fn (Builder $query, string $portfolio) => $query->where('portfolio_type', $portfolio))
+            ->when($this->filters['pipeline_stage'] ?? null, fn (Builder $query, string $stage) => $query->where('pipeline_stage', $stage))
             ->latest();
     }
 
@@ -44,7 +45,12 @@ class RecoveryAccountsExport implements FromQuery, WithHeadings, WithMapping, Wi
             'Account Number',
             'Customer Number',
             'Debtor Phone',
+            'Alternate Phone',
+            'WhatsApp Number',
             'Email',
+            'NIN',
+            'NSSF Number',
+            'CRB Reference',
             'Employer',
             'Branch Name',
             'Region',
@@ -57,6 +63,11 @@ class RecoveryAccountsExport implements FromQuery, WithHeadings, WithMapping, Wi
             'Recovered',
             'Currency',
             'Bucket',
+            'Pipeline Stage',
+            'Priority',
+            'Next Follow-up',
+            'Skip-trace Status',
+            'SMS Opt-in',
             'Status',
             'Import Batch',
             'Created On',
@@ -75,7 +86,12 @@ class RecoveryAccountsExport implements FromQuery, WithHeadings, WithMapping, Wi
             $account->account_number,
             $account->customer_number,
             $account->phone,
+            $account->alternate_phone,
+            $account->whatsapp_number,
             $account->email,
+            $account->nin,
+            $account->nssf_number,
+            $account->crb_reference,
             $account->employer,
             $account->branch_name,
             $account->region,
@@ -88,6 +104,11 @@ class RecoveryAccountsExport implements FromQuery, WithHeadings, WithMapping, Wi
             (float) $account->amount_recovered,
             $account->currency,
             $account->bucket,
+            $account->pipelineStageLabel(),
+            $account->priorityLabel(),
+            optional($account->next_follow_up_at)->format('Y-m-d H:i'),
+            $account->skipTraceStatusLabel(),
+            $account->sms_opt_in ? 'Yes' : 'No',
             $account->statusLabel(),
             $account->importBatch?->source_file,
             optional($account->created_at)->format('Y-m-d'),

@@ -228,6 +228,7 @@ Route::middleware([
         Route::patch('/recoveries/imports/{batch}/assign', [RecoveryController::class, 'assignBatch'])->name('recoveries.batches.assign');
         Route::get('/recoveries/reports', [RecoveryReportController::class, 'index'])->name('recoveries.reports');
         Route::get('/recoveries/reports/export', [RecoveryReportController::class, 'export'])->name('recoveries.export');
+        Route::post('/recoveries/reminders/send', [RecoveryController::class, 'sendPromiseReminders'])->name('recoveries.reminders.send');
         Route::get('/recoveries/create', [RecoveryController::class, 'create'])->name('recoveries.create');
         Route::post('/recoveries', [RecoveryController::class, 'store'])->name('recoveries.store');
         Route::get('/recoveries/{recovery}', [RecoveryController::class, 'show'])->name('recoveries.show');
@@ -237,6 +238,7 @@ Route::middleware([
         Route::patch('/recoveries/{recovery}/assignment', [RecoveryController::class, 'updateAssignment'])->name('recoveries.assignment.update');
         Route::delete('/recoveries/{recovery}', [RecoveryController::class, 'destroy'])->name('recoveries.destroy');
         Route::post('/recoveries/{recovery}/activities', [RecoveryActivityController::class, 'store'])->name('recoveries.activities.store');
+        Route::post('/recoveries/{recovery}/skip-trace', [RecoveryController::class, 'storeSkipTrace'])->name('recoveries.skip-trace.store');
         Route::get('/land-titles/dashboard', [LandTitleController::class, 'dashboard'])->name('land-titles.dashboard');
         Route::get('/land-titles/dashboard/export/{section}', [LandTitleController::class, 'dashboardExport'])->name('land-titles.dashboard.export');
         Route::get('/land-titles', [LandTitleController::class, 'index'])->name('land-titles.index');

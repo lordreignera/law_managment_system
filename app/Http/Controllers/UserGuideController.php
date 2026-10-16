@@ -314,8 +314,10 @@ class UserGuideController extends Controller
             'steps' => [
                 'Add banks or portfolio categories before importing recovery accounts.',
                 'Import portfolios, review batches, and assign accounts to recovery officers.',
-                'Monitor net outstanding balances, recovered totals, and officer workload from the dashboard.',
-                'Use reports to filter, export, and compare daily, weekly, and monthly collections.',
+                'Monitor net outstanding balances, recovered totals, officer workload, and the recovery pipeline from the dashboard.',
+                'Use reports to filter, export, and compare daily, weekly, and monthly collections by bank, client, and officer.',
+                'Record promise dates so the scheduled reminder job can send due SMS messages where the debtor has opted in.',
+                'Review skip-trace results for NIN, NSSF, CRB, and WhatsApp checks on each account.',
             ],
         ];
     }
@@ -330,6 +332,7 @@ class UserGuideController extends Controller
                 'Open My Recoveries to see only the accounts assigned to you.',
                 'Use Report Activity after a call, visit, promise, payment, or other follow-up.',
                 'When a client pays, enter the amount paid and upload the receipt so the outstanding balance reduces.',
+                'Keep the pipeline stage, priority, and next follow-up date current after every contact.',
                 'Use the daily, weekly, and monthly reports to review your collection performance.',
             ],
         ];

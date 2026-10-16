@@ -21,7 +21,12 @@ class RecoveryPortfolioMapper
         'customer_number' => ['cif_id', 'customer_number', 'customer_id', 'cif'],
         'operative_account' => ['operative_accounts', 'operative_account', 'operative_account_number'],
         'phone' => ['contacts', 'contact', 'phone', 'preferred_phone_number', 'telephone'],
+        'alternate_phone' => ['alternate_phone', 'alternative_phone', 'next_of_kin_phone'],
+        'whatsapp_number' => ['whatsapp', 'whatsapp_number'],
         'email' => ['email'],
+        'nin' => ['nin', 'national_id', 'nin_number'],
+        'nssf_number' => ['nssf', 'nssf_number'],
+        'crb_reference' => ['crb', 'crb_reference', 'crb_number'],
         'employer' => ['employer', 'employer_name', 'business_employer_name'],
         'branch_name' => ['branch', 'branch_name', 'operative_account_branch_name'],
         'region' => ['region', 'region_name'],
@@ -36,6 +41,8 @@ class RecoveryPortfolioMapper
         'days_past_due' => ['dpd_count', 'days_past_due'],
         'collateral_held' => ['collateral_held'],
         'cause_of_default' => ['cause_of_default'],
+        'pipeline_stage' => ['pipeline_stage', 'stage'],
+        'priority' => ['priority', 'risk_priority'],
     ];
 
     private const PORTFOLIO_OVERRIDES = [
@@ -92,7 +99,12 @@ class RecoveryPortfolioMapper
             'customer_number' => $this->text($this->value($normalized, 'customer_number', $portfolioKey)),
             'debtor_name' => $this->text($this->value($normalized, 'debtor_name', $portfolioKey)),
             'phone' => $this->text($this->value($normalized, 'phone', $portfolioKey)),
+            'alternate_phone' => $this->text($this->value($normalized, 'alternate_phone', $portfolioKey)),
+            'whatsapp_number' => $this->text($this->value($normalized, 'whatsapp_number', $portfolioKey)),
             'email' => $this->email($this->value($normalized, 'email', $portfolioKey)),
+            'nin' => $this->text($this->value($normalized, 'nin', $portfolioKey)),
+            'nssf_number' => $this->text($this->value($normalized, 'nssf_number', $portfolioKey)),
+            'crb_reference' => $this->text($this->value($normalized, 'crb_reference', $portfolioKey)),
             'employer' => $this->text($this->value($normalized, 'employer', $portfolioKey)),
             'branch_name' => $this->text($this->value($normalized, 'branch_name', $portfolioKey)),
             'region' => $this->text($this->value($normalized, 'region', $portfolioKey)),
@@ -106,6 +118,8 @@ class RecoveryPortfolioMapper
             'amount_recovered' => $this->money($this->value($normalized, 'amount_recovered', $portfolioKey)),
             'currency' => $this->text($this->value($normalized, 'currency', $portfolioKey)) ?: 'UGX',
             'bucket' => $this->text($this->value($normalized, 'bucket', $portfolioKey)),
+            'pipeline_stage' => $this->enum($this->value($normalized, 'pipeline_stage', $portfolioKey), ['new', 'contact_pending', 'engaged', 'promise_to_pay', 'field_visit', 'legal_review', 'recovered', 'untraceable', 'closed'], 'new'),
+            'priority' => $this->enum($this->value($normalized, 'priority', $portfolioKey), ['low', 'normal', 'high', 'urgent'], 'normal'),
             'collateral_held' => $this->text($this->value($normalized, 'collateral_held', $portfolioKey)),
             'cause_of_default' => $this->text($this->value($normalized, 'cause_of_default', $portfolioKey)),
             'status' => 'active',
@@ -195,6 +209,13 @@ class RecoveryPortfolioMapper
         $money = $this->money($value);
 
         return $money > 0 ? (int) $money : null;
+    }
+
+    private function enum($value, array $allowed, string $default): string
+    {
+        $value = $this->text($value);
+
+        return $value && in_array(strtolower($value), $allowed, true) ? strtolower($value) : $default;
     }
 
     private function money($value): float

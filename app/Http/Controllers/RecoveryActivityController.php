@@ -17,6 +17,12 @@ class RecoveryActivityController extends Controller
      */
     public function store(Request $request, RecoveryAccount $recovery)
     {
+        abort_unless(RecoveryAccount::forBranchOf($request->user())->whereKey($recovery->id)->exists(), 403);
+
+        if ($request->user()->hasRole('Recovery Officer') && $recovery->assigned_to !== $request->user()->id) {
+            abort(403, 'Only the assigned recovery officer can log activity for this account.');
+        }
+
         abort_if($recovery->status !== 'active' || $recovery->settled_externally_at, 422, 'This recovery account is closed and cannot receive another activity.');
 
         $request->merge([
@@ -31,6 +37,7 @@ class RecoveryActivityController extends Controller
             'amount_paid' => [Rule::requiredIf($request->input('response_outcome') === 'paid'), 'nullable', 'numeric', 'min:0.01'],
             'promised_amount' => [Rule::requiredIf($request->input('response_outcome') === 'promised'), 'nullable', 'numeric', 'min:0.01'],
             'promised_on' => [Rule::requiredIf($request->input('response_outcome') === 'promised'), 'nullable', 'date'],
+            'next_follow_up_at' => ['nullable', 'date'],
             'receipt' => [Rule::requiredIf($request->input('response_outcome') === 'paid'), 'nullable', 'file', 'max:10240', 'mimes:pdf,jpg,jpeg,png,webp'],
             'notes' => ['required', 'string', 'max:2000'],
         ]);
@@ -44,6 +51,10 @@ class RecoveryActivityController extends Controller
             $data['amount_paid'] = null;
             $data['promised_amount'] = null;
             $data['promised_on'] = null;
+        }
+
+        if ($data['response_outcome'] !== 'promised') {
+            $data['next_follow_up_at'] = $data['next_follow_up_at'] ?? null;
         }
 
         if ($data['response_outcome'] === 'fully_repaid') {
@@ -62,7 +73,7 @@ class RecoveryActivityController extends Controller
         $data['user_id'] = $request->user()->id;
         unset($data['receipt']);
 
-        DB::transaction(function () use ($data, $request, $recovery) {
+        DB::transaction(function () use ($data, $request, $recovery, $amountPaid, $netOutstanding) {
             $activity = $recovery->activities()->create($data);
 
             if ($request->hasFile('receipt')) {
@@ -72,10 +83,30 @@ class RecoveryActivityController extends Controller
                 ]);
             }
 
-            if ($data['response_outcome'] === 'fully_repaid') {
-                $recovery->forceFill([
+            $fullySettled = $data['response_outcome'] === 'fully_repaid'
+                || ($data['response_outcome'] === 'paid' && $amountPaid >= $netOutstanding);
+
+            if ($fullySettled) {
+                $settlement = [
                     'status' => 'closed',
-                    'settled_externally_at' => now(),
+                    'pipeline_stage' => $data['response_outcome'] === 'paid' ? 'recovered' : 'closed',
+                    'last_contact_at' => $data['activity_at'],
+                    'next_follow_up_at' => null,
+                ];
+                if ($data['response_outcome'] === 'fully_repaid') {
+                    $settlement['settled_externally_at'] = now();
+                }
+                $recovery->forceFill($settlement)->save();
+            } else {
+                $recovery->forceFill([
+                    'last_contact_at' => $data['activity_at'],
+                    'next_follow_up_at' => $data['next_follow_up_at'] ?? ($data['promised_on'] ?? null),
+                    'pipeline_stage' => match ($data['response_outcome']) {
+                        'promised' => 'promise_to_pay',
+                        'needs_follow_up' => 'contact_pending',
+                        'disputed' => 'legal_review',
+                        default => 'engaged',
+                    },
                 ])->save();
             }
 

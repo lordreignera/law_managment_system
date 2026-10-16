@@ -34,7 +34,7 @@ class RecoveryAccountsImport implements ToCollection, WithHeadingRow
         private ?int $assignedTo = null,
         private bool $matchCollector = false,
     ) {
-        $this->collectorOfficerMap = User::role('Recovery Officer')
+        $this->collectorOfficerMap = User::whereHas('roles', fn ($query) => $query->where('name', 'Recovery Officer'))
             ->get(['id', 'name', 'branch_id'])
             ->mapWithKeys(fn (User $officer) => [strtolower(trim($officer->name)) => $officer])
             ->all();

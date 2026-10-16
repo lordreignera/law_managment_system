@@ -122,7 +122,12 @@
                     <div><dt>Bank / Client</dt><dd>{{ $account->client?->name ?: '-' }}</dd></div>
                     <div><dt>Customer Number</dt><dd>{{ $account->customer_number ?: '-' }}</dd></div>
                     <div><dt>Debtor Phone</dt><dd>{{ $account->phone ?: '-' }}</dd></div>
+                    <div><dt>Alternate Phone</dt><dd>{{ $account->alternate_phone ?: '-' }}</dd></div>
+                    <div><dt>WhatsApp</dt><dd>{{ $account->whatsapp_number ?: '-' }}</dd></div>
                     <div><dt>Email</dt><dd>{{ $account->email ?: '-' }}</dd></div>
+                    <div><dt>NIN</dt><dd>{{ $account->nin ?: '-' }}</dd></div>
+                    <div><dt>NSSF Number</dt><dd>{{ $account->nssf_number ?: '-' }}</dd></div>
+                    <div><dt>CRB Reference</dt><dd>{{ $account->crb_reference ?: '-' }}</dd></div>
                     <div><dt>Employer</dt><dd>{{ $account->employer ?: '-' }}</dd></div>
                     <div><dt>Branch Name</dt><dd>{{ $account->branch_name ?: '-' }}</dd></div>
                     <div><dt>Region</dt><dd>{{ $account->region ?: '-' }}</dd></div>
@@ -147,6 +152,11 @@
                     </div>
                     <div><dt>Portfolio Type</dt><dd>{{ $account->portfolio_type ?: '-' }}</dd></div>
                     <div><dt>Bucket</dt><dd>{{ $account->bucket ?: '-' }}</dd></div>
+                    <div><dt>Pipeline Stage</dt><dd>{{ $account->pipelineStageLabel() }}</dd></div>
+                    <div><dt>Priority</dt><dd>{{ $account->priorityLabel() }}</dd></div>
+                    <div><dt>Last Contact</dt><dd>{{ $account->last_contact_at?->format('d M Y, H:i') ?: '-' }}</dd></div>
+                    <div><dt>Next Follow-up</dt><dd>{{ $account->next_follow_up_at?->format('d M Y, H:i') ?: '-' }}</dd></div>
+                    <div><dt>SMS reminders</dt><dd>{{ $account->sms_opt_in ? 'Allowed' : 'Disabled' }}</dd></div>
                     <div><dt>Imported From</dt><dd>{{ $account->importBatch?->source_file ?: 'Manual entry' }}</dd></div>
                     <div><dt>Original Collector</dt><dd>{{ $account->collector_name ?: '-' }}</dd></div>
                     @if ($account->settled_externally_at)
@@ -161,10 +171,45 @@
                     <div><dt>Arrears</dt><dd>{{ $currency }} {{ number_format((float) $account->arrears_amount, 2) }}</dd></div>
                     <div><dt>Collateral Held</dt><dd>{{ $account->collateral_held ?: '-' }}</dd></div>
                     <div><dt>Cause of Default</dt><dd>{{ $account->cause_of_default ?: '-' }}</dd></div>
+                    <div><dt>Skip-trace Status</dt><dd>{{ $account->skipTraceStatusLabel() }}</dd></div>
+                    <div><dt>Skip-trace Checked</dt><dd>{{ $account->skip_trace_checked_at?->format('d M Y, H:i') ?: '-' }}</dd></div>
+                    <div><dt>Skip-trace Notes</dt><dd>{{ $account->skip_trace_notes ?: '-' }}</dd></div>
                 </dl>
             </div>
         </section>
 
+    </div>
+
+    <div class="kfms-recovery-layout kfms-recovery-layout-single">
+        @can('recoveries.skip-trace.store')
+            <section class="kfms-panel">
+                <div class="kfms-panel-header">
+                    <div><h2>Skip Trace</h2><span>Record NIN, NSSF, CRB, or WhatsApp checks and their outcome.</span></div>
+                </div>
+                <form class="kfms-form" method="POST" action="{{ route('recoveries.skip-trace.store', $account) }}">
+                    @csrf
+                    <div class="kfms-form-grid">
+                        <label><span>Source</span><select name="provider" required>@foreach (['manual' => 'Manual Check', 'nin' => 'NIN', 'nssf' => 'NSSF', 'crb' => 'CRB', 'whatsapp' => 'WhatsApp'] as $value => $label)<option value="{{ $value }}">{{ $label }}</option>@endforeach</select></label>
+                        <label><span>Outcome</span><select name="status" required>@foreach (['pending' => 'Pending', 'in_progress' => 'In Progress', 'found' => 'Found', 'not_found' => 'Not Found', 'failed' => 'Failed'] as $value => $label)<option value="{{ $value }}">{{ $label }}</option>@endforeach</select></label>
+                        <label><span>NIN</span><input type="text" name="nin" value="{{ old('nin') }}"></label>
+                        <label><span>NSSF Number</span><input type="text" name="nssf_number" value="{{ old('nssf_number') }}"></label>
+                        <label><span>CRB Reference</span><input type="text" name="crb_reference" value="{{ old('crb_reference') }}"></label>
+                        <label><span>WhatsApp Number</span><input type="text" name="whatsapp_number" value="{{ old('whatsapp_number') }}"></label>
+                        <label class="kfms-span-2"><span>Result Notes</span><textarea name="notes" rows="3" maxlength="2000">{{ old('notes') }}</textarea></label>
+                    </div>
+                    <div class="kfms-form-actions"><button class="kfms-btn" type="submit"><i class="mdi mdi-map-search-outline"></i> Record Check</button></div>
+                </form>
+                <div class="kfms-table-wrap">
+                    <table class="kfms-table"><thead><tr><th>Checked</th><th>Source</th><th>Outcome</th><th>By</th><th>Notes</th></tr></thead><tbody>
+                        @forelse ($account->skipTraceChecks as $check)
+                            <tr><td>{{ $check->checked_at?->format('d M Y, H:i') ?: '-' }}</td><td>{{ str($check->provider)->upper() }}</td><td>{{ str($check->status)->headline() }}</td><td>{{ $check->checker?->name ?: '-' }}</td><td>{{ $check->notes ?: '-' }}</td></tr>
+                        @empty
+                            <tr><td colspan="5" class="kfms-empty">No skip-trace checks recorded.</td></tr>
+                        @endforelse
+                    </tbody></table>
+                </div>
+            </section>
+        @endcan
     </div>
 
     <section class="kfms-panel">
@@ -187,6 +232,7 @@
                         <th>Receipt</th>
                         <th>Promised</th>
                         <th>By</th>
+                        <th>Promise SMS</th>
                         <th>Notes</th>
                     </tr>
                 </thead>
@@ -207,11 +253,12 @@
                             </td>
                             <td>{{ $activity->promised_amount ? $currency.' '.number_format($activity->promised_amount, 2).($activity->promised_on ? ' by '.$activity->promised_on->format('d M') : '') : '-' }}</td>
                             <td>{{ $activity->user?->name ?: '-' }}</td>
+                            <td>{{ $activity->promiseReminderLogs->first()?->status ? str($activity->promiseReminderLogs->first()->status)->headline() : '-' }}</td>
                             <td>{{ $activity->notes }}</td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="9" class="kfms-empty">No follow-ups logged yet.</td>
+                            <td colspan="10" class="kfms-empty">No follow-ups logged yet.</td>
                         </tr>
                     @endforelse
                 </tbody>

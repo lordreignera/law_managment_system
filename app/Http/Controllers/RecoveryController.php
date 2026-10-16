@@ -10,7 +10,9 @@ use App\Models\RecoveryAccount;
 use App\Models\RecoveryActivity;
 use App\Models\RecoveryClient;
 use App\Models\RecoveryImportBatch;
+use App\Models\RecoverySkipTraceCheck;
 use App\Models\User;
+use App\Support\Recoveries\RecoveryPromiseReminderService;
 use App\Support\Recoveries\RecoveryReferenceData;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\Eloquent\Builder;
@@ -25,22 +27,29 @@ class RecoveryController extends Controller
     {
         $base = RecoveryAccount::query()->forBranchOf($request->user());
 
-        $clientRows = RecoveryClient::withCount('accounts')
-            ->withSum(['accounts as outstanding_total' => fn (Builder $query) => $query->whereNull('settled_externally_at')], 'outstanding_amount')
-            ->withSum(['accounts as recovered_for_outstanding' => fn (Builder $query) => $query->whereNull('settled_externally_at')], 'amount_recovered')
-            ->withSum('accounts as recovered_total', 'amount_recovered')
+        $clientRows = RecoveryClient::withCount(['accounts' => fn (Builder $query) => $query->forBranchOf($request->user())])
+            ->withSum(['accounts as outstanding_total' => fn (Builder $query) => $query->forBranchOf($request->user())->whereNull('settled_externally_at')], 'outstanding_amount')
+            ->withSum(['accounts as recovered_for_outstanding' => fn (Builder $query) => $query->forBranchOf($request->user())->whereNull('settled_externally_at')], 'amount_recovered')
+            ->withSum(['accounts as recovered_total' => fn (Builder $query) => $query->forBranchOf($request->user())], 'amount_recovered')
             ->orderBy('name')
             ->get();
 
-        $officerRows = User::role('Recovery Officer')
-            ->withCount(['assignedRecoveries as active_recoveries_count' => fn (Builder $query) => $query->where('status', 'active')])
-            ->withSum(['assignedRecoveries as outstanding_total' => fn (Builder $query) => $query->whereNull('settled_externally_at')], 'outstanding_amount')
-            ->withSum(['assignedRecoveries as recovered_for_outstanding' => fn (Builder $query) => $query->whereNull('settled_externally_at')], 'amount_recovered')
-            ->withSum('assignedRecoveries as recovered_total', 'amount_recovered')
+        $officerRows = User::whereHas('roles', fn ($query) => $query->where('name', 'Recovery Officer'))
+            ->withCount(['assignedRecoveries as active_recoveries_count' => fn (Builder $query) => $query->forBranchOf($request->user())->where('status', 'active')])
+            ->withSum(['assignedRecoveries as outstanding_total' => fn (Builder $query) => $query->forBranchOf($request->user())->whereNull('settled_externally_at')], 'outstanding_amount')
+            ->withSum(['assignedRecoveries as recovered_for_outstanding' => fn (Builder $query) => $query->forBranchOf($request->user())->whereNull('settled_externally_at')], 'amount_recovered')
+            ->withSum(['assignedRecoveries as recovered_total' => fn (Builder $query) => $query->forBranchOf($request->user())], 'amount_recovered')
             ->orderBy('name')
             ->get();
 
         $unsettled = (clone $base)->whereNull('settled_externally_at');
+        $pipelineRows = (clone $base)->get()->groupBy('pipeline_stage')->map(fn ($group, $stage) => [
+            'stage' => $stage,
+            'label' => RecoveryAccount::PIPELINE_STAGES[$stage] ?? str($stage)->headline()->toString(),
+            'accounts' => $group->count(),
+            'outstanding' => (float) $group->sum(fn (RecoveryAccount $account) => $account->net_outstanding_balance),
+            'priority' => $group->whereIn('priority', ['high', 'urgent'])->count(),
+        ])->sortByDesc('outstanding')->values();
 
         return view('modules.recoveries.dashboard', [
             'summary' => [
@@ -50,10 +59,27 @@ class RecoveryController extends Controller
                 'outstanding' => max((clone $unsettled)->sum('outstanding_amount') - (clone $unsettled)->sum('amount_recovered'), 0),
                 'recovered' => (clone $base)->sum('amount_recovered'),
             ],
-            'recentBatches' => RecoveryImportBatch::with(['client', 'uploader'])->latest()->take(6)->get(),
+            'recentBatches' => RecoveryImportBatch::with(['client', 'uploader'])
+                ->whereHas('accounts', fn (Builder $query) => $query->forBranchOf($request->user()))
+                ->latest()
+                ->take(6)
+                ->get(),
             'clientRows' => $clientRows,
             'officerRows' => $officerRows,
+            'pipelineRows' => $pipelineRows,
         ]);
+    }
+
+    public function sendPromiseReminders(Request $request, RecoveryPromiseReminderService $reminders)
+    {
+        $result = $reminders->sendDue(now()->startOfDay(), $request->user());
+
+        return back()->with('status', sprintf(
+            'Promise reminders processed: %d sent, %d skipped, %d failed.',
+            $result['sent'],
+            $result['skipped'],
+            $result['failed'],
+        ));
     }
 
     public function index(Request $request)
@@ -68,7 +94,8 @@ class RecoveryController extends Controller
             'clients' => RecoveryClient::orderBy('name')->get(['id', 'name']),
             'officers' => $this->recoveryOfficers(),
             'portfolioTypes' => $this->portfolioTypes(),
-            'filters' => $request->only(['search', 'status', 'client', 'officer', 'portfolio_type']),
+            'pipelineStages' => RecoveryAccount::PIPELINE_STAGES,
+            'filters' => $request->only(['search', 'status', 'client', 'officer', 'portfolio_type', 'pipeline_stage']),
         ]);
     }
 
@@ -241,6 +268,8 @@ class RecoveryController extends Controller
 
     public function batchShow(RecoveryImportBatch $batch)
     {
+        abort_unless($this->batchVisibleTo($batch, request()->user()), 403);
+
         $batch->load(['client', 'uploader'])
             ->loadCount('accounts')
             ->loadCount(['accounts as assigned_accounts_count' => fn (Builder $query) => $query->whereNotNull('assigned_to')]);
@@ -256,8 +285,10 @@ class RecoveryController extends Controller
 
     public function assignBatch(Request $request, RecoveryImportBatch $batch)
     {
+        abort_unless($this->batchVisibleTo($batch, $request->user()), 403);
+
         $data = $request->validate([
-            'assigned_to' => ['required', 'exists:users,id'],
+            'assigned_to' => ['required', Rule::in(User::whereHas('roles', fn ($query) => $query->where('name', 'Recovery Officer'))->pluck('id')->all())],
             'scope' => ['required', 'in:unassigned,all'],
         ]);
 
@@ -286,7 +317,7 @@ class RecoveryController extends Controller
     public function exportAccounts(Request $request)
     {
         return Excel::download(
-            new RecoveryAccountsExport($request->user(), $request->only(['search', 'status', 'client', 'officer', 'portfolio_type'])),
+            new RecoveryAccountsExport($request->user(), $request->only(['search', 'status', 'client', 'officer', 'portfolio_type', 'pipeline_stage'])),
             'recovery-accounts-'.now()->format('Ymd-His').'.xlsx'
         );
     }
@@ -309,7 +340,7 @@ class RecoveryController extends Controller
         abort_unless(RecoveryAccount::forBranchOf($request->user())->whereKey($recovery->id)->exists(), 403);
 
         return view('modules.recoveries.show', [
-            'account' => $recovery->load(['client', 'branch', 'assignee', 'assigner', 'importBatch', 'activities.user', 'activities.attachments']),
+            'account' => $recovery->load(['client', 'branch', 'assignee', 'assigner', 'importBatch', 'activities.user', 'activities.attachments', 'activities.promiseReminderLogs', 'promiseReminderLogs', 'skipTraceChecks.checker']),
             'activityTypes' => RecoveryActivity::TYPES,
             'canManage' => $request->user()->can('recoveries.update'),
         ]);
@@ -330,6 +361,8 @@ class RecoveryController extends Controller
 
     public function editAssignment(RecoveryAccount $recovery)
     {
+        abort_unless(RecoveryAccount::forBranchOf(request()->user())->whereKey($recovery->id)->exists(), 403);
+
         return view('modules.recoveries.assignment', [
             'account' => $recovery->load(['client', 'branch', 'assignee', 'assigner']),
             'branches' => Branch::where('is_active', true)->orderBy('name')->get(['id', 'name']),
@@ -340,7 +373,7 @@ class RecoveryController extends Controller
     public function update(Request $request, RecoveryAccount $recovery)
     {
         abort_unless(RecoveryAccount::forBranchOf($request->user())->whereKey($recovery->id)->exists(), 403);
-        $data = $this->validateAccount($request, false);
+        $data = $this->validateAccount($request, false, $recovery);
 
         $recovery->update($data);
 
@@ -351,8 +384,10 @@ class RecoveryController extends Controller
 
     public function updateAssignment(Request $request, RecoveryAccount $recovery)
     {
+        abort_unless(RecoveryAccount::forBranchOf($request->user())->whereKey($recovery->id)->exists(), 403);
+
         $data = $request->validate([
-            'assigned_to' => ['nullable', 'exists:users,id'],
+            'assigned_to' => ['nullable', Rule::in(User::whereHas('roles', fn ($query) => $query->where('name', 'Recovery Officer'))->pluck('id')->all())],
             'branch_id' => ['nullable', 'exists:branches,id'],
         ]);
 
@@ -367,6 +402,8 @@ class RecoveryController extends Controller
 
     public function destroy(RecoveryAccount $recovery)
     {
+        abort_unless(RecoveryAccount::forBranchOf(request()->user())->whereKey($recovery->id)->exists(), 403);
+
         $recovery->delete();
 
         return redirect()
@@ -374,12 +411,49 @@ class RecoveryController extends Controller
             ->with('status', 'Recovery account removed.');
     }
 
+    public function storeSkipTrace(Request $request, RecoveryAccount $recovery)
+    {
+        abort_unless(RecoveryAccount::forBranchOf($request->user())->whereKey($recovery->id)->exists(), 403);
+
+        $data = $request->validate([
+            'provider' => ['required', 'in:manual,nin,nssf,crb,whatsapp'],
+            'status' => ['required', 'in:pending,in_progress,found,not_found,failed'],
+            'nin' => ['nullable', 'string', 'max:100'],
+            'nssf_number' => ['nullable', 'string', 'max:100'],
+            'crb_reference' => ['nullable', 'string', 'max:100'],
+            'whatsapp_number' => ['nullable', 'string', 'max:50'],
+            'notes' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $data['recovery_account_id'] = $recovery->id;
+        $data['checked_by'] = $request->user()->id;
+        $data['checked_at'] = now();
+        $data['result'] = collect($data)->only(['nin', 'nssf_number', 'crb_reference', 'whatsapp_number'])->filter()->all();
+
+        RecoverySkipTraceCheck::create($data);
+
+        $accountData = [
+            'skip_trace_status' => $data['status'],
+            'skip_trace_checked_at' => now(),
+            'skip_trace_notes' => $data['notes'] ?? null,
+        ];
+        foreach (['nin', 'nssf_number', 'crb_reference', 'whatsapp_number'] as $field) {
+            $value = $request->input($field);
+            if ($value !== null && $value !== '') {
+                $accountData[$field] = $value;
+            }
+        }
+        $recovery->update($accountData);
+
+        return back()->with('status', 'Skip-trace check recorded.');
+    }
+
     /**
      * Users who hold the Recovery Officer role, eligible for assignment.
      */
     private function recoveryOfficers()
     {
-        return User::role('Recovery Officer')
+        return User::whereHas('roles', fn ($query) => $query->where('name', 'Recovery Officer'))
             ->with('branch')
             ->orderBy('name')
             ->get(['id', 'name', 'branch_id']);
@@ -532,6 +606,10 @@ class RecoveryController extends Controller
         $previousAssignee = $existing?->assigned_to;
 
         if ($assignedTo && $assignedTo != $previousAssignee) {
+            $officer = User::whereKey($assignedTo)
+                ->whereHas('roles', fn ($query) => $query->where('name', 'Recovery Officer'))
+                ->first();
+            abort_unless($officer, 422, 'Only users with the Recovery Officer role can be assigned recovery work.');
             $data['assigned_by'] = $request->user()->id;
             $data['assigned_at'] = now();
         }
@@ -544,15 +622,27 @@ class RecoveryController extends Controller
         return $data;
     }
 
-    private function validateAccount(Request $request, bool $includeAssignment = true): array
+    private function validateAccount(Request $request, bool $includeAssignment = true, ?RecoveryAccount $existing = null): array
     {
+        $request->merge([
+            'pipeline_stage' => $request->input('pipeline_stage', $existing?->pipeline_stage ?: 'new'),
+            'priority' => $request->input('priority', $existing?->priority ?: 'normal'),
+            'skip_trace_status' => $request->input('skip_trace_status', $existing?->skip_trace_status ?: 'not_started'),
+            'sms_opt_in' => $request->has('sms_opt_in') ? $request->boolean('sms_opt_in') : ($existing?->sms_opt_in ?? true),
+        ]);
+
         $rules = [
             'recovery_client_id' => ['required', Rule::exists('recovery_clients', 'id')->where('is_active', true)],
             'debtor_name' => ['required', 'string', 'max:191'],
             'account_number' => ['nullable', 'string', 'max:100'],
             'customer_number' => ['nullable', 'string', 'max:100'],
             'phone' => ['nullable', 'string', 'max:50'],
+            'alternate_phone' => ['nullable', 'string', 'max:50'],
+            'whatsapp_number' => ['nullable', 'string', 'max:50'],
             'email' => ['nullable', 'email', 'max:191'],
+            'nin' => ['nullable', 'string', 'max:100'],
+            'nssf_number' => ['nullable', 'string', 'max:100'],
+            'crb_reference' => ['nullable', 'string', 'max:100'],
             'employer' => ['nullable', 'string', 'max:191'],
             'branch_name' => ['nullable', 'string', 'max:191'],
             'region' => ['nullable', 'string', 'max:191'],
@@ -566,6 +656,13 @@ class RecoveryController extends Controller
             'outstanding_amount' => ['nullable', 'numeric', 'min:0'],
             'currency' => ['nullable', 'string', 'max:10'],
             'bucket' => ['nullable', 'string', 'max:100'],
+            'pipeline_stage' => ['required', Rule::in(array_keys(RecoveryAccount::PIPELINE_STAGES))],
+            'priority' => ['required', Rule::in(array_keys(RecoveryAccount::PRIORITIES))],
+            'last_contact_at' => ['nullable', 'date'],
+            'next_follow_up_at' => ['nullable', 'date'],
+            'skip_trace_status' => ['required', Rule::in(array_keys(RecoveryAccount::SKIP_TRACE_STATUSES))],
+            'skip_trace_notes' => ['nullable', 'string', 'max:2000'],
+            'sms_opt_in' => ['nullable', 'boolean'],
             'collateral_held' => ['nullable', 'string', 'max:2000'],
             'cause_of_default' => ['nullable', 'string', 'max:2000'],
             'status' => ['required', 'in:'.implode(',', array_keys(RecoveryAccount::STATUSES))],
@@ -579,6 +676,12 @@ class RecoveryController extends Controller
         $data = $request->validate($rules);
 
         return RecoveryReferenceData::validate($data, RecoveryClient::findOrFail($data['recovery_client_id']));
+    }
+
+    private function batchVisibleTo(RecoveryImportBatch $batch, User $user): bool
+    {
+        return $user->canSeeAllBranches()
+            || $batch->accounts()->forBranchOf($user)->exists();
     }
 
     private function filteredAccountsQuery(Request $request): Builder
@@ -600,7 +703,8 @@ class RecoveryController extends Controller
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')->toString()))
             ->when($request->filled('client'), fn ($query) => $query->where('recovery_client_id', $request->integer('client')))
             ->when($request->filled('officer'), fn ($query) => $query->where('assigned_to', $request->integer('officer')))
-            ->when($request->filled('portfolio_type'), fn ($query) => $query->where('portfolio_type', $request->string('portfolio_type')->toString()));
+            ->when($request->filled('portfolio_type'), fn ($query) => $query->where('portfolio_type', $request->string('portfolio_type')->toString()))
+            ->when($request->filled('pipeline_stage'), fn ($query) => $query->where('pipeline_stage', $request->string('pipeline_stage')->toString()));
     }
 
     private function portfolioTypes(): array

@@ -71,7 +71,7 @@ class RecoveryReportController extends Controller
             [$dateFrom, $dateTo] = [$dateTo->copy()->startOfDay(), $dateFrom->copy()->endOfDay()];
         }
 
-        $grain = in_array($request->string('grain')->toString(), ['daily', 'weekly'], true)
+        $grain = in_array($request->string('grain')->toString(), ['daily', 'weekly', 'monthly'], true)
             ? $request->string('grain')->toString()
             : 'weekly';
 
@@ -82,6 +82,7 @@ class RecoveryReportController extends Controller
         $filteredAccounts = $accounts
             ->when($request->filled('client'), fn ($accounts) => $accounts->where('recovery_client_id', $request->integer('client')))
             ->when($request->filled('officer'), fn ($accounts) => $accounts->where('assigned_to', $request->integer('officer')))
+            ->when($request->filled('pipeline_stage'), fn ($accounts) => $accounts->where('pipeline_stage', $request->string('pipeline_stage')->toString()))
             ->values();
 
         $accountIds = $filteredAccounts->pluck('id');
@@ -121,6 +122,16 @@ class RecoveryReportController extends Controller
             ];
         })->sortByDesc('outstanding')->values();
 
+        $byPipeline = $filteredAccounts->groupBy('pipeline_stage')->map(function ($group, $stage) {
+            return [
+                'stage' => $stage,
+                'label' => RecoveryAccount::PIPELINE_STAGES[$stage] ?? str($stage)->headline()->toString(),
+                'accounts' => $group->count(),
+                'outstanding' => (float) $group->sum(fn (RecoveryAccount $account) => $account->net_outstanding_balance),
+                'recovered' => (float) $group->sum('amount_recovered'),
+            ];
+        })->sortByDesc('outstanding')->values();
+
         // 4. Outstanding vs recovered summary.
         $summary = [
             'accounts' => $filteredAccounts->count(),
@@ -133,7 +144,7 @@ class RecoveryReportController extends Controller
             'year' => $year,
             'years' => $this->yearOptions($accounts),
             'clients' => RecoveryClient::where('is_active', true)->orderBy('name')->get(['id', 'name']),
-            'officers' => User::role('Recovery Officer')->orderBy('name')->get(['id', 'name']),
+            'officers' => User::whereHas('roles', fn ($query) => $query->where('name', 'Recovery Officer'))->orderBy('name')->get(['id', 'name']),
             'reportFilters' => [
                 'period' => $period,
                 'period_value' => $periodValue,
@@ -143,10 +154,13 @@ class RecoveryReportController extends Controller
                 'date_to' => $dateTo->toDateString(),
                 'client' => $request->filled('client') ? $request->integer('client') : null,
                 'officer' => $request->filled('officer') ? $request->integer('officer') : null,
+                'pipeline_stage' => $request->filled('pipeline_stage') ? $request->string('pipeline_stage')->toString() : null,
             ],
             'monthly' => $monthly,
             'byOfficer' => $byOfficer,
             'byClient' => $byClient,
+            'byPipeline' => $byPipeline,
+            'pipelineStages' => RecoveryAccount::PIPELINE_STAGES,
             'activityRows' => $this->activityRows($filteredAccounts, $grain, $dateFrom, $dateTo),
             'summary' => $summary,
         ];
@@ -269,6 +283,11 @@ class RecoveryReportController extends Controller
                 $report['byClient']->map(fn ($r) => [$r['client'], $r['accounts'], number_format($r['outstanding'], 2), number_format($r['recovered'], 2)])->all(),
                 'Recoveries by Bank '.$report['reportFilters']['period_label'],
             ],
+            'pipeline' => [
+                ['Pipeline Stage', 'Accounts', 'Outstanding', 'Recovered'],
+                $report['byPipeline']->map(fn ($r) => [$r['label'], $r['accounts'], number_format($r['outstanding'], 2), number_format($r['recovered'], 2)])->all(),
+                'Recovery Pipeline '.$report['reportFilters']['period_label'],
+            ],
             default => [
                 ['Officer', 'Accounts', 'Outstanding', 'Recovered'],
                 $report['byOfficer']->map(fn ($r) => [$r['officer'], $r['accounts'], number_format($r['outstanding'], 2), number_format($r['recovered'], 2)])->all(),
@@ -287,9 +306,11 @@ class RecoveryReportController extends Controller
 
         return $activities
             ->groupBy(function (RecoveryActivity $activity) use ($grain) {
-                $periodStart = $grain === 'daily'
-                    ? $activity->activity_at->copy()->startOfDay()
-                    : $activity->activity_at->copy()->startOfWeek();
+                $periodStart = match ($grain) {
+                    'daily' => $activity->activity_at->copy()->startOfDay(),
+                    'monthly' => $activity->activity_at->copy()->startOfMonth(),
+                    default => $activity->activity_at->copy()->startOfWeek(),
+                };
 
                 return implode('|', [
                     $periodStart->toDateString(),
@@ -299,14 +320,18 @@ class RecoveryReportController extends Controller
             })
             ->map(function ($group) use ($grain) {
                 $first = $group->first();
-                $periodStart = $grain === 'daily'
-                    ? $first->activity_at->copy()->startOfDay()
-                    : $first->activity_at->copy()->startOfWeek();
+                $periodStart = match ($grain) {
+                    'daily' => $first->activity_at->copy()->startOfDay(),
+                    'monthly' => $first->activity_at->copy()->startOfMonth(),
+                    default => $first->activity_at->copy()->startOfWeek(),
+                };
 
                 return [
-                    'period' => $grain === 'daily'
-                        ? $periodStart->format('d M Y')
-                        : $periodStart->format('d M').' - '.$periodStart->copy()->endOfWeek()->format('d M Y'),
+                    'period' => match ($grain) {
+                        'daily' => $periodStart->format('d M Y'),
+                        'monthly' => $periodStart->format('M Y'),
+                        default => $periodStart->format('d M').' - '.$periodStart->copy()->endOfWeek()->format('d M Y'),
+                    },
                     'client' => $first->account?->client?->name ?: 'Unknown',
                     'officer' => $first->account?->assignee?->name ?: 'Unassigned',
                     'accounts' => $group->pluck('recovery_account_id')->unique()->count(),
