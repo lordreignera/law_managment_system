@@ -2,9 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Models\Client;
+use App\Models\Invoice;
 use App\Models\StaffProfile;
 use App\Models\User;
+use App\Services\ReportingAnalyticsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
@@ -142,5 +146,47 @@ class ReportingCatalogueTest extends TestCase
         $user = $this->activeUser([]);
 
         $this->actingAs($user)->get(route('reports.index'))->assertForbidden();
+    }
+
+    public function test_finance_reports_ignore_non_billable_invoice_states_and_show_real_aging(): void
+    {
+        $user = $this->activeUser();
+        $client = Client::create(['client_no' => 'CL-REPORT', 'name' => 'Reporting Client', 'status' => 'active']);
+
+        Invoice::create([
+            'client_id' => $client->id,
+            'invoice_no' => 'INV-REPORT-SENT',
+            'invoice_date' => today(),
+            'due_date' => Carbon::today()->subDays(100),
+            'total' => 1000,
+            'paid_amount' => 100,
+            'status' => 'sent',
+        ]);
+        Invoice::create([
+            'client_id' => $client->id,
+            'invoice_no' => 'INV-REPORT-DRAFT',
+            'invoice_date' => today(),
+            'total' => 5000,
+            'status' => 'draft',
+        ]);
+        Invoice::create([
+            'client_id' => $client->id,
+            'invoice_no' => 'INV-REPORT-VOID',
+            'invoice_date' => today(),
+            'total' => 7000,
+            'status' => 'void',
+        ]);
+
+        $service = app(ReportingAnalyticsService::class);
+        $billing = $service->build('billing-totals', $user, 'monthly');
+        $invoiced = collect($billing['charts'][0]['datasets'])->firstWhere('label', 'Invoiced')['data'];
+        $this->assertSame(1000.0, array_sum($invoiced));
+
+        $aging = $service->build('aging', $user, 'monthly');
+        $agingChart = $aging['charts'][0];
+        $over90Index = array_search('90+ days', $agingChart['labels'], true);
+        $this->assertNotFalse($over90Index);
+        $this->assertSame(900.0, (float) $agingChart['datasets'][0]['data'][$over90Index]);
+        $this->assertStringContainsString('90+ days', $aging['insight'].' '.implode(' ', $agingChart['labels']));
     }
 }

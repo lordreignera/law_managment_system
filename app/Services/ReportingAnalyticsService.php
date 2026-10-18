@@ -317,7 +317,50 @@ class ReportingAnalyticsService
         };
 
         if (in_array($slug, ['billing-totals', 'aging'], true)) {
-            $invoices = Invoice::query()->whereHas('client', fn (Builder $query) => $query->forBranchOf($user));
+            $invoices = Invoice::query()
+                ->whereIn('status', ['sent', 'part_paid', 'paid', 'overdue'])
+                ->whereHas('client', fn (Builder $query) => $query->forBranchOf($user));
+
+            if ($slug === 'aging') {
+                $asOf = today();
+                $bucketsByName = [
+                    'No due date' => fn ($invoice) => $invoice->due_date === null,
+                    'Current' => fn ($invoice) => $invoice->due_date !== null && $invoice->due_date->greaterThanOrEqualTo($asOf),
+                    '1-30 days' => fn ($invoice) => $invoice->due_date !== null && $invoice->due_date->lt($asOf) && $invoice->due_date->diffInDays($asOf) <= 30,
+                    '31-60 days' => fn ($invoice) => $invoice->due_date !== null && $invoice->due_date->diffInDays($asOf) > 30 && $invoice->due_date->diffInDays($asOf) <= 60,
+                    '61-90 days' => fn ($invoice) => $invoice->due_date !== null && $invoice->due_date->diffInDays($asOf) > 60 && $invoice->due_date->diffInDays($asOf) <= 90,
+                    '90+ days' => fn ($invoice) => $invoice->due_date !== null && $invoice->due_date->diffInDays($asOf) > 90,
+                ];
+                $agingRows = (clone $invoices)->get()->groupBy(function (Invoice $invoice) use ($bucketsByName) {
+                    foreach ($bucketsByName as $label => $rule) {
+                        if ($rule($invoice)) {
+                            return $label;
+                        }
+                    }
+
+                    return 'Current';
+                });
+                $agingLabels = array_keys($bucketsByName);
+                $agingValues = array_map(fn (string $label) => round((float) $agingRows->get($label, collect())->sum(fn (Invoice $invoice) => $invoice->balance), 2), $agingLabels);
+
+                return [
+                    'period' => $period,
+                    'period_label' => $this->periodLabel($period),
+                    'scope' => 'Outstanding eligible invoices as at '.today()->toDateString().' within the permitted branch scope.',
+                    'cards' => [
+                        $this->card('Outstanding', number_format(array_sum($agingValues), 2), 'Eligible invoice balance at the as-of date', self::RED, true),
+                        $this->card('Invoices aged', (clone $invoices)->count(), 'Eligible unpaid or partially paid invoices', self::NAVY),
+                        $this->card('Over 90 days', number_format($agingValues[array_search('90+ days', $agingLabels, true)] ?? 0, 2), 'Balance requiring escalation', self::RED, true),
+                        $this->card('No due date', number_format($agingValues[array_search('No due date', $agingLabels, true)] ?? 0, 2), 'Balances requiring invoice clean-up', self::GOLD, true),
+                    ],
+                    'charts' => [
+                        $this->barChart('invoice-aging', 'Receivables aging', 'Outstanding balance by due-date bucket at the as-of date.', $agingLabels, [$this->dataset('Outstanding', $agingValues, self::NAVY, true)]),
+                        $this->doughnutChart('invoice-aging-mix', 'Aging mix', 'Share of outstanding balance by age bucket.', $agingLabels, $agingValues, [self::BLUE, self::GREEN, self::GOLD, self::RED, '#8b3a62', '#4b5563']),
+                    ],
+                    'insight' => 'Prioritize the 90+ day balance, then resolve invoices without due dates so collection work is based on reliable aging data.',
+                ];
+            }
+
             $invoiced = $this->sumSeries($invoices, 'invoice_date', 'total', $buckets, true);
             $paid = $this->sumSeries($invoices, 'invoice_date', 'paid_amount', $buckets, true);
             $outstanding = array_map(fn ($total, $index) => max(0, (float) $total - (float) ($paid[$index] ?? 0)), $invoiced, array_keys($invoiced));
@@ -345,7 +388,10 @@ class ReportingAnalyticsService
         }
 
         if ($slug === 'collections') {
-            $payments = InvoicePayment::query()->whereHas('invoice.client', fn (Builder $query) => $query->forBranchOf($user));
+            $payments = InvoicePayment::query()
+                ->whereHas('invoice', fn (Builder $invoice) => $invoice
+                    ->whereIn('status', ['sent', 'part_paid', 'paid', 'overdue'])
+                    ->whereHas('client', fn (Builder $query) => $query->forBranchOf($user)));
             $collected = $this->sumSeries($payments, 'paid_on', 'amount', $buckets, true);
 
             return [
@@ -454,9 +500,9 @@ class ReportingAnalyticsService
             'period_label' => $this->periodLabel($period),
             'scope' => 'Securities custody records within the permitted branch scope.',
             'cards' => [
-                $this->card('In custody', (clone $titles)->whereIn('status', ['received', 'in_progress', 'dispatched'])->count(), 'Titles currently held or moving', self::NAVY),
-                $this->card('Received in period', $this->sum($received), 'Incoming custody records', self::BLUE),
-                $this->card('Returned in period', $this->sum($returned), 'Completed custody returns', self::GREEN),
+                $this->card('In custody', (clone $titles)->whereIn('status', ['received', 'in_progress', 'dispatched'])->count(), 'Securities currently held or moving', self::NAVY),
+                $this->card('Received in period', $this->sum($received), 'Incoming security custody records', self::BLUE),
+                $this->card('Returned in period', $this->sum($returned), 'Completed security custody returns', self::GREEN),
                 $this->card('Overdue milestones', LandTitleMilestone::query()->whereHas('landTitle', fn (Builder $query) => $query->forBranchOf($user))->where('status', 'pending')->where('due_at', '<', now())->count(), 'Custody actions past due', self::RED),
             ],
             'charts' => [
@@ -474,7 +520,7 @@ class ReportingAnalyticsService
     private function payroll(string $period, array $buckets): array
     {
         $periods = PayrollPeriod::query();
-        $runs = PayrollRun::query()->with('period');
+        $runs = PayrollRun::query()->whereIn('status', ['approved', 'paid'])->with('period');
         $labels = $this->labels($buckets);
         $gross = [];
         $net = [];

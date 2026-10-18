@@ -186,7 +186,22 @@ class DatabaseSeeder extends Seeder
 
         Role::findByName('Recovery Officer')->givePermissionTo($recoveryOfficerSelfService);
 
-        $kampala = Branch::firstOrCreate(['name' => 'Kampala'], ['city' => 'Kampala']);
+        foreach ([
+            ['name' => 'Kampala', 'city' => 'Kampala', 'address' => 'Kampala office'],
+            ['name' => 'Mbale', 'city' => 'Mbale', 'address' => 'Mbale office'],
+            ['name' => 'Mbarara', 'city' => 'Mbarara', 'address' => 'Mbarara office'],
+        ] as $branch) {
+            Branch::updateOrCreate(
+                ['name' => $branch['name']],
+                [
+                    'city' => $branch['city'],
+                    'address' => $branch['address'],
+                    'is_active' => true,
+                ]
+            );
+        }
+
+        $kampala = Branch::where('name', 'Kampala')->firstOrFail();
 
         // Uganda fixed-date public holidays (recur every year). Movable feasts
         // such as Easter and the two Eids are added manually by an administrator.

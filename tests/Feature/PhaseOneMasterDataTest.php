@@ -73,9 +73,14 @@ class PhaseOneMasterDataTest extends TestCase
             $this->get(route('settings.master-data.template', $slug))->assertOk();
             $this->get(route('settings.master-data.export', $slug))->assertOk();
         }
-        foreach (['banks', 'bank_branches', 'judicial_officers', 'opposing_counsels', 'centenary_regions', 'centenary_branches', 'recovery_clients', 'clients', 'matters'] as $table) {
+        foreach (['judicial_officers', 'opposing_counsels', 'centenary_regions', 'centenary_branches', 'recovery_clients', 'clients', 'matters'] as $table) {
             $this->assertDatabaseCount($table, 0);
         }
+        $this->assertDatabaseCount('banks', 34);
+        $this->assertDatabaseCount('bank_branches', 37);
+        $this->assertDatabaseHas('branches', ['name' => 'Kampala', 'city' => 'Kampala']);
+        $this->assertDatabaseHas('branches', ['name' => 'Mbale', 'city' => 'Mbale']);
+        $this->assertDatabaseHas('branches', ['name' => 'Mbarara', 'city' => 'Mbarara']);
     }
 
     public function test_system_settings_overview_can_search_and_modal_markup_is_scrollable(): void

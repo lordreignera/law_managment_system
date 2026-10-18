@@ -141,6 +141,16 @@
                         <span>{{ $status }}</span>
                     @endforeach
                 </div>
+                @foreach (['related_statuses' => 'Related workflow values', 'pipeline_stages' => 'Pipeline stages', 'derived_statuses' => 'Derived values'] as $key => $label)
+                    @if (! empty($report[$key]))
+                        <span class="kfms-report-eyebrow kfms-report-contract-sub-eyebrow">{{ $label }}</span>
+                        <div class="kfms-report-tags">
+                            @foreach ($report[$key] as $status)
+                                <span>{{ $status }}</span>
+                            @endforeach
+                        </div>
+                    @endif
+                @endforeach
             </article>
 
             <article class="kfms-report-contract-card">

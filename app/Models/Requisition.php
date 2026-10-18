@@ -18,6 +18,7 @@ class Requisition extends Model
     use SoftDeletes;
 
     public const STATUSES = [
+        'draft' => 'Draft',
         'submitted' => 'Submitted',
         'approved' => 'Approved',
         'rejected' => 'Rejected',
