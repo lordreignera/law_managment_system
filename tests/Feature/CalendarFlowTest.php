@@ -206,4 +206,17 @@ class CalendarFlowTest extends TestCase
         $this->actingAs($user)->get(route('calendar.index', ['scope' => 'mine']))->assertSee($mine->title)->assertDontSee('Other Department Meeting');
         $this->actingAs($user)->get(route('calendar.create'))->assertSee('Firm or branch calendar');
     }
+
+    public function test_calendar_index_contains_inline_event_modal(): void
+    {
+        $user = $this->activeUser(['calendar.index', 'calendar.create', 'calendar.store'], 'Advocate');
+
+        $this->actingAs($user)
+            ->get(route('calendar.index'))
+            ->assertOk()
+            ->assertSee('id="calendar-create-modal"', false)
+            ->assertSee('id="calendar-create-form"', false)
+            ->assertSee('data-calendar-create-date=', false)
+            ->assertSee('Add an event without leaving your calendar.');
+    }
 }

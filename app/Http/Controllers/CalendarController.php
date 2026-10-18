@@ -69,35 +69,38 @@ class CalendarController extends Controller
 
         $holidays = PublicHoliday::forMonth($month->year, $month->month);
 
-        $gridStart = $month->copy()->startOfMonth()->startOfWeek();
-        $gridEnd = $month->copy()->endOfMonth()->endOfWeek();
+        $gridStart = $month->copy()->startOfMonth()->startOfWeek(Carbon::SUNDAY);
+        $gridEnd = $month->copy()->endOfMonth()->endOfWeek(Carbon::SATURDAY);
 
         $days = [];
         for ($date = $gridStart->copy(); $date->lte($gridEnd); $date->addDay()) {
             $days[] = $date->copy();
         }
 
+        $upcomingEvents = $events
+            ->flatten(1)
+            ->sortBy(fn (array $event) => $event['date'].' '.($event['time'] ?? '00:00'))
+            ->take(8)
+            ->values();
+
         return view('modules.calendar.index', [
             'month' => $month,
             'days' => $days,
             'events' => $events,
+            'upcomingEvents' => $upcomingEvents,
             'holidays' => $holidays,
             'canManageAll' => $user->canSeeAllBranches(),
             'personalOnly' => $personalOnly,
+            ...$this->calendarFormData($request, $month->toDateString()),
         ]);
     }
 
     public function create(Request $request)
     {
-        return view('modules.calendar.create', [
-            'types' => CalendarEvent::TYPES,
-            'branches' => Branch::where('is_active', true)->orderBy('name')->get(['id', 'name']),
-            'departments' => Department::with('branch:id,name')->where('is_active', true)->orderBy('name')->get(['id', 'name', 'branch_id']),
-            'matters' => Matter::visibleTo($request->user())->orderByDesc('id')->limit(300)->get(['id', 'reference_no', 'title']),
-            'officers' => $this->calendarUsers(),
-            'defaultBranchId' => $request->user()->branch_id,
-            'defaultDate' => $request->filled('date') ? $request->string('date')->toString() : now()->toDateString(),
-        ]);
+        return view('modules.calendar.create', $this->calendarFormData(
+            $request,
+            $request->filled('date') ? $request->string('date')->toString() : now()->toDateString(),
+        ));
     }
 
     public function store(Request $request)
@@ -294,5 +297,18 @@ class CalendarController extends Controller
             ->with('branch:id,name')
             ->orderBy('name')
             ->get(['id', 'name', 'branch_id']);
+    }
+
+    private function calendarFormData(Request $request, string $defaultDate): array
+    {
+        return [
+            'types' => CalendarEvent::TYPES,
+            'branches' => Branch::where('is_active', true)->orderBy('name')->get(['id', 'name']),
+            'departments' => Department::with('branch:id,name')->where('is_active', true)->orderBy('name')->get(['id', 'name', 'branch_id']),
+            'matters' => Matter::visibleTo($request->user())->orderByDesc('id')->limit(300)->get(['id', 'reference_no', 'title']),
+            'officers' => $this->calendarUsers(),
+            'defaultBranchId' => $request->user()->branch_id,
+            'defaultDate' => $defaultDate,
+        ];
     }
 }
