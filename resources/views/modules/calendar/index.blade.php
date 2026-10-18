@@ -4,6 +4,10 @@
 @section('page-title', 'Firm Calendar')
 
 @section('content')
+    @php
+        $calendarScope = $personalOnly ? ['scope' => 'mine'] : [];
+    @endphp
+
     <section class="kfms-panel">
         <div class="kfms-panel-header">
             <div>
@@ -11,19 +15,20 @@
                 <span>Meetings, court dates &amp; public holidays</span>
             </div>
             <div class="kfms-toolbar-actions">
-                <a class="kfms-link-btn" href="{{ route('calendar.index', ['month' => $month->copy()->subMonth()->format('Y-m')]) }}">
+                <a class="kfms-link-btn" href="{{ route('calendar.index', $calendarScope + ['month' => $month->copy()->subMonth()->format('Y-m')]) }}">
                     <i class="mdi mdi-chevron-left"></i>
                     Prev
                 </a>
-                <a class="kfms-link-btn" href="{{ route('calendar.index') }}">Today</a>
+                <a class="kfms-link-btn" href="{{ route('calendar.index', $calendarScope) }}">Today</a>
                 <a class="kfms-link-btn {{ $personalOnly ? 'is-active' : '' }}" href="{{ route('calendar.index', ['month' => $month->format('Y-m'), 'scope' => 'mine']) }}">
                     <i class="mdi mdi-account-calendar-outline"></i> My calendar
                 </a>
-                <a class="kfms-link-btn" href="{{ route('calendar.index', ['month' => $month->copy()->addMonth()->format('Y-m')]) }}">
+                <a class="kfms-link-btn" href="{{ route('calendar.index', $calendarScope + ['month' => $month->copy()->addMonth()->format('Y-m')]) }}">
                     Next
                     <i class="mdi mdi-chevron-right"></i>
                 </a>
                 <form class="kfms-calendar-jump" method="GET" action="{{ route('calendar.index') }}">
+                    @if ($personalOnly)<input type="hidden" name="scope" value="mine">@endif
                     <select name="m" aria-label="Month">
                         @for ($m = 1; $m <= 12; $m++)
                             <option value="{{ $m }}" @selected((int) $month->month === $m)>{{ \Illuminate\Support\Carbon::create(null, $m)->format('F') }}</option>

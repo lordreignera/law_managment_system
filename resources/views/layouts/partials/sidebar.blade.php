@@ -105,7 +105,7 @@
             'label' => 'Human Resources',
             'icon' => 'mdi-account-tie',
             'route' => 'hr.dashboard',
-            'active' => ['hr.*', 'staff.*', 'leave.*'],
+            'active' => ['hr.*', 'staff.*', 'leave.*', 'attendance.*'],
             'children' => [
                 ['label' => 'HR Dashboard', 'route' => 'hr.dashboard', 'active' => 'hr.dashboard', 'permission' => 'hr.dashboard'],
                 ['label' => 'Staff Register', 'route' => 'staff.index', 'active' => 'staff.*', 'permission' => 'staff.index'],
