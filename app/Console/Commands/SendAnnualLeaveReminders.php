@@ -31,7 +31,7 @@ class SendAnnualLeaveReminders extends Command
             ->chunkById(100, function ($users) use ($year, &$sent) {
                 foreach ($users as $user) {
                     $scheduledDays = LeaveRequest::annualScheduledDaysFor($user, $year);
-                    $requiredDays = LeaveRequest::annualEntitlementFor($year);
+                    $requiredDays = LeaveRequest::annualEntitlementForUser($user, $year);
 
                     if ($scheduledDays >= $requiredDays) {
                         continue;

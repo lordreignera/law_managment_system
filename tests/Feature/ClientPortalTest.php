@@ -74,7 +74,7 @@ class ClientPortalTest extends TestCase
             'client_type' => 'individual',
             'name' => 'Portal Client',
             'email' => 'client@example.test',
-                'phone' => '+256 700 111222',
+            'phone' => '+256 700 111222',
             'status' => 'active',
         ]);
 
@@ -299,6 +299,7 @@ class ClientPortalTest extends TestCase
         $this->actingAs($portalUser)->get(route('client.dashboard'))
             ->assertOk()
             ->assertSee('Client Visible Matter')
+            ->assertSee('https://kalikumutima.com/')
             ->assertDontSee('Other Client Matter');
 
         $this->actingAs($portalUser)->get(route('client.matters.show', $otherMatter))

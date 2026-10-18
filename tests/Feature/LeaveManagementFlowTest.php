@@ -258,4 +258,57 @@ class LeaveManagementFlowTest extends TestCase
             ->assertSee('30 days')
             ->assertSee('25 days');
     }
+
+    public function test_leave_request_exceeding_available_balance_is_blocked(): void
+    {
+        $type = LeaveType::create(['name' => 'Annual Leave', 'annual_entitlement_days' => 5]);
+        $staff = $this->activeUser(['leave.store', 'leave.show'], 'Advocate');
+        $this->attachApprovalChain($staff);
+
+        LeaveRequest::create([
+            'leave_no' => 'LV2611-0001', 'user_id' => $staff->id, 'leave_type_id' => $type->id,
+            'start_date' => '2026-01-05', 'end_date' => '2026-01-08', 'days' => 4, 'status' => 'approved',
+        ]);
+
+        $this->actingAs($staff)
+            ->post(route('leave.store'), [
+                'leave_type_id' => $type->id,
+                'start_date' => '2026-02-10',
+                'end_date' => '2026-02-11',
+            ])
+            ->assertSessionHasErrors(['start_date' => 'This request exceeds your available Annual Leave balance for 2026. You have 1 day remaining, but requested 2.']);
+
+        $this->assertDatabaseCount('leave_requests', 1);
+    }
+
+    public function test_carry_forward_is_included_when_enforcing_leave_balance(): void
+    {
+        $type = LeaveType::create([
+            'name' => 'Annual Leave',
+            'annual_entitlement_days' => 5,
+            'carry_forward' => true,
+        ]);
+        $staff = $this->activeUser(['leave.store', 'leave.show'], 'Advocate');
+        $this->attachApprovalChain($staff);
+
+        LeaveRequest::create([
+            'leave_no' => 'LV2612-0001', 'user_id' => $staff->id, 'leave_type_id' => $type->id,
+            'start_date' => '2025-01-05', 'end_date' => '2025-01-07', 'days' => 3, 'status' => 'approved',
+        ]);
+
+        $this->actingAs($staff)
+            ->post(route('leave.store'), [
+                'leave_type_id' => $type->id,
+                'start_date' => '2026-02-10',
+                'end_date' => '2026-02-16',
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('leave_requests', [
+            'user_id' => $staff->id,
+            'leave_type_id' => $type->id,
+            'days' => 7,
+            'status' => 'submitted',
+        ]);
+    }
 }

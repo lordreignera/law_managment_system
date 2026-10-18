@@ -94,6 +94,35 @@ class LeaveRequest extends Model
             });
     }
 
+    /**
+     * Return the entitlement available to a user for a leave type in a year.
+     *
+     * Carry-forward uses the prior year's unused configured entitlement. The
+     * leave type is configuration data, so this remains deterministic even
+     * when a fresh installation has no prior leave records.
+     */
+    public static function entitlementFor(User $user, LeaveType $leaveType, int $year): float
+    {
+        $entitlement = max(0, (float) $leaveType->annual_entitlement_days);
+
+        if (! $leaveType->carry_forward || $year <= 1) {
+            return $entitlement;
+        }
+
+        $priorYearUsed = static::scheduledDaysFor($user, $leaveType->id, $year - 1);
+
+        return $entitlement + max(0, $entitlement - $priorYearUsed);
+    }
+
+    public static function annualEntitlementForUser(User $user, int $year): float
+    {
+        $annualLeaveType = LeaveType::query()->where('name', 'Annual Leave')->first();
+
+        return $annualLeaveType
+            ? static::entitlementFor($user, $annualLeaveType, $year)
+            : self::ANNUAL_LEAVE_DAYS;
+    }
+
     public static function annualEntitlementFor(int $year): float
     {
         return (float) (LeaveType::query()

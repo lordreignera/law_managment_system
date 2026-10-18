@@ -54,7 +54,7 @@ class LeaveController extends Controller
 
         if (! $canApprove) {
             $scheduledDays = LeaveRequest::annualScheduledDaysFor($request->user(), now()->year);
-            $requiredDays = LeaveRequest::annualEntitlementFor(now()->year);
+            $requiredDays = LeaveRequest::annualEntitlementForUser($request->user(), now()->year);
             $annualLeavePlan = [
                 'year' => now()->year,
                 'scheduled_days' => $scheduledDays,
@@ -68,12 +68,13 @@ class LeaveController extends Controller
                 ->get()
                 ->map(function (LeaveType $type) use ($request) {
                     $used = LeaveRequest::scheduledDaysFor($request->user(), $type->id, now()->year);
+                    $entitlement = LeaveRequest::entitlementFor($request->user(), $type, now()->year);
 
                     return [
                         'type' => $type,
-                        'entitlement' => (float) $type->annual_entitlement_days,
+                        'entitlement' => $entitlement,
                         'used' => $used,
-                        'remaining' => max(0, (float) $type->annual_entitlement_days - $used),
+                        'remaining' => max(0, $entitlement - $used),
                     ];
                 });
         }
@@ -114,6 +115,7 @@ class LeaveController extends Controller
         }
 
         $this->ensureNoConflict($request->user(), $data['start_date'], $data['end_date']);
+        $this->ensureWithinBalance($request->user(), $leaveType, $data['start_date'], $data['end_date']);
 
         $approverIds = $this->approvalChain($request->user());
         $days = Carbon::parse($data['start_date'])->diffInDays(Carbon::parse($data['end_date'])) + 1;
@@ -192,6 +194,7 @@ class LeaveController extends Controller
         }
 
         $this->ensureNoConflict($request->user(), $data['start_date'], $data['end_date'], $leave);
+        $this->ensureWithinBalance($request->user(), $leaveType, $data['start_date'], $data['end_date']);
 
         $approverIds = $this->approvalChain($request->user());
         $days = Carbon::parse($data['start_date'])->diffInDays(Carbon::parse($data['end_date'])) + 1;
@@ -329,6 +332,37 @@ class LeaveController extends Controller
             throw ValidationException::withMessages([
                 'start_date' => 'These dates overlap another submitted or approved leave request.',
             ]);
+        }
+    }
+
+    protected function ensureWithinBalance(User $user, LeaveType $leaveType, string $startDate, string $endDate): void
+    {
+        $start = Carbon::parse($startDate)->startOfDay();
+        $end = Carbon::parse($endDate)->startOfDay();
+
+        for ($year = $start->year; $year <= $end->year; $year++) {
+            $yearStart = Carbon::create($year, 1, 1)->startOfDay();
+            $yearEnd = Carbon::create($year, 12, 31)->startOfDay();
+            $periodStart = $start->greaterThan($yearStart) ? $start : $yearStart;
+            $periodEnd = $end->lessThan($yearEnd) ? $end : $yearEnd;
+            $requestedDays = $periodStart->diffInDays($periodEnd) + 1;
+            $scheduledDays = LeaveRequest::scheduledDaysFor($user, $leaveType->id, $year);
+            $entitlement = LeaveRequest::entitlementFor($user, $leaveType, $year);
+
+            if ($scheduledDays + $requestedDays > $entitlement) {
+                $remaining = max(0, $entitlement - $scheduledDays);
+
+                throw ValidationException::withMessages([
+                    'start_date' => sprintf(
+                        'This request exceeds your available %s balance for %d. You have %s day%s remaining, but requested %s.',
+                        $leaveType->name,
+                        $year,
+                        rtrim(rtrim(number_format($remaining, 1), '0'), '.'),
+                        $remaining === 1.0 ? '' : 's',
+                        rtrim(rtrim(number_format($requestedDays, 1), '0'), '.'),
+                    ),
+                ]);
+            }
         }
     }
 
