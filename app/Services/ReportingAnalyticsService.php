@@ -30,6 +30,8 @@ use Illuminate\Support\Str;
 
 class ReportingAnalyticsService
 {
+    private int $activeBucketCount = 0;
+
     private const NAVY = '#071426';
 
     private const GOLD = '#c4902f';
@@ -43,7 +45,8 @@ class ReportingAnalyticsService
     public function build(string $slug, User $user, string $period = 'monthly'): ?array
     {
         $period = $this->normalizePeriod($period);
-        $buckets = $this->buckets($period);
+        $buckets = $this->buckets($period, $slug, $user);
+        $this->activeBucketCount = count($buckets);
 
         $analytics = match ($slug) {
             'client-activity', 'client-intake-funnel' => $this->clients($user, $period, $buckets),
@@ -263,20 +266,24 @@ class ReportingAnalyticsService
         $absent = [];
 
         foreach ($buckets as $bucket) {
-            $rows = (clone $records)->whereBetween('attendance_date', [$bucket['start']->toDateString(), $bucket['end']->toDateString()])->get();
+            // Attendance is measured only through today. Future workdays in
+            // the current week/month must not be counted as absences.
+            $measurementEnd = $bucket['end']->isFuture() ? now() : $bucket['end'];
+            $rows = (clone $records)->whereBetween('attendance_date', [$bucket['start']->toDateString(), $measurementEnd->toDateString()])->get();
             $present[] = $rows->whereIn('status', ['present', 'corrected'])->count();
             $late[] = $rows->where('status', 'late')->count();
             $incomplete[] = $rows->where('status', 'incomplete')->count();
-            $expected = $staff->count() * $this->workingDays($bucket['start'], $bucket['end']);
-            $leaveDays = $this->approvedLeaveDaysForStaff($staffIds, $bucket['start'], $bucket['end']);
+            $expected = $staff->count() * $this->workingDays($bucket['start'], $measurementEnd);
+            $leaveDays = $this->approvedLeaveDaysForStaff($staffIds, $bucket['start'], $measurementEnd);
             $worked = $rows->whereNotNull('checked_in_at')->count();
             $absent[] = max(0, $expected - $leaveDays - $worked);
         }
 
-        $currentRecords = (clone $records)->whereBetween('attendance_date', [now()->startOfMonth()->toDateString(), now()->endOfMonth()->toDateString()]);
-        $expectedCurrent = $staff->count() * $this->workingDays(now()->startOfMonth(), now()->endOfMonth());
+        $currentEnd = now();
+        $currentRecords = (clone $records)->whereBetween('attendance_date', [now()->startOfMonth()->toDateString(), $currentEnd->toDateString()]);
+        $expectedCurrent = $staff->count() * $this->workingDays(now()->startOfMonth(), $currentEnd);
         $workedCurrent = (clone $currentRecords)->whereNotNull('checked_in_at')->count();
-        $leaveCurrent = $this->approvedLeaveDaysForStaff($staffIds, now()->startOfMonth(), now()->endOfMonth());
+        $leaveCurrent = $this->approvedLeaveDaysForStaff($staffIds, now()->startOfMonth(), $currentEnd);
         $attendanceRate = $expectedCurrent > 0 ? round(($workedCurrent / max(1, $expectedCurrent - $leaveCurrent)) * 100, 1) : 0;
 
         return [
@@ -785,7 +792,7 @@ class ReportingAnalyticsService
         return $days;
     }
 
-    private function buckets(string $period): array
+    private function buckets(string $period, string $slug, User $user): array
     {
         $count = match ($period) {
             'weekly' => 12,
@@ -793,12 +800,51 @@ class ReportingAnalyticsService
             'yearly' => 5,
             default => 12,
         };
-        $cursor = match ($period) {
-            'weekly' => now()->startOfWeek()->subWeeks($count - 1),
-            'quarterly' => now()->startOfQuarter()->subQuarters($count - 1),
-            'yearly' => now()->startOfYear()->subYears($count - 1),
-            default => now()->startOfMonth()->subMonths($count - 1),
+        $currentStart = match ($period) {
+            'weekly' => now()->startOfWeek(),
+            'quarterly' => now()->startOfQuarter(),
+            'yearly' => now()->startOfYear(),
+            default => now()->startOfMonth(),
         };
+        $cursor = match ($period) {
+            'weekly' => $currentStart->copy()->subWeeks($count - 1),
+            'quarterly' => $currentStart->copy()->subQuarters($count - 1),
+            'yearly' => $currentStart->copy()->subYears($count - 1),
+            default => $currentStart->copy()->subMonths($count - 1),
+        };
+
+        $firstRecord = $this->firstReportRecordDate($slug, $user);
+        if ($firstRecord === null) {
+            $cursor = $currentStart->copy();
+            $count = 1;
+        } else {
+            $firstStart = match ($period) {
+                'weekly' => $firstRecord->copy()->startOfWeek(),
+                'quarterly' => $firstRecord->copy()->startOfQuarter(),
+                'yearly' => $firstRecord->copy()->startOfYear(),
+                default => $firstRecord->copy()->startOfMonth(),
+            };
+
+            if ($firstStart->greaterThan($cursor)) {
+                $cursor = $firstStart->lessThanOrEqualTo($currentStart) ? $firstStart : $currentStart->copy();
+                $count = 1;
+                $probe = $cursor->copy();
+                while ($probe->lessThan($currentStart) && $count < match ($period) {
+                    'weekly' => 12,
+                    'quarterly' => 8,
+                    'yearly' => 5,
+                    default => 12,
+                }) {
+                    $probe = match ($period) {
+                        'weekly' => $probe->addWeek(),
+                        'quarterly' => $probe->addQuarter(),
+                        'yearly' => $probe->addYear(),
+                        default => $probe->addMonth(),
+                    };
+                    $count++;
+                }
+            }
+        }
         $buckets = [];
         for ($index = 0; $index < $count; $index++) {
             $start = $cursor->copy();
@@ -835,6 +881,86 @@ class ReportingAnalyticsService
         return $buckets;
     }
 
+    /**
+     * Return the earliest eligible source date for a report. Empty modules
+     * deliberately return null so a new installation does not display years
+     * of invented zero/absence history.
+     */
+    private function firstReportRecordDate(string $slug, User $user): ?Carbon
+    {
+        $dates = [];
+        $add = function ($value) use (&$dates): void {
+            if ($value !== null && $value !== '') {
+                $dates[] = Carbon::parse($value);
+            }
+        };
+
+        switch ($slug) {
+            case 'client-activity':
+            case 'client-intake-funnel':
+                $add(Client::query()->forBranchOf($user)->min('created_at'));
+                $add($this->intakes($user)->min('created_at'));
+                break;
+            case 'matter-workload':
+            case 'matter-turnaround':
+                $add(Matter::query()->visibleTo($user)->min('opened_on'));
+                break;
+            case 'litigation-deadlines':
+            case 'court-outcomes':
+                $add(CourtEvent::query()->whereHas('matter', fn (Builder $query) => $query->visibleTo($user))->min('starts_at'));
+                break;
+            case 'recovery-collections':
+            case 'recovery-promises':
+            case 'bank-performance':
+            case 'recovery-officer-performance':
+                $add(RecoveryActivity::query()->whereHas('account', fn (Builder $query) => $query->forBranchOf($user))->min('activity_at'));
+                $add(RecoveryAccount::query()->forBranchOf($user)->min('created_at'));
+                break;
+            case 'leave-utilization':
+                $add($this->leaveRequests($user)->min('start_date'));
+                $add($this->leaveRequests($user)->min('created_at'));
+                break;
+            case 'attendance':
+                $add(AttendanceRecord::query()->whereIn('user_id', $this->staffScope($user)->select('id'))->min('attendance_date'));
+                break;
+            case 'land-title-custody':
+            case 'title-turnaround':
+                $add(LandTitle::query()->forBranchOf($user)->min('received_at'));
+                $add(LandTitle::query()->forBranchOf($user)->min('instruction_date'));
+                break;
+            case 'billing-totals':
+            case 'aging':
+                $add(Invoice::query()->whereIn('status', ['sent', 'part_paid', 'paid', 'overdue'])->whereHas('client', fn (Builder $query) => $query->forBranchOf($user))->min('invoice_date'));
+                break;
+            case 'collections':
+                $add(InvoicePayment::query()->whereHas('invoice', fn (Builder $query) => $query->whereIn('status', ['sent', 'part_paid', 'paid', 'overdue'])->whereHas('client', fn (Builder $client) => $client->forBranchOf($user)))->min('paid_on'));
+                break;
+            case 'expenses':
+                $add($this->expenses($user)->min('spent_on'));
+                break;
+            case 'petty-cash':
+                $add($this->pettyCash($user)->min('transacted_on'));
+                break;
+            case 'requisitions':
+                $add($this->requisitions($user)->min('created_at'));
+                break;
+            case 'payroll':
+                $add(PayrollPeriod::query()->min('starts_on'));
+                break;
+            case 'branch-comparison':
+            case 'department-comparison':
+            case 'monthly-management-pack':
+            case 'annual-management-pack':
+                $add(Client::query()->forBranchOf($user)->min('created_at'));
+                $add(Matter::query()->visibleTo($user)->min('opened_on'));
+                $add(CourtEvent::query()->whereHas('matter', fn (Builder $query) => $query->visibleTo($user))->min('starts_at'));
+                $add(RecoveryActivity::query()->whereHas('account', fn (Builder $query) => $query->forBranchOf($user))->min('activity_at'));
+                break;
+        }
+
+        return empty($dates) ? null : collect($dates)->sort()->first();
+    }
+
     private function labels(array $buckets): array
     {
         return array_column($buckets, 'label');
@@ -842,12 +968,20 @@ class ReportingAnalyticsService
 
     private function periodLabel(string $period): string
     {
-        return match ($period) {
-            'weekly' => 'Last 12 weeks',
-            'quarterly' => 'Last 8 quarters',
-            'yearly' => 'Last 5 years',
-            default => 'Last 12 months',
+        $count = $this->activeBucketCount ?: match ($period) {
+            'weekly' => 12,
+            'quarterly' => 8,
+            'yearly' => 5,
+            default => 12,
         };
+        $unit = match ($period) {
+            'weekly' => 'weeks',
+            'quarterly' => 'quarters',
+            'yearly' => 'years',
+            default => 'months',
+        };
+
+        return $count === 1 ? 'Current period (live data)' : "{$count} {$unit} with live data";
     }
 
     private function withTable(?array $analytics): ?array

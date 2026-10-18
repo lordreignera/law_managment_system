@@ -58,6 +58,8 @@ class UserGuideAccessTest extends TestCase
             ->assertOk()
             ->assertSee('Workspace Guide')
             ->assertSee('First Steps')
+            ->assertSee('Client Portal')
+            ->assertSee('href="'.e(route('client.portal')).'"', false)
             ->assertDontSee('Letters & Opinions Guide', false);
     }
 

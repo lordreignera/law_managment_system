@@ -141,6 +141,18 @@ class ReportingCatalogueTest extends TestCase
         }
     }
 
+    public function test_empty_attendance_report_does_not_render_invented_historical_periods(): void
+    {
+        $user = $this->activeUser();
+
+        $analytics = app(ReportingAnalyticsService::class)->build('attendance', $user, 'monthly');
+        $labels = $analytics['charts'][0]['labels'];
+
+        $this->assertCount(1, $labels);
+        $this->assertSame(now()->format('M Y'), $labels[0]);
+        $this->assertSame('Current period (live data)', $analytics['period_label']);
+    }
+
     public function test_user_without_reporting_permission_is_forbidden(): void
     {
         $user = $this->activeUser([]);
