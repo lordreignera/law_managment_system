@@ -71,6 +71,19 @@
     ])
 
     <label>
+        <span>Department calendar</span>
+        <select name="department_id">
+            <option value="">Firm or branch calendar</option>
+            @foreach ($departments as $department)
+                <option value="{{ $department->id }}" @selected((string) old('department_id', $event?->department_id) === (string) $department->id)>
+                    {{ $department->name }}{{ $department->branch?->name ? ' · '.$department->branch->name : '' }}
+                </option>
+            @endforeach
+        </select>
+        @error('department_id') <small>{{ $message }}</small> @enderror
+    </label>
+
+    <label>
         <span>Related Matter (optional)</span>
         <select name="matter_id">
             <option value="">None</option>

@@ -13,6 +13,13 @@ class LeaveType extends Model
 
     protected $guarded = [];
 
+    protected $casts = [
+        'annual_entitlement_days' => 'float',
+        'carry_forward' => 'boolean',
+        'requires_attachment' => 'boolean',
+        'is_active' => 'boolean',
+    ];
+
     public static function codePrefix(): string
     {
         return 'LVT';

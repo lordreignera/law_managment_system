@@ -71,12 +71,17 @@ class LeaveRequest extends Model
             return 0.0;
         }
 
+        return static::scheduledDaysFor($user, $annualLeaveTypeId, $year);
+    }
+
+    public static function scheduledDaysFor(User $user, int $leaveTypeId, int $year): float
+    {
         $yearStart = Carbon::create($year, 1, 1)->startOfDay();
         $yearEnd = Carbon::create($year, 12, 31)->endOfDay();
 
         return (float) static::query()
             ->where('user_id', $user->id)
-            ->where('leave_type_id', $annualLeaveTypeId)
+            ->where('leave_type_id', $leaveTypeId)
             ->whereIn('status', ['submitted', 'approved'])
             ->whereDate('start_date', '<=', $yearEnd)
             ->whereDate('end_date', '>=', $yearStart)
@@ -87,6 +92,13 @@ class LeaveRequest extends Model
 
                 return $start->greaterThan($end) ? 0 : $start->diffInDays($end) + 1;
             });
+    }
+
+    public static function annualEntitlementFor(int $year): float
+    {
+        return (float) (LeaveType::query()
+            ->where('name', 'Annual Leave')
+            ->value('annual_entitlement_days') ?? self::ANNUAL_LEAVE_DAYS);
     }
 
     public function statusLabel(): string

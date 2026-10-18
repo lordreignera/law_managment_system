@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AccessControlController;
 use App\Http\Controllers\AttachmentController;
+use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\BranchController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\ChartAccountController;
@@ -219,6 +220,15 @@ Route::middleware([
         Route::get('/calendar/{calendar}/edit', [CalendarController::class, 'edit'])->name('calendar.edit');
         Route::put('/calendar/{calendar}', [CalendarController::class, 'update'])->name('calendar.update');
         Route::delete('/calendar/{calendar}', [CalendarController::class, 'destroy'])->name('calendar.destroy');
+
+        // Attendance: explicit check-in/out, correction approvals, and reports
+        Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance.index');
+        Route::get('/attendance/monthly', [AttendanceController::class, 'monthly'])->name('attendance.monthly');
+        Route::post('/attendance/check-in', [AttendanceController::class, 'checkIn'])->name('attendance.check-in');
+        Route::post('/attendance/check-out', [AttendanceController::class, 'checkOut'])->name('attendance.check-out');
+        Route::post('/attendance/corrections', [AttendanceController::class, 'storeCorrection'])->name('attendance.corrections.store');
+        Route::patch('/attendance/corrections/{correction}/approve', [AttendanceController::class, 'approveCorrection'])->name('attendance.corrections.approve');
+        Route::patch('/attendance/corrections/{correction}/reject', [AttendanceController::class, 'rejectCorrection'])->name('attendance.corrections.reject');
 
         // Standalone module landing pages
         // Recoveries (debt collection) — manager registers debts & assigns

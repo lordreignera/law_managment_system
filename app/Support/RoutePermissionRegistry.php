@@ -30,6 +30,7 @@ class RoutePermissionRegistry
         'litigation' => 'Litigation',
         'letters' => 'Letters & Opinions',
         'calendar' => 'Firm Calendar',
+        'attendance' => 'Attendance',
         'recoveries' => 'Recoveries',
         'land-titles' => 'Securities',
         'finance' => 'Finance',

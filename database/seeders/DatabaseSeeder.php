@@ -96,7 +96,7 @@ class DatabaseSeeder extends Seeder
             'Recovery Officer' => ['dashboard', 'messages', 'recoveries'],
             'Securities Manager' => ['dashboard', 'messages', 'land-titles'],
             'Accountant' => ['dashboard', 'messages', 'finance', 'expenses', 'petty-cash', 'ledger', 'requisitions'],
-            'HR Manager' => ['dashboard', 'messages', 'hr', 'staff', 'leave'],
+            'HR Manager' => ['dashboard', 'messages', 'hr', 'staff', 'leave', 'attendance'],
             'Payroll Officer' => ['dashboard', 'messages', 'payroll'],
             'Front Desk' => ['dashboard', 'messages', 'clients', 'intakes', 'letters'],
             'IT Manager' => ['dashboard', 'messages', 'access', 'settings', 'branches', 'holidays'],
@@ -155,6 +155,25 @@ class DatabaseSeeder extends Seeder
             'HR Manager', 'Front Desk', 'IT Manager',
         ] as $roleName) {
             Role::findByName($roleName)->givePermissionTo($calendarPermissions);
+        }
+
+        // Attendance self-service is available to every active staff role.
+        $attendanceSelfService = array_values(array_intersect(
+            ['attendance.index', 'attendance.check-in', 'attendance.check-out', 'attendance.corrections.store'],
+            $allPermissions
+        ));
+
+        foreach (['Managing Partner', 'Department Manager', 'Senior Partner', 'Litigation Officer', 'Advocate', 'Paralegal', 'Recoveries Manager', 'Recovery Officer', 'Accountant', 'HR Manager', 'Front Desk', 'IT Manager'] as $roleName) {
+            Role::findByName($roleName)->givePermissionTo($attendanceSelfService);
+        }
+
+        $attendanceManagerPermissions = array_values(array_intersect(
+            ['attendance.reports', 'attendance.monthly', 'attendance.corrections.approve', 'attendance.corrections.reject'],
+            $allPermissions
+        ));
+
+        foreach (['Super Admin', 'Administrator', 'Managing Partner', 'Department Manager', 'HR Manager'] as $roleName) {
+            Role::findByName($roleName)->givePermissionTo($attendanceManagerPermissions);
         }
 
         // Recovery Officers get a limited slice of the Recoveries module: they

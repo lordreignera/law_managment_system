@@ -2,6 +2,7 @@
 
 namespace App\Http\Responses;
 
+use App\Services\AttendanceService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -27,6 +28,11 @@ class LoginResponse implements LoginResponseContract
 
         if ($this->staffIsPendingApproval($user)) {
             return $this->pendingApprovalResponse($request);
+        }
+
+        if ($user?->staffProfile?->employment_status === 'active') {
+            $record = app(AttendanceService::class)->checkIn($user, $request, 'login');
+            $request->session()->put('attendance_record_id', $record->id);
         }
 
         return redirect($this->staffHome($user));

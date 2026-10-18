@@ -12,6 +12,7 @@ use App\Support\MonthlyReferenceNumber;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class LeaveController extends Controller
@@ -49,25 +50,43 @@ class LeaveController extends Controller
         ];
 
         $annualLeavePlan = null;
+        $leaveBalances = collect();
 
         if (! $canApprove) {
             $scheduledDays = LeaveRequest::annualScheduledDaysFor($request->user(), now()->year);
+            $requiredDays = LeaveRequest::annualEntitlementFor(now()->year);
             $annualLeavePlan = [
                 'year' => now()->year,
                 'scheduled_days' => $scheduledDays,
-                'required_days' => LeaveRequest::ANNUAL_LEAVE_DAYS,
-                'remaining_days' => max(0, LeaveRequest::ANNUAL_LEAVE_DAYS - $scheduledDays),
+                'required_days' => $requiredDays,
+                'remaining_days' => max(0, $requiredDays - $scheduledDays),
             ];
+
+            $leaveBalances = LeaveType::query()
+                ->where('is_active', true)
+                ->orderBy('name')
+                ->get()
+                ->map(function (LeaveType $type) use ($request) {
+                    $used = LeaveRequest::scheduledDaysFor($request->user(), $type->id, now()->year);
+
+                    return [
+                        'type' => $type,
+                        'entitlement' => (float) $type->annual_entitlement_days,
+                        'used' => $used,
+                        'remaining' => max(0, (float) $type->annual_entitlement_days - $used),
+                    ];
+                });
         }
 
         return view('modules.leave.index', [
             'leave' => $leave,
             'filters' => $request->only(['search', 'status', 'leave_type_id']),
             'statuses' => LeaveRequest::STATUSES,
-            'leaveTypes' => LeaveType::orderBy('name')->get(),
+            'leaveTypes' => LeaveType::where('is_active', true)->orderBy('name')->get(),
             'canApprove' => $canApprove,
             'summary' => $summary,
             'annualLeavePlan' => $annualLeavePlan,
+            'leaveBalances' => $leaveBalances,
         ]);
     }
 
@@ -75,19 +94,26 @@ class LeaveController extends Controller
     {
         return view('modules.leave.create', [
             'leaveNumber' => MonthlyReferenceNumber::make(LeaveRequest::class, 'leave_no', 'LV'),
-            'leaveTypes' => LeaveType::orderBy('name')->get(),
+            'leaveTypes' => LeaveType::where('is_active', true)->orderBy('name')->get(),
         ]);
     }
 
     public function store(Request $request, ApprovalService $approvals)
     {
         $data = $request->validate([
-            'leave_type_id' => ['required', 'exists:leave_types,id'],
+            'leave_type_id' => ['required', Rule::exists('leave_types', 'id')->where('is_active', true)],
             'start_date' => ['required', 'date'],
             'end_date' => ['required', 'date', 'after_or_equal:start_date'],
             'reason' => ['nullable', 'string', 'max:2000'],
             'attachment' => ['nullable', 'file', 'max:5120'],
         ]);
+
+        $leaveType = LeaveType::findOrFail($data['leave_type_id']);
+        if ($leaveType->requires_attachment && ! $request->hasFile('attachment')) {
+            throw ValidationException::withMessages(['attachment' => 'A supporting document is required for this leave type.']);
+        }
+
+        $this->ensureNoConflict($request->user(), $data['start_date'], $data['end_date']);
 
         $approverIds = $this->approvalChain($request->user());
         $days = Carbon::parse($data['start_date'])->diffInDays(Carbon::parse($data['end_date'])) + 1;
@@ -143,7 +169,7 @@ class LeaveController extends Controller
 
         return view('modules.leave.reschedule', [
             'leave' => $leave->load('leaveType'),
-            'leaveTypes' => LeaveType::orderBy('name')->get(),
+            'leaveTypes' => LeaveType::where('is_active', true)->orderBy('name')->get(),
         ]);
     }
 
@@ -153,12 +179,19 @@ class LeaveController extends Controller
         abort_unless($leave->status === 'rejected', 422, 'Only rejected requests can be rescheduled.');
 
         $data = $request->validate([
-            'leave_type_id' => ['required', 'exists:leave_types,id'],
+            'leave_type_id' => ['required', Rule::exists('leave_types', 'id')->where('is_active', true)],
             'start_date' => ['required', 'date'],
             'end_date' => ['required', 'date', 'after_or_equal:start_date'],
             'reason' => ['nullable', 'string', 'max:2000'],
             'attachment' => ['nullable', 'file', 'max:5120'],
         ]);
+
+        $leaveType = LeaveType::findOrFail($data['leave_type_id']);
+        if ($leaveType->requires_attachment && ! $request->hasFile('attachment')) {
+            throw ValidationException::withMessages(['attachment' => 'A supporting document is required for this leave type.']);
+        }
+
+        $this->ensureNoConflict($request->user(), $data['start_date'], $data['end_date'], $leave);
 
         $approverIds = $this->approvalChain($request->user());
         $days = Carbon::parse($data['start_date'])->diffInDays(Carbon::parse($data['end_date'])) + 1;
@@ -282,6 +315,23 @@ class LeaveController extends Controller
             && ($approval->approver_id === null || $approval->approver_id === $user->id);
     }
 
+    protected function ensureNoConflict(User $user, string $startDate, string $endDate, ?LeaveRequest $ignore = null): void
+    {
+        $conflict = LeaveRequest::query()
+            ->where('user_id', $user->id)
+            ->whereIn('status', ['submitted', 'approved'])
+            ->when($ignore, fn ($query) => $query->whereKeyNot($ignore->id))
+            ->whereDate('start_date', '<=', $endDate)
+            ->whereDate('end_date', '>=', $startDate)
+            ->exists();
+
+        if ($conflict) {
+            throw ValidationException::withMessages([
+                'start_date' => 'These dates overlap another submitted or approved leave request.',
+            ]);
+        }
+    }
+
     protected function notifyCurrentApprover(LeaveRequest $leave): void
     {
         $approval = $leave->currentApproval();
@@ -367,6 +417,7 @@ class LeaveController extends Controller
         foreach ($stages as $label => $approver) {
             if (! $approver || $approver->staffProfile?->employment_status !== 'active' || in_array($approver->id, $approverIds, true)) {
                 $missing[] = $label;
+
                 continue;
             }
 

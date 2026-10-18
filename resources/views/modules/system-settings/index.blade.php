@@ -16,6 +16,7 @@
             + (in_array('office_location', $extraFields, true) ? 1 : 0)
             + (in_array('districts_covered', $extraFields, true) ? 1 : 0)
             + (in_array('portfolio_types', $extraFields, true) ? 1 : 0);
+            $tableColumns += in_array('annual_entitlement_days', $extraFields, true) ? 1 : 0;
             $tableColumns += collect(['court_id', 'firm_name', 'centenary_region_id', 'tax_type', 'rate', 'channel', 'event_key'])
                 ->filter(fn ($field) => in_array($field, $extraFields, true))
                 ->count();
@@ -72,6 +73,7 @@
                     <tr>
                         <th>Code</th>
                         <th>Name</th>
+                        @if (in_array('annual_entitlement_days', $extraFields, true)) <th>Entitlement</th> @endif
                         @if (in_array('iso_code', $extraFields, true)) <th>ISO Code</th> @endif
                         @if (in_array('court_level', $extraFields, true))
                             <th>Level</th>
@@ -129,6 +131,7 @@
                         <tr>
                             <td>{{ $record->code }}</td>
                             <td>{{ $record->name }}</td>
+                            @if (in_array('annual_entitlement_days', $extraFields, true)) <td>{{ rtrim(rtrim(number_format((float) $record->annual_entitlement_days, 1), '0'), '.') }} days</td> @endif
                             @if (in_array('iso_code', $extraFields, true)) <td>{{ $record->iso_code }}</td> @endif
                             @if (in_array('court_level', $extraFields, true))
                                 <td>{{ $record->court_level ?: '-' }}</td>

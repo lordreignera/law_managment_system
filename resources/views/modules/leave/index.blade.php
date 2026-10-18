@@ -43,6 +43,24 @@
             </div>
         @endif
 
+        @if ($leaveBalances->isNotEmpty())
+            <div class="kfms-table-wrap" style="margin-bottom: 1rem">
+                <table class="kfms-table">
+                    <thead><tr><th>Leave balance ({{ now()->year }})</th><th>Entitlement</th><th>Scheduled / used</th><th>Remaining</th></tr></thead>
+                    <tbody>
+                        @foreach ($leaveBalances as $balance)
+                            <tr>
+                                <td>{{ $balance['type']->name }}</td>
+                                <td>{{ rtrim(rtrim(number_format($balance['entitlement'], 1), '0'), '.') }} days</td>
+                                <td>{{ rtrim(rtrim(number_format($balance['used'], 1), '0'), '.') }} days</td>
+                                <td><strong>{{ rtrim(rtrim(number_format($balance['remaining'], 1), '0'), '.') }} days</strong></td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @endif
+
         <form class="kfms-table-toolbar" method="GET" action="{{ route('leave.index') }}">
             <label class="kfms-search-box">
                 <i class="mdi mdi-magnify"></i>

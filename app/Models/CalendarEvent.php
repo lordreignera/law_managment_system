@@ -44,6 +44,11 @@ class CalendarEvent extends Model
         return $this->belongsTo(Branch::class);
     }
 
+    public function department()
+    {
+        return $this->belongsTo(Department::class);
+    }
+
     public function branches()
     {
         return $this->belongsToMany(Branch::class, 'calendar_event_branch')->withTimestamps();
@@ -56,12 +61,22 @@ class CalendarEvent extends Model
         }
 
         return $query->where(function (Builder $query) use ($user) {
-            $query->whereNull($this->getTable().'.branch_id');
+            $query->where(function (Builder $query) use ($user) {
+                $query->whereNull($this->getTable().'.branch_id');
 
-            if ($user->branch_id) {
-                $query->orWhere($this->getTable().'.branch_id', $user->branch_id)
-                    ->orWhereHas('branches', fn (Builder $query) => $query->where('branches.id', $user->branch_id));
-            }
+                if ($user->branch_id) {
+                    $query->orWhere($this->getTable().'.branch_id', $user->branch_id)
+                        ->orWhereHas('branches', fn (Builder $query) => $query->where('branches.id', $user->branch_id));
+                }
+            });
+
+            $query->where(function (Builder $query) use ($user) {
+                $query->whereNull($this->getTable().'.department_id');
+
+                if ($user->department_id) {
+                    $query->orWhere($this->getTable().'.department_id', $user->department_id);
+                }
+            });
         });
     }
 

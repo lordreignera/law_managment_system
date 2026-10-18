@@ -166,6 +166,7 @@ return [
         'singular' => 'Leave Type',
         'model' => LeaveType::class,
         'description' => 'Human resource leave categories.',
+        'extra_fields' => ['annual_entitlement_days', 'carry_forward', 'requires_attachment'],
     ],
     'payment-modes' => [
         'title' => 'Payment Modes',

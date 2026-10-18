@@ -15,7 +15,7 @@ class SendAnnualLeaveReminders extends Command
     protected $signature = 'kfms:leave-reminders
                             {--year= : The leave year to remind staff about}';
 
-    protected $description = 'Remind active staff to schedule their 21 annual leave days.';
+    protected $description = 'Remind active staff to schedule their configured annual leave entitlement.';
 
     public function handle(): int
     {
@@ -31,8 +31,9 @@ class SendAnnualLeaveReminders extends Command
             ->chunkById(100, function ($users) use ($year, &$sent) {
                 foreach ($users as $user) {
                     $scheduledDays = LeaveRequest::annualScheduledDaysFor($user, $year);
+                    $requiredDays = LeaveRequest::annualEntitlementFor($year);
 
-                    if ($scheduledDays >= LeaveRequest::ANNUAL_LEAVE_DAYS) {
+                    if ($scheduledDays >= $requiredDays) {
                         continue;
                     }
 
@@ -46,7 +47,7 @@ class SendAnnualLeaveReminders extends Command
                     }
 
                     try {
-                        Notification::send($user, new AnnualLeaveReminder($year, $scheduledDays));
+                        Notification::send($user, new AnnualLeaveReminder($year, $scheduledDays, $requiredDays));
                         $sent++;
                     } catch (Throwable $exception) {
                         $reminder->delete();

@@ -118,7 +118,7 @@ class MasterDataImports
                 $row[] = $record->{$relation}?->{self::RELATIONS[$field][2]};
             } elseif ($field === 'portfolio_types') {
                 $row[] = is_array($record->{$field}) ? implode('|', $record->{$field}) : $record->{$field};
-            } elseif (in_array($field, ['is_default', 'is_inclusive'], true)) {
+            } elseif (in_array($field, ['is_default', 'is_inclusive', 'carry_forward', 'requires_attachment'], true)) {
                 $row[] = $record->{$field} ? 1 : 0;
             } else {
                 $row[] = $record->{$field};
@@ -221,7 +221,7 @@ class MasterDataImports
         if ($setting === 'notification-templates') {
             $keys = ['event_key' => $input['event_key'] ?? ''];
         }
-        foreach (['is_default', 'is_inclusive'] as $field) {
+        foreach (['is_default', 'is_inclusive', 'carry_forward', 'requires_attachment'] as $field) {
             if (in_array($field, $definition['extra_fields'] ?? [], true)) {
                 $input[$field] = $this->boolean($input[$field] ?? '0');
             }

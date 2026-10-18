@@ -130,6 +130,24 @@ class UserGuideController extends Controller
                 'sections' => [$this->litigationSection()],
             ],
             [
+                'title' => 'Calendar Guide',
+                'subtitle' => 'Firm, department, personal, and court schedules.',
+                'icon' => 'mdi-calendar-month',
+                'route' => 'calendar.index',
+                'route_permission' => 'calendar.index',
+                'permissions' => ['calendar.index', 'calendar.create'],
+                'sections' => [$this->calendarSection()],
+            ],
+            [
+                'title' => 'Attendance Guide',
+                'subtitle' => 'Check-in, corrections, approvals, and staff reports.',
+                'icon' => 'mdi-clock-check-outline',
+                'route' => 'attendance.index',
+                'route_permission' => 'attendance.index',
+                'permissions' => ['attendance.index'],
+                'sections' => [$this->attendanceSection()],
+            ],
+            [
                 'title' => 'Letters & Opinions Guide',
                 'subtitle' => 'Drafting, review, approval, signatures, and dispatch.',
                 'icon' => 'mdi-file-sign',
@@ -302,6 +320,38 @@ class UserGuideController extends Controller
                 'Add the cause list or court file with case number, court, judge, event type, and next date.',
                 'Update filing, service, hearings, rulings, judgment, taxation, and execution steps.',
                 'Use the litigation dashboard to monitor active court work and pending lifecycle stages.',
+            ],
+        ];
+    }
+
+    private function calendarSection(): array
+    {
+        return [
+            'id' => 'calendar',
+            'title' => 'Calendar Flow',
+            'subtitle' => 'Keep firm, department, personal, and court dates in one view.',
+            'steps' => [
+                'Use the Firm Calendar to schedule meetings, appointments, tasks, and deadlines.',
+                'Select one or more branches, then optionally select a department and assigned staff using the searchable checkbox dropdown.',
+                'Use My calendar to see events assigned to you; court events follow the matter team assignment.',
+                'Public holidays and court events appear alongside ordinary calendar events.',
+                'Scheduled reminders are sent through the configured notification template and calendar scheduler.',
+            ],
+        ];
+    }
+
+    private function attendanceSection(): array
+    {
+        return [
+            'id' => 'attendance',
+            'title' => 'Attendance Flow',
+            'subtitle' => 'Record attendance with an auditable approval trail.',
+            'steps' => [
+                'Check in when you start work and check out when you finish; the system records time, device, IP address, and user agent.',
+                'A successful staff login also records a check-in, and logout records a check-out when the session is closed.',
+                'If a time is missing, submit a correction for the date with the corrected time and reason.',
+                'The assigned manager must approve or reject the correction; the original record remains auditable.',
+                'Managers use the daily report for late or absent staff and the monthly report for present, late, incomplete, leave, and absence totals.',
             ],
         ];
     }

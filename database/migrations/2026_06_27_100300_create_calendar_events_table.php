@@ -13,6 +13,7 @@ return new class extends Migration
             $table->string('title');
             $table->string('type')->default('meeting');
             $table->foreignId('branch_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('department_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('matter_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('assigned_to')->nullable()->constrained('users')->nullOnDelete();
@@ -26,6 +27,7 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
             $table->index(['branch_id', 'starts_at']);
+            $table->index(['department_id', 'starts_at']);
             $table->index('starts_at');
         });
     }

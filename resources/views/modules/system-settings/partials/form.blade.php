@@ -17,6 +17,14 @@
         @error('name') <small>{{ $message }}</small> @enderror
     </label>
 
+    @if (in_array('annual_entitlement_days', $extraFields, true))
+        <label>
+            <span>Annual Entitlement (days)</span>
+            <input type="number" name="annual_entitlement_days" min="0" max="366" step="0.5" value="{{ old('annual_entitlement_days', $record->annual_entitlement_days ?? 21) }}" required>
+            @error('annual_entitlement_days') <small>{{ $message }}</small> @enderror
+        </label>
+    @endif
+
     @if (in_array('court_level', $extraFields, true))
         <label>
             <span>Court Level</span>
@@ -216,6 +224,20 @@
         <label class="kfms-check-row">
             <input type="checkbox" name="is_inclusive" value="1" @checked(old('is_inclusive', $record->is_inclusive))>
             <span>Tax inclusive</span>
+        </label>
+    @endif
+
+    @if (in_array('carry_forward', $extraFields, true))
+        <label class="kfms-check-row">
+            <input type="checkbox" name="carry_forward" value="1" @checked(old('carry_forward', $record->carry_forward))>
+            <span>Allow carry-forward</span>
+        </label>
+    @endif
+
+    @if (in_array('requires_attachment', $extraFields, true))
+        <label class="kfms-check-row">
+            <input type="checkbox" name="requires_attachment" value="1" @checked(old('requires_attachment', $record->requires_attachment))>
+            <span>Supporting document required</span>
         </label>
     @endif
 

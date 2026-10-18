@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Branch;
 use App\Models\CalendarEvent;
 use App\Models\CourtEvent;
+use App\Models\Department;
 use App\Models\Matter;
 use App\Models\PublicHoliday;
 use App\Models\User;
@@ -23,8 +24,13 @@ class CalendarController extends Controller
         $rangeEnd = $month->copy()->endOfMonth();
 
         // General calendar events visible to this user's branch.
-        $calendarEvents = CalendarEvent::with(['matter', 'assignee', 'branch', 'branches'])
+        $personalOnly = $request->string('scope')->toString() === 'mine';
+
+        $calendarEvents = CalendarEvent::with(['matter', 'assignee', 'branch', 'branches', 'department'])
             ->forBranchOf($user)
+            ->when($personalOnly, fn ($query) => $query->where(function ($query) use ($user) {
+                $query->where('assigned_to', $user->id)->orWhereHas('assignees', fn ($assignees) => $assignees->whereKey($user->id));
+            }))
             ->whereBetween('starts_at', [$rangeStart, $rangeEnd])
             ->get()
             ->map(fn (CalendarEvent $event) => [
@@ -40,6 +46,12 @@ class CalendarController extends Controller
         $courtEvents = CourtEvent::with(['matter'])
             ->whereBetween('starts_at', [$rangeStart, $rangeEnd])
             ->whereHas('matter', fn ($query) => $query->visibleTo($user))
+            ->when($personalOnly, fn ($query) => $query->where(function ($query) use ($user) {
+                $query->where('assigned_to', $user->id)
+                    ->orWhereHas('matter', fn ($matter) => $matter
+                        ->where('opened_by', $user->id)
+                        ->orWhereHas('assignments', fn ($assignments) => $assignments->where('user_id', $user->id)));
+            }))
             ->get()
             ->map(fn (CourtEvent $event) => [
                 'date' => $event->starts_at?->toDateString(),
@@ -71,6 +83,7 @@ class CalendarController extends Controller
             'events' => $events,
             'holidays' => $holidays,
             'canManageAll' => $user->canSeeAllBranches(),
+            'personalOnly' => $personalOnly,
         ]);
     }
 
@@ -79,6 +92,7 @@ class CalendarController extends Controller
         return view('modules.calendar.create', [
             'types' => CalendarEvent::TYPES,
             'branches' => Branch::where('is_active', true)->orderBy('name')->get(['id', 'name']),
+            'departments' => Department::with('branch:id,name')->where('is_active', true)->orderBy('name')->get(['id', 'name', 'branch_id']),
             'matters' => Matter::visibleTo($request->user())->orderByDesc('id')->limit(300)->get(['id', 'reference_no', 'title']),
             'officers' => $this->calendarUsers(),
             'defaultBranchId' => $request->user()->branch_id,
@@ -120,6 +134,7 @@ class CalendarController extends Controller
             'types' => CalendarEvent::TYPES,
             'statuses' => CalendarEvent::STATUSES,
             'branches' => Branch::where('is_active', true)->orderBy('name')->get(['id', 'name']),
+            'departments' => Department::with('branch:id,name')->where('is_active', true)->orderBy('name')->get(['id', 'name', 'branch_id']),
             'matters' => Matter::visibleTo(request()->user())->orderByDesc('id')->limit(300)->get(['id', 'reference_no', 'title']),
             'officers' => $this->calendarUsers(),
         ]);
@@ -173,6 +188,7 @@ class CalendarController extends Controller
             'type' => ['required', 'in:'.implode(',', array_keys(CalendarEvent::TYPES))],
             'branch_ids' => ['nullable', 'array'],
             'branch_ids.*' => ['integer', 'distinct', 'exists:branches,id'],
+            'department_id' => ['nullable', 'exists:departments,id'],
             'matter_id' => ['nullable', 'exists:matters,id'],
             'assigned_to' => ['nullable', 'array'],
             'assigned_to.*' => ['integer', 'distinct', 'exists:users,id'],
@@ -194,6 +210,20 @@ class CalendarController extends Controller
             throw ValidationException::withMessages([
                 'matter_id' => 'Select a matter you are allowed to view.',
             ]);
+        }
+
+        if (! empty($data['department_id'])) {
+            $department = Department::find($data['department_id']);
+            $branchIds = collect($data['branch_ids'] ?? [])->map(fn ($id) => (int) $id);
+            if ($branchIds->isEmpty() && $request->user()->branch_id) {
+                $branchIds->push((int) $request->user()->branch_id);
+            }
+
+            if ($department?->branch_id && $branchIds->isNotEmpty() && ! $branchIds->contains((int) $department->branch_id)) {
+                throw ValidationException::withMessages([
+                    'department_id' => 'The selected department must belong to one of the selected branches.',
+                ]);
+            }
         }
 
         return $data;

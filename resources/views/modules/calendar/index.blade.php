@@ -16,6 +16,9 @@
                     Prev
                 </a>
                 <a class="kfms-link-btn" href="{{ route('calendar.index') }}">Today</a>
+                <a class="kfms-link-btn {{ $personalOnly ? 'is-active' : '' }}" href="{{ route('calendar.index', ['month' => $month->format('Y-m'), 'scope' => 'mine']) }}">
+                    <i class="mdi mdi-account-calendar-outline"></i> My calendar
+                </a>
                 <a class="kfms-link-btn" href="{{ route('calendar.index', ['month' => $month->copy()->addMonth()->format('Y-m')]) }}">
                     Next
                     <i class="mdi mdi-chevron-right"></i>

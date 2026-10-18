@@ -44,6 +44,9 @@ class MasterDataValidator
             'footer_text' => ['nullable', 'string', 'max:2000'],
             'is_default' => ['nullable', 'boolean'],
             'hourly_rate' => ['required', 'numeric', 'min:0'],
+            'annual_entitlement_days' => ['required', 'numeric', 'min:0', 'max:366'],
+            'carry_forward' => ['nullable', 'boolean'],
+            'requires_attachment' => ['nullable', 'boolean'],
             'currency_type_id' => ['nullable', 'exists:currency_types,id'],
             'branch_id' => ['nullable', 'exists:branches,id'],
             'bank_id' => ['required', 'exists:banks,id'],
@@ -65,7 +68,7 @@ class MasterDataValidator
         }
         $data = Validator::make($input, $rules)->validate();
         $data['sort_order'] = $data['sort_order'] ?? 0;
-        foreach (array_intersect(['is_active', 'is_default', 'is_inclusive'], array_keys($rules)) as $field) {
+        foreach (array_intersect(['is_active', 'is_default', 'is_inclusive', 'carry_forward', 'requires_attachment'], array_keys($rules)) as $field) {
             $data[$field] = filter_var($data[$field] ?? false, FILTER_VALIDATE_BOOLEAN);
         }
         if (in_array('portfolio_types', $fields, true)) {

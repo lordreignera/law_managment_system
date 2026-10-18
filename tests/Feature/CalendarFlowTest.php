@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Branch;
 use App\Models\CalendarEvent;
+use App\Models\Department;
 use App\Models\PublicHoliday;
 use App\Models\StaffProfile;
 use App\Models\User;
@@ -181,5 +182,28 @@ class CalendarFlowTest extends TestCase
         $response->assertOk();
         $response->assertSee('Test Holiday');
         $response->assertSee('is-weekend', false);
+    }
+
+    public function test_department_and_personal_calendar_scope_are_enforced(): void
+    {
+        $branch = Branch::create(['name' => 'Branch A', 'code' => 'BRA']);
+        $departmentA = Department::create(['name' => 'Litigation', 'code' => 'LIT', 'branch_id' => $branch->id]);
+        $departmentB = Department::create(['name' => 'Finance', 'code' => 'FIN', 'branch_id' => $branch->id]);
+        $user = $this->activeUser(['calendar.index', 'calendar.create', 'calendar.store'], 'Advocate', $branch->id);
+        $user->update(['department_id' => $departmentA->id]);
+        $other = $this->activeUser([], 'Advocate', $branch->id);
+
+        $mine = CalendarEvent::create([
+            'title' => 'My Department Meeting', 'type' => 'meeting', 'branch_id' => $branch->id,
+            'department_id' => $departmentA->id, 'assigned_to' => $user->id, 'starts_at' => now()->addDay(),
+        ]);
+        CalendarEvent::create([
+            'title' => 'Other Department Meeting', 'type' => 'meeting', 'branch_id' => $branch->id,
+            'department_id' => $departmentB->id, 'assigned_to' => $other->id, 'starts_at' => now()->addDay(),
+        ]);
+
+        $this->actingAs($user)->get(route('calendar.index'))->assertSee($mine->title)->assertDontSee('Other Department Meeting');
+        $this->actingAs($user)->get(route('calendar.index', ['scope' => 'mine']))->assertSee($mine->title)->assertDontSee('Other Department Meeting');
+        $this->actingAs($user)->get(route('calendar.create'))->assertSee('Firm or branch calendar');
     }
 }

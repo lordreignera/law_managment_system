@@ -117,6 +117,16 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasOne(PayrollEmployeeProfile::class);
     }
 
+    public function attendanceRecords()
+    {
+        return $this->hasMany(AttendanceRecord::class);
+    }
+
+    public function attendanceCorrectionRequests()
+    {
+        return $this->hasMany(AttendanceCorrectionRequest::class);
+    }
+
     public function clientPortalAccount()
     {
         return $this->hasOne(ClientPortalAccount::class);

@@ -110,8 +110,10 @@
                 ['label' => 'HR Dashboard', 'route' => 'hr.dashboard', 'active' => 'hr.dashboard', 'permission' => 'hr.dashboard'],
                 ['label' => 'Staff Register', 'route' => 'staff.index', 'active' => 'staff.*', 'permission' => 'staff.index'],
                 ['label' => 'Leave Management', 'route' => 'leave.index', 'active' => 'leave.*', 'permission' => 'leave.index'],
+                ['label' => 'Attendance', 'route' => 'attendance.index', 'active' => 'attendance.*', 'permission' => 'attendance.index'],
+                ['label' => 'Monthly Attendance', 'route' => 'attendance.monthly', 'active' => 'attendance.monthly', 'permission' => 'attendance.monthly'],
             ],
-            'permission_any' => ['hr.dashboard', 'staff.index', 'leave.index'],
+            'permission_any' => ['hr.dashboard', 'staff.index', 'leave.index', 'attendance.index', 'attendance.monthly'],
         ],
         [
             'label' => 'Payroll',

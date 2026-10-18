@@ -221,4 +221,41 @@ class LeaveManagementFlowTest extends TestCase
             ->patch(route('leave.approve', $leave), [])
             ->assertForbidden();
     }
+
+    public function test_overlapping_submitted_leave_is_rejected(): void
+    {
+        $type = LeaveType::create(['name' => 'Annual Leave']);
+        $staff = $this->activeUser(['leave.store', 'leave.show'], 'Advocate');
+        $this->attachApprovalChain($staff);
+
+        $this->actingAs($staff)->post(route('leave.store'), [
+            'leave_type_id' => $type->id,
+            'start_date' => '2026-09-01',
+            'end_date' => '2026-09-05',
+        ])->assertRedirect();
+
+        $this->actingAs($staff)->post(route('leave.store'), [
+            'leave_type_id' => $type->id,
+            'start_date' => '2026-09-05',
+            'end_date' => '2026-09-07',
+        ])->assertSessionHasErrors('start_date');
+
+        $this->assertDatabaseCount('leave_requests', 1);
+    }
+
+    public function test_leave_balance_uses_configured_entitlement(): void
+    {
+        $type = LeaveType::create(['name' => 'Annual Leave', 'annual_entitlement_days' => 30]);
+        $staff = $this->activeUser(['leave.index'], 'Advocate');
+
+        LeaveRequest::create([
+            'leave_no' => 'LV2610-0001', 'user_id' => $staff->id, 'leave_type_id' => $type->id,
+            'start_date' => '2026-01-01', 'end_date' => '2026-01-05', 'days' => 5, 'status' => 'approved',
+        ]);
+
+        $this->actingAs($staff)->get(route('leave.index'))
+            ->assertOk()
+            ->assertSee('30 days')
+            ->assertSee('25 days');
+    }
 }

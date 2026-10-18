@@ -4,7 +4,7 @@ namespace App\Notifications;
 
 class AnnualLeaveReminder extends TemplateNotification
 {
-    public function __construct(public int $year, public float $scheduledDays) {}
+    public function __construct(public int $year, public float $scheduledDays, public float $requiredDays = 21) {}
 
     protected function eventKey(): string
     {
@@ -13,7 +13,7 @@ class AnnualLeaveReminder extends TemplateNotification
 
     protected function context(): array
     {
-        return ['year' => $this->year, 'scheduled_days' => $this->scheduledDays, 'remaining_days' => max(0, 21 - $this->scheduledDays)];
+        return ['year' => $this->year, 'scheduled_days' => $this->scheduledDays, 'remaining_days' => max(0, $this->requiredDays - $this->scheduledDays)];
     }
 
     protected function action(): array
