@@ -86,7 +86,7 @@ class DatabaseSeeder extends Seeder
             'Super Admin' => array_keys(RoutePermissionRegistry::MODULES),
             'Administrator' => array_keys(RoutePermissionRegistry::MODULES),
 
-            'Managing Partner' => ['dashboard', 'messages', 'clients', 'intakes', 'matters', 'litigation', 'letters', 'recoveries', 'land-titles', 'finance', 'expenses', 'petty-cash', 'ledger', 'hr', 'staff', 'leave', 'requisitions', 'branches', 'holidays'],
+            'Managing Partner' => ['dashboard', 'messages', 'clients', 'intakes', 'matters', 'litigation', 'letters', 'recoveries', 'land-titles', 'finance', 'expenses', 'petty-cash', 'ledger', 'hr', 'staff', 'leave', 'requisitions', 'reports', 'branches', 'holidays'],
             'Department Manager' => ['dashboard', 'messages', 'leave'],
             'Senior Partner' => ['dashboard', 'messages', 'clients', 'intakes', 'matters', 'litigation', 'letters'],
             'Litigation Officer' => ['dashboard', 'messages', 'clients', 'intakes', 'matters', 'litigation', 'letters', 'calendar'],

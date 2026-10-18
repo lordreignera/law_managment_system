@@ -59,6 +59,7 @@
             'permission_any' => ['letters.dashboard', 'letters.index', 'letters.create', 'letters.templates.index'],
         ],
         ['label' => 'Firm Calendar', 'icon' => 'mdi-calendar-month', 'route' => 'calendar.index', 'active' => 'calendar.*', 'permission' => 'calendar.index'],
+        ['label' => 'Reports & Analytics', 'icon' => 'mdi-chart-box-outline', 'route' => 'reports.index', 'active' => 'reports.*', 'permission' => 'reports.index'],
         [
             'label' => 'Recoveries',
             'icon' => 'mdi-bank',

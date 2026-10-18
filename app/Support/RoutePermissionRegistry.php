@@ -38,6 +38,7 @@ class RoutePermissionRegistry
         'petty-cash' => 'Petty Cash',
         'ledger' => 'Ledger',
         'payroll' => 'Payroll',
+        'reports' => 'Reporting & Analytics',
         'hr' => 'Human Resources',
         'staff' => 'Staff',
         'leave' => 'Leave Management',

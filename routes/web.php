@@ -45,6 +45,7 @@ use App\Http\Controllers\PublicHolidayController;
 use App\Http\Controllers\RecoveryActivityController;
 use App\Http\Controllers\RecoveryController;
 use App\Http\Controllers\RecoveryReportController;
+use App\Http\Controllers\ReportingController;
 use App\Http\Controllers\RequisitionController;
 use App\Http\Controllers\StaffController;
 use App\Http\Controllers\SystemSettingController;
@@ -113,6 +114,10 @@ Route::middleware([
     // permission record.
     Route::middleware(['active.staff', 'route.permission'])->group(function () {
         Route::get('/dashboard', DashboardController::class)->name('dashboard');
+
+        // Reporting catalogue and controlled report definitions.
+        Route::get('/reports', [ReportingController::class, 'index'])->name('reports.index');
+        Route::get('/reports/{report}', [ReportingController::class, 'show'])->name('reports.show');
 
         // Internal messages
         Route::get('/messages', [MessageController::class, 'index'])->name('messages.index');

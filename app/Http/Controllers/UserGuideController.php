@@ -224,6 +224,15 @@ class UserGuideController extends Controller
                 'sections' => [$this->payrollSection()],
             ],
             [
+                'title' => 'Reporting & Analytics Guide',
+                'subtitle' => 'Controlled report definitions, management packs, exports, and audit rules.',
+                'icon' => 'mdi-chart-box-outline',
+                'route' => 'reports.index',
+                'route_permission' => 'reports.index',
+                'permissions' => ['reports.index'],
+                'sections' => [$this->reportingSection()],
+            ],
+            [
                 'title' => 'Messages Guide',
                 'subtitle' => 'Internal and client communication available to your account.',
                 'icon' => 'mdi-message-text-outline',
@@ -479,6 +488,22 @@ class UserGuideController extends Controller
                 'Use Messages to communicate with individual users, departments, branches, or the whole firm.',
                 'Client matter messages are visible only to the client and the assigned matter team.',
                 'Uploaded chat files are stored using the configured document storage bucket.',
+            ],
+        ];
+    }
+
+    private function reportingSection(): array
+    {
+        return [
+            'id' => 'reporting-analytics',
+            'title' => 'Reporting & Analytics Flow',
+            'subtitle' => 'Use one controlled definition for every management report.',
+            'steps' => [
+                'Open Reports & Analytics to browse the catalogue by group or search for a report by name, formula, or module.',
+                'Open a report definition before exporting so that the included statuses, date rule, branch rule, permission rule, and draft or void treatment are clear.',
+                'Use the linked operational report for live module data where one is available. Recovery and payroll reports remain protected by their own module permissions.',
+                'Use branch and department comparison reports only within the scope granted to your role. Firm-wide management packs are restricted to authorized administrators and management users.',
+                'Every generated report or management pack must record the actor, period, filters, branch scope, component versions, export format, and row or checksum details in the audit trail.',
             ],
         ];
     }
