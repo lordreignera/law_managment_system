@@ -22,9 +22,10 @@ class BankSeeder extends Seeder
     }
 
     /**
-     * Uganda's commercial-bank master list is seeded from the Uganda Bankers
-     * Association member list. Branch locations are kept in BankBranchSeeder
-     * so that a bank can be maintained independently from its locations.
+     * Uganda's banking-institution master list is seeded from the Uganda
+     * Bankers Association member list. Branch locations are kept in
+     * BankBranchSeeder so that a bank can be maintained independently from
+     * its locations.
      */
     private function banks(): array
     {
