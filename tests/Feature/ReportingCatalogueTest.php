@@ -63,7 +63,7 @@ class ReportingCatalogueTest extends TestCase
         $this->actingAs($user)->get(route('reports.index', ['q' => 'turnaround']))
             ->assertOk()
             ->assertSee('<h3>Matter turnaround</h3>', false)
-            ->assertSee('<h3>Title turnaround</h3>', false)
+            ->assertSee('<h3>Securities turnaround</h3>', false)
             ->assertDontSee('<h3>Recovery collections</h3>', false);
     }
 
@@ -78,6 +78,31 @@ class ReportingCatalogueTest extends TestCase
             ->assertSee('Draft, void &amp; archived treatment', false)
             ->assertSee('report_generated')
             ->assertSee('Open operational report');
+    }
+
+    public function test_report_periods_table_and_csv_export_are_available(): void
+    {
+        $user = $this->activeUser();
+
+        $this->actingAs($user)->get(route('reports.show', ['report' => 'matter-workload', 'period' => 'weekly']))
+            ->assertOk()
+            ->assertSee('Weekly')
+            ->assertSee('Yearly')
+            ->assertSee('Decision table')
+            ->assertSee('PNG')
+            ->assertSee('/reports/matter-workload/export?period=weekly', false);
+
+        $this->actingAs($user)->get(route('reports.export', ['report' => 'matter-workload', 'period' => 'weekly', 'format' => 'csv']))
+            ->assertOk()
+            ->assertHeader('content-type', 'text/csv; charset=UTF-8');
+
+        $this->actingAs($user)->get(route('reports.export', ['report' => 'matter-workload', 'period' => 'monthly', 'format' => 'xlsx']))
+            ->assertOk()
+            ->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+
+        $this->actingAs($user)->get(route('reports.export', ['report' => 'matter-workload', 'period' => 'monthly', 'format' => 'pdf']))
+            ->assertOk()
+            ->assertHeader('content-type', 'application/pdf');
     }
 
     public function test_live_module_analytics_pages_render_with_an_empty_dataset(): void

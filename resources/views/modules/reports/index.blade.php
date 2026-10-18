@@ -8,7 +8,7 @@
             <div>
                 <span class="kfms-report-eyebrow">Management information</span>
                 <h1>Reporting &amp; Analytics</h1>
-                <p>Use the controlled catalogue to view, compare and export consistent management information across the firm.</p>
+                <p>Use the controlled catalogue to view, compare and export consistent management information across the firm. Each supported report can be read weekly, monthly, quarterly, or yearly.</p>
             </div>
             <div class="kfms-report-hero-stats" aria-label="Report catalogue summary">
                 <div><strong>{{ $totalReports }}</strong><span>Defined reports</span></div>

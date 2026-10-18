@@ -26,6 +26,7 @@ use App\Models\Requisition;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 
 class ReportingAnalyticsService
 {
@@ -41,10 +42,10 @@ class ReportingAnalyticsService
 
     public function build(string $slug, User $user, string $period = 'monthly'): ?array
     {
-        $period = in_array($period, ['monthly', 'quarterly', 'annual'], true) ? $period : 'monthly';
+        $period = $this->normalizePeriod($period);
         $buckets = $this->buckets($period);
 
-        return match ($slug) {
+        $analytics = match ($slug) {
             'client-activity', 'client-intake-funnel' => $this->clients($user, $period, $buckets),
             'matter-workload', 'matter-turnaround' => $this->matters($user, $period, $buckets),
             'litigation-deadlines', 'court-outcomes' => $this->litigation($user, $period, $buckets),
@@ -56,6 +57,17 @@ class ReportingAnalyticsService
             'payroll' => $this->payroll($period, $buckets),
             'branch-comparison', 'department-comparison', 'monthly-management-pack', 'annual-management-pack' => $this->management($slug, $user, $period, $buckets),
             default => null,
+        };
+
+        return $this->withTable($analytics);
+    }
+
+    private function normalizePeriod(string $period): string
+    {
+        return match ($period) {
+            'weekly', 'monthly', 'quarterly', 'yearly' => $period,
+            'annual' => 'yearly',
+            default => 'monthly',
         };
     }
 
@@ -440,7 +452,7 @@ class ReportingAnalyticsService
         return [
             'period' => $period,
             'period_label' => $this->periodLabel($period),
-            'scope' => 'Securities and land-title custody records within the permitted branch scope.',
+            'scope' => 'Securities custody records within the permitted branch scope.',
             'cards' => [
                 $this->card('In custody', (clone $titles)->whereIn('status', ['received', 'in_progress', 'dispatched'])->count(), 'Titles currently held or moving', self::NAVY),
                 $this->card('Received in period', $this->sum($received), 'Incoming custody records', self::BLUE),
@@ -453,9 +465,9 @@ class ReportingAnalyticsService
                     $this->dataset('Returned', $returned, self::GREEN),
                 ]),
                 $this->doughnutChart('securities-status', 'Custody status', 'Current security status distribution.', array_keys($statusCounts), array_values($statusCounts), [self::GOLD, self::BLUE, self::NAVY, self::GREEN, self::RED]),
-                $this->barChart('securities-turnaround', 'Title turnaround', 'Average days from receipt to return.', $labels, [$this->dataset('Average days', $turnaround, self::NAVY)]),
+                $this->barChart('securities-turnaround', 'Securities turnaround', 'Average days from receipt to return.', $labels, [$this->dataset('Average days', $turnaround, self::NAVY)]),
             ],
-            'insight' => 'Use custody status with turnaround days to identify titles that are accumulating in progress or missing a completed return movement.',
+            'insight' => 'Use custody status with turnaround days to identify securities that are accumulating in progress or missing a completed return movement.',
         ];
     }
 
@@ -531,7 +543,7 @@ class ReportingAnalyticsService
                         $this->dataset('Clients', $clientCounts, self::BLUE),
                         $this->dataset('Matters', $matterCounts, self::NAVY),
                         $this->dataset('Staff', $staffCounts, self::GOLD),
-                    ]),
+                    ], false, 'Branch'),
                     $this->lineChart('branch-trend', 'Firm movement', 'New clients, matters and court events by period.', $labels, [
                         $this->dataset('Clients', $newClients, self::BLUE),
                         $this->dataset('Matters', $openedMatters, self::NAVY),
@@ -573,7 +585,7 @@ class ReportingAnalyticsService
                     $this->barChart('department-workload', 'Department capacity', 'Active staff and current-month attendance by department.', $departmentLabels, [
                         $this->dataset('Staff', $staffCounts, self::NAVY),
                         $this->dataset('Attendance entries', $attendanceCounts, self::GREEN),
-                    ]),
+                    ], false, 'Department'),
                     $this->lineChart('department-trend', 'Operating movement', 'New clients, matters and court events by period.', $labels, [
                         $this->dataset('Clients', $newClients, self::BLUE),
                         $this->dataset('Matters', $openedMatters, self::NAVY),
@@ -730,40 +742,46 @@ class ReportingAnalyticsService
     private function buckets(string $period): array
     {
         $count = match ($period) {
+            'weekly' => 12,
             'quarterly' => 8,
-            'annual' => 5,
+            'yearly' => 5,
             default => 12,
         };
         $cursor = match ($period) {
+            'weekly' => now()->startOfWeek()->subWeeks($count - 1),
             'quarterly' => now()->startOfQuarter()->subQuarters($count - 1),
-            'annual' => now()->startOfYear()->subYears($count - 1),
+            'yearly' => now()->startOfYear()->subYears($count - 1),
             default => now()->startOfMonth()->subMonths($count - 1),
         };
         $buckets = [];
         for ($index = 0; $index < $count; $index++) {
             $start = $cursor->copy();
             $end = match ($period) {
+                'weekly' => $start->copy()->endOfWeek(),
                 'quarterly' => $start->copy()->endOfQuarter(),
-                'annual' => $start->copy()->endOfYear(),
+                'yearly' => $start->copy()->endOfYear(),
                 default => $start->copy()->endOfMonth(),
             };
             $buckets[] = [
                 'key' => $start->format(match ($period) {
+                    'weekly' => 'o-\\WW',
                     'quarterly' => 'Y-\QQ',
-                    'annual' => 'Y',
+                    'yearly' => 'Y',
                     default => 'Y-m',
                 }),
                 'label' => match ($period) {
+                    'weekly' => $start->format('d M').' - '.$end->format('d M Y'),
                     'quarterly' => 'Q'.$start->quarter.' '.$start->year,
-                    'annual' => (string) $start->year,
+                    'yearly' => (string) $start->year,
                     default => $start->format('M Y'),
                 },
                 'start' => $start,
                 'end' => $end,
             ];
             $cursor = match ($period) {
+                'weekly' => $cursor->copy()->addWeek(),
                 'quarterly' => $cursor->copy()->addQuarter(),
-                'annual' => $cursor->copy()->addYear(),
+                'yearly' => $cursor->copy()->addYear(),
                 default => $cursor->copy()->addMonth(),
             };
         }
@@ -779,10 +797,40 @@ class ReportingAnalyticsService
     private function periodLabel(string $period): string
     {
         return match ($period) {
+            'weekly' => 'Last 12 weeks',
             'quarterly' => 'Last 8 quarters',
-            'annual' => 'Last 5 years',
+            'yearly' => 'Last 5 years',
             default => 'Last 12 months',
         };
+    }
+
+    private function withTable(?array $analytics): ?array
+    {
+        if (! $analytics || ! empty($analytics['table'])) {
+            return $analytics;
+        }
+
+        $chart = collect($analytics['charts'] ?? [])->first(fn (array $chart) => ! empty($chart['datasets']));
+        if (! $chart) {
+            return $analytics + ['table' => ['columns' => [], 'rows' => []]];
+        }
+
+        $columns = collect($chart['datasets'])->map(fn (array $dataset) => [
+            'key' => Str::slug($dataset['label']),
+            'label' => $dataset['label'],
+            'money' => (bool) ($dataset['money'] ?? false),
+        ])->values()->all();
+
+        $rows = collect($chart['labels'] ?? [])->map(function (string $label, int $index) use ($chart): array {
+            return [
+                'period' => $label,
+                'values' => collect($chart['datasets'])->map(fn (array $dataset) => $dataset['data'][$index] ?? 0)->values()->all(),
+            ];
+        })->values()->all();
+
+        $dimension = $chart['dimension'] ?? 'Period';
+
+        return $analytics + ['table' => compact('columns', 'rows', 'dimension')];
     }
 
     private function card(string $label, mixed $value, string $caption, string $color, bool $money = false, ?string $suffix = null): array
@@ -795,19 +843,19 @@ class ReportingAnalyticsService
         return compact('label', 'data', 'color', 'money');
     }
 
-    private function lineChart(string $id, string $title, string $subtitle, array $labels, array $datasets): array
+    private function lineChart(string $id, string $title, string $subtitle, array $labels, array $datasets, string $dimension = 'Period'): array
     {
-        return compact('id', 'title', 'subtitle', 'labels', 'datasets') + ['type' => 'line', 'stacked' => false];
+        return compact('id', 'title', 'subtitle', 'labels', 'datasets', 'dimension') + ['type' => 'line', 'stacked' => false];
     }
 
-    private function barChart(string $id, string $title, string $subtitle, array $labels, array $datasets, bool $stacked = false): array
+    private function barChart(string $id, string $title, string $subtitle, array $labels, array $datasets, bool $stacked = false, string $dimension = 'Period'): array
     {
-        return compact('id', 'title', 'subtitle', 'labels', 'datasets') + ['type' => 'bar', 'stacked' => $stacked];
+        return compact('id', 'title', 'subtitle', 'labels', 'datasets', 'dimension') + ['type' => 'bar', 'stacked' => $stacked];
     }
 
     private function doughnutChart(string $id, string $title, string $subtitle, array $labels, array $data, array $colors): array
     {
-        return compact('id', 'title', 'subtitle', 'labels', 'data', 'colors') + ['type' => 'doughnut', 'datasets' => []];
+        return compact('id', 'title', 'subtitle', 'labels', 'data', 'colors') + ['type' => 'pie', 'datasets' => []];
     }
 
     private function sum(array $values): float

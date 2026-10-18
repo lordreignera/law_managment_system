@@ -32,9 +32,10 @@
                     <form method="GET" action="{{ route('reports.show', $report['slug']) }}" class="kfms-report-period-filter">
                         <label for="report-period">View by</label>
                         <select id="report-period" name="period" onchange="this.form.submit()">
+                            <option value="weekly" @selected($analytics['period'] === 'weekly')>Weekly</option>
                             <option value="monthly" @selected($analytics['period'] === 'monthly')>Monthly</option>
                             <option value="quarterly" @selected($analytics['period'] === 'quarterly')>Quarterly</option>
-                            <option value="annual" @selected($analytics['period'] === 'annual')>Annual</option>
+                            <option value="yearly" @selected($analytics['period'] === 'yearly')>Yearly</option>
                         </select>
                     </form>
                 </div>
@@ -59,6 +60,9 @@
                                     <h3>{{ $chart['title'] }}</h3>
                                     <p>{{ $chart['subtitle'] }}</p>
                                 </div>
+                                <button type="button" class="kfms-report-chart-download" data-chart-download="{{ $chart['id'] }}">
+                                    <i class="mdi mdi-download"></i> PNG
+                                </button>
                             </div>
                             <div class="kfms-report-chart-wrap">
                                 <canvas id="{{ $chart['id'] }}" aria-label="{{ $chart['title'] }}"></canvas>
@@ -71,6 +75,55 @@
                     <i class="mdi mdi-lightbulb-outline"></i>
                     <span><strong>Management reading:</strong> {{ $analytics['insight'] }}</span>
                 </div>
+
+                @if (! empty($analytics['table']['columns']))
+                    <section class="kfms-report-data-table-panel">
+                        <div class="kfms-report-data-table-heading">
+                            <div>
+                                <span class="kfms-report-eyebrow">Exportable detail</span>
+                                <h3>Decision table</h3>
+                                <p>These rows use the same period scope as the charts above.</p>
+                            </div>
+                            <div class="kfms-report-export-actions">
+                                @foreach (['csv' => 'CSV', 'xlsx' => 'Excel', 'pdf' => 'PDF'] as $format => $label)
+                                    <a href="{{ route('reports.export', ['report' => $report['slug'], 'period' => $analytics['period'], 'format' => $format]) }}" class="kfms-report-export-button">
+                                        <i class="mdi mdi-download"></i> {{ $label }}
+                                    </a>
+                                @endforeach
+                            </div>
+                        </div>
+                        <div class="kfms-report-table-scroll">
+                            <table class="kfms-report-data-table">
+                                <thead>
+                                    <tr>
+                                        <th>{{ $analytics['table']['dimension'] ?? 'Period' }}</th>
+                                        @foreach ($analytics['table']['columns'] as $column)
+                                            <th>{{ $column['label'] }}</th>
+                                        @endforeach
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse ($analytics['table']['rows'] as $row)
+                                        <tr>
+                                            <th>{{ $row['period'] }}</th>
+                                            @foreach ($row['values'] as $index => $value)
+                                                <td>
+                                                    @if (! empty($analytics['table']['columns'][$index]['money']))
+                                                        UGX {{ number_format((float) $value, 2) }}
+                                                    @else
+                                                        {{ is_numeric($value) ? number_format((float) $value, 2) : $value }}
+                                                    @endif
+                                                </td>
+                                            @endforeach
+                                        </tr>
+                                    @empty
+                                        <tr><td colspan="{{ count($analytics['table']['columns']) + 1 }}">No records matched this period.</td></tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+                @endif
             </section>
         @endif
 
@@ -174,7 +227,8 @@
                         return;
                     }
 
-                    const datasets = chartConfig.type === 'doughnut'
+                    const isPie = ['pie', 'doughnut'].includes(chartConfig.type);
+                    const datasets = isPie
                         ? [{
                             data: chartConfig.data,
                             backgroundColor: chartConfig.colors,
@@ -198,9 +252,9 @@
                         options: {
                             responsive: true,
                             maintainAspectRatio: false,
-                            legend: { display: chartConfig.type !== 'doughnut', position: 'bottom' },
+                            legend: { display: isPie, position: 'bottom' },
                             cutoutPercentage: chartConfig.type === 'doughnut' ? 62 : undefined,
-                            scales: chartConfig.type === 'doughnut' ? {} : {
+                            scales: isPie ? {} : {
                                 xAxes: [{ stacked: chartConfig.stacked, gridLines: { display: false } }],
                                 yAxes: [{ stacked: chartConfig.stacked, ticks: { beginAtZero: true } }],
                             },
@@ -208,14 +262,31 @@
                                 callbacks: {
                                     label: function (tooltipItem, data) {
                                         const dataset = data.datasets[tooltipItem.datasetIndex] || {};
-                                        const value = chartConfig.type === 'doughnut'
+                                        const value = isPie
                                             ? data.datasets[0].data[tooltipItem.index]
                                             : dataset.data[tooltipItem.index];
-                                        return `${dataset.label ? dataset.label + ': ' : ''}${formatValue(value, dataset)}`;
+                                        const label = isPie
+                                            ? chartConfig.labels[tooltipItem.index]
+                                            : dataset.label;
+                                        return `${label ? label + ': ' : ''}${formatValue(value, dataset)}`;
                                     },
                                 },
                             },
                         },
+                    });
+                });
+
+                document.querySelectorAll('[data-chart-download]').forEach((button) => {
+                    button.addEventListener('click', function () {
+                        const canvas = document.getElementById(this.dataset.chartDownload);
+                        if (!canvas) {
+                            return;
+                        }
+
+                        const link = document.createElement('a');
+                        link.download = `${this.dataset.chartDownload}.png`;
+                        link.href = canvas.toDataURL('image/png');
+                        link.click();
                     });
                 });
             });

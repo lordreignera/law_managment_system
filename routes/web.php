@@ -117,6 +117,8 @@ Route::middleware([
 
         // Reporting catalogue and controlled report definitions.
         Route::get('/reports', [ReportingController::class, 'index'])->name('reports.index');
+        Route::get('/reports/{report}/export', [ReportingController::class, 'export'])
+            ->withoutMiddleware('route.permission')->name('reports.export');
         Route::get('/reports/{report}', [ReportingController::class, 'show'])->name('reports.show');
 
         // Internal messages
