@@ -57,14 +57,14 @@ class ReportingCatalogueTest extends TestCase
 
         $this->actingAs($user)->get(route('reports.index', ['group' => 'Recoveries']))
             ->assertOk()
-            ->assertSee('Recovery collections')
-            ->assertDontSee('Matter workload');
+            ->assertSee('<h3>Recovery collections</h3>', false)
+            ->assertDontSee('<h3>Matter workload</h3>', false);
 
         $this->actingAs($user)->get(route('reports.index', ['q' => 'turnaround']))
             ->assertOk()
-            ->assertSee('Matter turnaround')
-            ->assertSee('Title turnaround')
-            ->assertDontSee('Recovery collections');
+            ->assertSee('<h3>Matter turnaround</h3>', false)
+            ->assertSee('<h3>Title turnaround</h3>', false)
+            ->assertDontSee('<h3>Recovery collections</h3>', false);
     }
 
     public function test_report_definition_page_displays_the_reporting_contract(): void

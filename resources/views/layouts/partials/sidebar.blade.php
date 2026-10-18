@@ -59,7 +59,23 @@
             'permission_any' => ['letters.dashboard', 'letters.index', 'letters.create', 'letters.templates.index'],
         ],
         ['label' => 'Firm Calendar', 'icon' => 'mdi-calendar-month', 'route' => 'calendar.index', 'active' => 'calendar.*', 'permission' => 'calendar.index'],
-        ['label' => 'Reports & Analytics', 'icon' => 'mdi-chart-box-outline', 'route' => 'reports.index', 'active' => 'reports.*', 'permission' => 'reports.index'],
+        [
+            'label' => 'Reports & Analytics',
+            'icon' => 'mdi-chart-box-outline',
+            'route' => 'reports.index',
+            'active' => 'reports.*',
+            'permission' => 'reports.index',
+            'children' => collect(config('reporting.reports', []))
+                ->map(fn (array $report, string $slug) => [
+                    'label' => $report['title'],
+                    'route' => 'reports.show',
+                    'params' => ['report' => $slug],
+                    'active' => 'reports.show',
+                    'permission' => 'reports.show',
+                ])
+                ->values()
+                ->all(),
+        ],
         [
             'label' => 'Recoveries',
             'icon' => 'mdi-bank',
@@ -191,12 +207,14 @@
                                 @foreach ($item['children'] as $child)
                                     @continue(isset($child['permission']) && ! auth()->user()?->can($child['permission']))
                                     @php
-                                        $childUrl = route($child['route'], $child['query'] ?? []);
+                                        $childUrl = route($child['route'], $child['params'] ?? ($child['query'] ?? []));
                                         $childPatterns = (array) ($child['active'] ?? $child['route']);
                                         $childRouteActive = collect($childPatterns)->contains(fn ($pattern) => request()->routeIs($pattern));
-                                        $childActive = isset($child['query'])
+                                        $childActive = isset($child['params'])
+                                            ? ($childRouteActive && request()->route('report') === ($child['params']['report'] ?? null))
+                                            : (isset($child['query'])
                                             ? ($childRouteActive && collect($child['query'])->every(fn ($value, $key) => request($key) === $value))
-                                            : ($childRouteActive && ! request()->has('status'));
+                                            : ($childRouteActive && ! request()->has('status')));
                                     @endphp
                                     <li class="nav-item {{ $childActive ? 'active' : '' }}">
                                         <a class="nav-link" href="{{ $childUrl }}">{{ $child['label'] }}</a>
