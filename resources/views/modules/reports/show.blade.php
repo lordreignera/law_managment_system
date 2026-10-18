@@ -21,6 +21,59 @@
             @endif
         </section>
 
+        @if ($analytics)
+            <section class="kfms-report-analytics-panel">
+                <div class="kfms-report-analytics-heading">
+                    <div>
+                        <span class="kfms-report-eyebrow">Live module analytics</span>
+                        <h2>Decision view</h2>
+                        <p>{{ $analytics['scope'] }} {{ $analytics['period_label'] }}.</p>
+                    </div>
+                    <form method="GET" action="{{ route('reports.show', $report['slug']) }}" class="kfms-report-period-filter">
+                        <label for="report-period">View by</label>
+                        <select id="report-period" name="period" onchange="this.form.submit()">
+                            <option value="monthly" @selected($analytics['period'] === 'monthly')>Monthly</option>
+                            <option value="quarterly" @selected($analytics['period'] === 'quarterly')>Quarterly</option>
+                            <option value="annual" @selected($analytics['period'] === 'annual')>Annual</option>
+                        </select>
+                    </form>
+                </div>
+
+                <div class="kfms-report-analytics-cards">
+                    @foreach ($analytics['cards'] as $card)
+                        <article class="kfms-report-analytics-card" style="--report-card-accent: {{ $card['color'] }}">
+                            <span>{{ $card['label'] }}</span>
+                            <strong>
+                                @if ($card['money']) UGX @endif{{ $card['value'] }}@if ($card['suffix']) <small>{{ $card['suffix'] }}</small>@endif
+                            </strong>
+                            <em>{{ $card['caption'] }}</em>
+                        </article>
+                    @endforeach
+                </div>
+
+                <div class="kfms-report-chart-grid">
+                    @foreach ($analytics['charts'] as $chart)
+                        <article class="kfms-report-chart-card">
+                            <div class="kfms-report-chart-heading">
+                                <div>
+                                    <h3>{{ $chart['title'] }}</h3>
+                                    <p>{{ $chart['subtitle'] }}</p>
+                                </div>
+                            </div>
+                            <div class="kfms-report-chart-wrap">
+                                <canvas id="{{ $chart['id'] }}" aria-label="{{ $chart['title'] }}"></canvas>
+                            </div>
+                        </article>
+                    @endforeach
+                </div>
+
+                <div class="kfms-report-analytics-insight">
+                    <i class="mdi mdi-lightbulb-outline"></i>
+                    <span><strong>Management reading:</strong> {{ $analytics['insight'] }}</span>
+                </div>
+            </section>
+        @endif
+
         <section class="kfms-report-contract-grid">
             <article class="kfms-report-contract-card kfms-report-contract-card-wide">
                 <span class="kfms-report-eyebrow">Defined formula</span>
@@ -106,3 +159,66 @@
         @endif
     </div>
 @endsection
+
+@if ($analytics)
+    @push('scripts')
+        <script src="{{ asset('admin/assets/vendors/chart.js/Chart.min.js') }}"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const charts = @json($analytics['charts']);
+                const formatValue = (value, dataset) => dataset.money ? `UGX ${Number(value || 0).toLocaleString()}` : Number(value || 0).toLocaleString();
+
+                charts.forEach((chartConfig) => {
+                    const canvas = document.getElementById(chartConfig.id);
+                    if (!canvas || typeof Chart === 'undefined') {
+                        return;
+                    }
+
+                    const datasets = chartConfig.type === 'doughnut'
+                        ? [{
+                            data: chartConfig.data,
+                            backgroundColor: chartConfig.colors,
+                            borderColor: '#ffffff',
+                            borderWidth: 2,
+                        }]
+                        : chartConfig.datasets.map((dataset) => ({
+                            label: dataset.label,
+                            data: dataset.data,
+                            backgroundColor: dataset.color,
+                            borderColor: dataset.color,
+                            borderWidth: 2,
+                            fill: chartConfig.type === 'line' ? false : undefined,
+                            tension: 0.28,
+                            pointRadius: chartConfig.type === 'line' ? 3 : 0,
+                        }));
+
+                    new Chart(canvas.getContext('2d'), {
+                        type: chartConfig.type,
+                        data: { labels: chartConfig.labels, datasets },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            legend: { display: chartConfig.type !== 'doughnut', position: 'bottom' },
+                            cutoutPercentage: chartConfig.type === 'doughnut' ? 62 : undefined,
+                            scales: chartConfig.type === 'doughnut' ? {} : {
+                                xAxes: [{ stacked: chartConfig.stacked, gridLines: { display: false } }],
+                                yAxes: [{ stacked: chartConfig.stacked, ticks: { beginAtZero: true } }],
+                            },
+                            tooltips: {
+                                callbacks: {
+                                    label: function (tooltipItem, data) {
+                                        const dataset = data.datasets[tooltipItem.datasetIndex] || {};
+                                        const value = chartConfig.type === 'doughnut'
+                                            ? data.datasets[0].data[tooltipItem.index]
+                                            : dataset.data[tooltipItem.index];
+                                        return `${dataset.label ? dataset.label + ': ' : ''}${formatValue(value, dataset)}`;
+                                    },
+                                },
+                            },
+                        },
+                    });
+                });
+            });
+        </script>
+    @endpush
+@endif

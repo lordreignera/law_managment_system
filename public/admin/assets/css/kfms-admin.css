@@ -457,8 +457,171 @@ body.kfms-template {
     text-decoration: none;
 }
 
+.kfms-report-analytics-panel {
+    padding: 20px;
+    margin-bottom: 18px;
+    border: 1px solid var(--kfms-report-line);
+    border-radius: 12px;
+    background: #f8fafc;
+}
+
+.kfms-report-analytics-heading {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.kfms-report-analytics-heading h2 {
+    margin: 0 0 4px;
+    color: var(--kfms-report-ink);
+    font-size: 21px;
+    font-weight: 800;
+}
+
+.kfms-report-analytics-heading p {
+    margin: 0;
+    color: var(--kfms-report-muted);
+    font-size: 12px;
+}
+
+.kfms-report-period-filter {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+}
+
+.kfms-report-period-filter label {
+    color: var(--kfms-report-muted);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.kfms-report-period-filter select {
+    min-height: 38px;
+    padding: 7px 30px 7px 10px;
+    border: 1px solid #cbd7e5;
+    border-radius: 8px;
+    color: var(--kfms-report-ink);
+    background: #fff;
+    font-weight: 700;
+}
+
+.kfms-report-analytics-cards {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.kfms-report-analytics-card {
+    min-height: 112px;
+    padding: 14px;
+    border: 1px solid var(--kfms-report-line);
+    border-top: 3px solid var(--report-card-accent, var(--kfms-report-navy));
+    border-radius: 9px;
+    background: #fff;
+}
+
+.kfms-report-analytics-card span,
+.kfms-report-analytics-card em {
+    display: block;
+}
+
+.kfms-report-analytics-card span {
+    color: var(--kfms-report-muted);
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.kfms-report-analytics-card strong {
+    display: block;
+    margin: 7px 0 5px;
+    color: var(--kfms-report-ink);
+    font-size: 24px;
+    font-weight: 800;
+    line-height: 1.1;
+}
+
+.kfms-report-analytics-card strong small {
+    display: block;
+    margin-top: 4px;
+    color: var(--kfms-report-muted);
+    font-size: 10px;
+    font-weight: 700;
+}
+
+.kfms-report-analytics-card em {
+    color: var(--kfms-report-muted);
+    font-size: 10px;
+    font-style: normal;
+    line-height: 1.35;
+}
+
+.kfms-report-chart-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.kfms-report-chart-card {
+    min-width: 0;
+    padding: 15px;
+    border: 1px solid var(--kfms-report-line);
+    border-radius: 9px;
+    background: #fff;
+}
+
+.kfms-report-chart-card:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+}
+
+.kfms-report-chart-heading h3 {
+    margin: 0 0 4px;
+    color: var(--kfms-report-ink);
+    font-size: 15px;
+    font-weight: 800;
+}
+
+.kfms-report-chart-heading p {
+    margin: 0;
+    color: var(--kfms-report-muted);
+    font-size: 11px;
+}
+
+.kfms-report-chart-wrap {
+    position: relative;
+    height: 260px;
+    margin-top: 10px;
+}
+
+.kfms-report-analytics-insight {
+    display: flex;
+    align-items: start;
+    gap: 9px;
+    padding: 11px 13px;
+    margin-top: 14px;
+    border-left: 3px solid var(--kfms-report-navy);
+    border-radius: 0 7px 7px 0;
+    color: var(--kfms-report-ink);
+    background: #eef3f8;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.kfms-report-analytics-insight > i {
+    color: var(--kfms-report-navy);
+    font-size: 18px;
+}
+
 @media (max-width: 1100px) {
     .kfms-report-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .kfms-report-analytics-cards {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
@@ -486,8 +649,22 @@ body.kfms-template {
     }
 
     .kfms-report-grid,
-    .kfms-report-contract-grid {
+    .kfms-report-contract-grid,
+    .kfms-report-chart-grid {
         grid-template-columns: 1fr;
+    }
+
+    .kfms-report-analytics-cards {
+        grid-template-columns: 1fr;
+    }
+
+    .kfms-report-analytics-heading {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .kfms-report-period-filter {
+        justify-content: space-between;
     }
 
     .kfms-report-contract-card-wide {

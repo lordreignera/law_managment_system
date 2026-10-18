@@ -501,6 +501,8 @@ class UserGuideController extends Controller
             'steps' => [
                 'Open Reports & Analytics to browse the catalogue by group or search for a report by name, formula, or module.',
                 'Open a report definition before exporting so that the included statuses, date rule, branch rule, permission rule, and draft or void treatment are clear.',
+                'Use the Monthly, Quarterly, or Annual selector on supported report pages to read live KPI cards, line trends, bar comparisons, and status charts from the current module records.',
+                'Read the management insight below each chart before making a decision, then open the linked operational report when you need to work on the underlying records.',
                 'Use the linked operational report for live module data where one is available. Recovery and payroll reports remain protected by their own module permissions.',
                 'Use branch and department comparison reports only within the scope granted to your role. Firm-wide management packs are restricted to authorized administrators and management users.',
                 'Every generated report or management pack must record the actor, period, filters, branch scope, component versions, export format, and row or checksum details in the audit trail.',

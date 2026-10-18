@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\ReportingAnalyticsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
@@ -45,7 +46,7 @@ class ReportingController extends Controller
         ]);
     }
 
-    public function show(string $report)
+    public function show(Request $request, string $report, ReportingAnalyticsService $analyticsService)
     {
         $definition = config("reporting.reports.{$report}");
 
@@ -53,6 +54,11 @@ class ReportingController extends Controller
 
         return view('modules.reports.show', [
             'report' => array_merge($definition, ['slug' => $report]),
+            'analytics' => $analyticsService->build(
+                $report,
+                $request->user(),
+                $request->string('period')->toString() ?: 'monthly'
+            ),
             'relatedReports' => $this->catalogue()
                 ->filter(fn (array $item, string $slug) => $slug !== $report && $item['group'] === $definition['group'])
                 ->sortBy('title')

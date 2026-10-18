@@ -48,7 +48,7 @@ class ReportingCatalogueTest extends TestCase
         $response->assertSee('Matter workload');
         $response->assertSee('Monthly management pack');
         $response->assertSee('Formula');
-        $this->assertCount(23, config('reporting.reports'));
+        $this->assertCount(25, config('reporting.reports'));
     }
 
     public function test_catalogue_can_be_filtered_by_group_and_search(): void
@@ -78,6 +78,38 @@ class ReportingCatalogueTest extends TestCase
             ->assertSee('Draft, void &amp; archived treatment', false)
             ->assertSee('report_generated')
             ->assertSee('Open operational report');
+    }
+
+    public function test_live_module_analytics_pages_render_with_an_empty_dataset(): void
+    {
+        $user = $this->activeUser();
+        $slugs = [
+            'client-activity',
+            'matter-workload',
+            'litigation-deadlines',
+            'recovery-collections',
+            'leave-utilization',
+            'attendance',
+            'billing-totals',
+            'collections',
+            'expenses',
+            'petty-cash',
+            'requisitions',
+            'land-title-custody',
+            'title-turnaround',
+            'payroll',
+            'branch-comparison',
+            'department-comparison',
+            'monthly-management-pack',
+            'annual-management-pack',
+        ];
+
+        foreach ($slugs as $slug) {
+            $this->actingAs($user)->get(route('reports.show', $slug))
+                ->assertOk()
+                ->assertSee('Live module analytics')
+                ->assertSee('Decision view');
+        }
     }
 
     public function test_user_without_reporting_permission_is_forbidden(): void
