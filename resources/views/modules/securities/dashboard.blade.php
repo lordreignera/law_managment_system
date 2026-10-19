@@ -11,20 +11,24 @@
             <p>Monitor documents received from financial institutions, movement to MZO/zonal offices, handling officers, and returns.</p>
         </div>
         <div class="kfms-dashboard-hero-actions">
-            @can('land-titles.import')
-                <a class="kfms-btn" href="{{ route('land-titles.import') }}">
+            @can('securities.import')
+                <a class="kfms-btn" href="{{ route('securities.import') }}">
                     <i class="mdi mdi-upload"></i>
                     Import
                 </a>
             @endcan
-            <a class="kfms-link-btn" href="{{ route('land-titles.index') }}">
-                <i class="mdi mdi-format-list-bulleted"></i>
-                Register
-            </a>
-            <a class="kfms-link-btn" href="{{ route('land-titles.create') }}">
-                <i class="mdi mdi-plus"></i>
-                Add Security
-            </a>
+            @can('securities.index')
+                <a class="kfms-link-btn" href="{{ route('securities.index') }}">
+                    <i class="mdi mdi-format-list-bulleted"></i>
+                    Register
+                </a>
+            @endcan
+            @can('securities.create')
+                <a class="kfms-link-btn" href="{{ route('securities.create') }}">
+                    <i class="mdi mdi-plus"></i>
+                    Add Security
+                </a>
+            @endcan
         </div>
     </section>
 
@@ -69,7 +73,7 @@
         </div>
         <div class="kfms-table-wrap"><table class="kfms-table"><thead><tr><th>Security</th><th>Milestone</th><th>Due</th><th>Status</th><th>Handler</th></tr></thead><tbody>
             @forelse ($milestoneQueue as $milestone)
-                <tr><td><a href="{{ route('land-titles.show', $milestone->landTitle) }}">{{ $milestone->landTitle?->reference_no }}</a></td><td>{{ $milestone->name }}</td><td>{{ $milestone->due_at?->format('d M Y, H:i') ?: '-' }}</td><td>{{ $milestone->statusLabel() }}</td><td>{{ $milestone->landTitle?->handler?->name ?: '-' }}</td></tr>
+                <tr><td>@can('securities.show')<a href="{{ route('securities.show', $milestone->landTitle) }}">{{ $milestone->landTitle?->reference_no }}</a>@else{{ $milestone->landTitle?->reference_no }}@endcan</td><td>{{ $milestone->name }}</td><td>{{ $milestone->due_at?->format('d M Y, H:i') ?: '-' }}</td><td>{{ $milestone->statusLabel() }}</td><td>{{ $milestone->landTitle?->handler?->name ?: '-' }}</td></tr>
             @empty
                 <tr><td colspan="5" class="kfms-empty">No pending milestones.</td></tr>
             @endforelse
@@ -84,10 +88,10 @@
                     <span>Active securities awaiting return or closure</span>
                 </div>
                 <div class="kfms-row-actions">
-                    @can('land-titles.dashboard.export')
-                        <a class="kfms-link-btn" href="{{ route('land-titles.dashboard.export', 'custody') }}"><i class="mdi mdi-download"></i> Export</a>
+                    @can('securities.dashboard.export')
+                        <a class="kfms-link-btn" href="{{ route('securities.dashboard.export', 'custody') }}"><i class="mdi mdi-download"></i> Export</a>
                     @endcan
-                    <a class="kfms-link-btn" href="{{ route('land-titles.index', ['status' => 'pending']) }}">
+                    <a class="kfms-link-btn" href="{{ route('securities.index', ['status' => 'pending']) }}">
                         Review Pending
                         <i class="mdi mdi-arrow-right"></i>
                     </a>
@@ -107,7 +111,7 @@
                     <tbody>
                         @forelse ($custodyQueue as $title)
                             <tr>
-                                <td><a href="{{ route('land-titles.show', $title) }}">{{ $title->reference_no }}</a></td>
+                                <td>@can('securities.show')<a href="{{ route('securities.show', $title) }}">{{ $title->reference_no }}</a>@else{{ $title->reference_no }}@endcan</td>
                                 <td>{{ $title->borrower_name }}</td>
                                 <td>{{ $title->bank?->name ?: '-' }}</td>
                                 <td>{{ $title->handler?->name ?: '-' }}</td>
@@ -127,8 +131,8 @@
                     <h2>Status Breakdown</h2>
                     <span>Current securities movement state</span>
                 </div>
-                @can('land-titles.dashboard.export')
-                    <a class="kfms-link-btn" href="{{ route('land-titles.dashboard.export', 'status') }}"><i class="mdi mdi-download"></i> Export</a>
+                @can('securities.dashboard.export')
+                    <a class="kfms-link-btn" href="{{ route('securities.dashboard.export', 'status') }}"><i class="mdi mdi-download"></i> Export</a>
                 @endcan
             </div>
             <div class="kfms-dashboard-bar-list">
@@ -151,8 +155,8 @@
                     <h2>By Financial Institution</h2>
                     <span>Top institutions by securities volume</span>
                 </div>
-                @can('land-titles.dashboard.export')
-                    <a class="kfms-link-btn" href="{{ route('land-titles.dashboard.export', 'banks') }}"><i class="mdi mdi-download"></i> Export</a>
+                @can('securities.dashboard.export')
+                    <a class="kfms-link-btn" href="{{ route('securities.dashboard.export', 'banks') }}"><i class="mdi mdi-download"></i> Export</a>
                 @endcan
             </div>
             <div class="kfms-table-wrap">
@@ -180,8 +184,8 @@
                     <h2>By MZO / Zonal Office</h2>
                     <span>Where securities are moving from or to</span>
                 </div>
-                @can('land-titles.dashboard.export')
-                    <a class="kfms-link-btn" href="{{ route('land-titles.dashboard.export', 'zonal-offices') }}"><i class="mdi mdi-download"></i> Export</a>
+                @can('securities.dashboard.export')
+                    <a class="kfms-link-btn" href="{{ route('securities.dashboard.export', 'zonal-offices') }}"><i class="mdi mdi-download"></i> Export</a>
                 @endcan
             </div>
             <div class="kfms-table-wrap">
@@ -210,10 +214,10 @@
                 <span>Latest records added or updated</span>
             </div>
             <div class="kfms-row-actions">
-                @can('land-titles.dashboard.export')
-                    <a class="kfms-link-btn" href="{{ route('land-titles.dashboard.export', 'recent') }}"><i class="mdi mdi-download"></i> Export</a>
+                @can('securities.dashboard.export')
+                    <a class="kfms-link-btn" href="{{ route('securities.dashboard.export', 'recent') }}"><i class="mdi mdi-download"></i> Export</a>
                 @endcan
-                <a class="kfms-link-btn" href="{{ route('land-titles.index') }}">View All</a>
+                <a class="kfms-link-btn" href="{{ route('securities.index') }}">View All</a>
             </div>
         </div>
         <div class="kfms-table-wrap">
@@ -231,7 +235,7 @@
                 <tbody>
                     @forelse ($recentTitles as $title)
                         <tr>
-                            <td><a href="{{ route('land-titles.show', $title) }}">{{ $title->reference_no }}</a></td>
+                            <td>@can('securities.show')<a href="{{ route('securities.show', $title) }}">{{ $title->reference_no }}</a>@else{{ $title->reference_no }}@endcan</td>
                             <td>{{ $title->borrower_name }}</td>
                             <td>
                                 {{ $title->bank?->name ?: '-' }}<br>

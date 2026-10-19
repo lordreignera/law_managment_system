@@ -60,6 +60,10 @@ Route::view('/user-guidelines', 'help.staff-guidelines')->name('help.staff-guide
 Route::view('/client-portal/guidelines', 'help.client-guidelines')->name('help.client-guidelines');
 
 Route::get('/client-portal', [ClientPortalAuthController::class, 'welcome'])->name('client.portal');
+Route::get('/client-portal/login', [ClientPortalAuthController::class, 'login'])->name('client.login');
+Route::post('/client-portal/login', [ClientPortalAuthController::class, 'authenticate'])
+    ->middleware('throttle:login')
+    ->name('client.login.store');
 
 Route::middleware('guest')->group(function () {
     Route::get('/client-portal/register', [ClientPortalAuthController::class, 'create'])->name('client.register');
@@ -263,27 +267,27 @@ Route::middleware([
         Route::delete('/recoveries/{recovery}', [RecoveryController::class, 'destroy'])->name('recoveries.destroy');
         Route::post('/recoveries/{recovery}/activities', [RecoveryActivityController::class, 'store'])->name('recoveries.activities.store');
         Route::post('/recoveries/{recovery}/skip-trace', [RecoveryController::class, 'storeSkipTrace'])->name('recoveries.skip-trace.store');
-        Route::get('/land-titles/dashboard', [LandTitleController::class, 'dashboard'])->name('land-titles.dashboard');
-        Route::get('/land-titles/dashboard/export/{section}', [LandTitleController::class, 'dashboardExport'])->name('land-titles.dashboard.export');
-        Route::get('/land-titles', [LandTitleController::class, 'index'])->name('land-titles.index');
-        Route::get('/land-titles/import', [LandTitleController::class, 'importForm'])->name('land-titles.import');
-        Route::post('/land-titles/import', [LandTitleController::class, 'importStore'])->name('land-titles.import.store');
-        Route::get('/land-titles/create', [LandTitleController::class, 'create'])->name('land-titles.create');
-        Route::post('/land-titles', [LandTitleController::class, 'store'])->name('land-titles.store');
-        Route::get('/land-titles/export', [LandTitleController::class, 'export'])->name('land-titles.export');
-        Route::get('/land-titles/{landTitle}', [LandTitleController::class, 'show'])->name('land-titles.show');
-        Route::get('/land-titles/{landTitle}/edit', [LandTitleController::class, 'edit'])->name('land-titles.edit');
-        Route::put('/land-titles/{landTitle}', [LandTitleController::class, 'update'])->name('land-titles.update');
-        Route::get('/land-titles/{landTitle}/return', [LandTitleController::class, 'returnForm'])->name('land-titles.return.form');
-        Route::patch('/land-titles/{landTitle}/return', [LandTitleController::class, 'returnSecurity'])->name('land-titles.return');
-        Route::post('/land-titles/{landTitle}/movements', [LandTitleController::class, 'storeMovement'])->name('land-titles.movements.store');
-        Route::post('/land-titles/{landTitle}/checklist', [LandTitleController::class, 'storeChecklistItem'])->name('land-titles.checklist.store');
-        Route::patch('/land-titles/{landTitle}/checklist/{item}', [LandTitleController::class, 'updateChecklistItem'])->name('land-titles.checklist.update');
-        Route::delete('/land-titles/{landTitle}/checklist/{item}', [LandTitleController::class, 'destroyChecklistItem'])->name('land-titles.checklist.destroy');
-        Route::post('/land-titles/{landTitle}/milestones', [LandTitleController::class, 'storeMilestone'])->name('land-titles.milestones.store');
-        Route::patch('/land-titles/{landTitle}/milestones/{milestone}', [LandTitleController::class, 'updateMilestone'])->name('land-titles.milestones.update');
-        Route::delete('/land-titles/{landTitle}/milestones/{milestone}', [LandTitleController::class, 'destroyMilestone'])->name('land-titles.milestones.destroy');
-        Route::delete('/land-titles/{landTitle}', [LandTitleController::class, 'destroy'])->name('land-titles.destroy');
+        Route::get('/securities/dashboard', [LandTitleController::class, 'dashboard'])->name('securities.dashboard');
+        Route::get('/securities/dashboard/export/{section}', [LandTitleController::class, 'dashboardExport'])->name('securities.dashboard.export');
+        Route::get('/securities', [LandTitleController::class, 'index'])->name('securities.index');
+        Route::get('/securities/import', [LandTitleController::class, 'importForm'])->name('securities.import');
+        Route::post('/securities/import', [LandTitleController::class, 'importStore'])->name('securities.import.store');
+        Route::get('/securities/create', [LandTitleController::class, 'create'])->name('securities.create');
+        Route::post('/securities', [LandTitleController::class, 'store'])->name('securities.store');
+        Route::get('/securities/export', [LandTitleController::class, 'export'])->name('securities.export');
+        Route::get('/securities/{landTitle}', [LandTitleController::class, 'show'])->name('securities.show');
+        Route::get('/securities/{landTitle}/edit', [LandTitleController::class, 'edit'])->name('securities.edit');
+        Route::put('/securities/{landTitle}', [LandTitleController::class, 'update'])->name('securities.update');
+        Route::get('/securities/{landTitle}/return', [LandTitleController::class, 'returnForm'])->name('securities.return.form');
+        Route::patch('/securities/{landTitle}/return', [LandTitleController::class, 'returnSecurity'])->name('securities.return');
+        Route::post('/securities/{landTitle}/movements', [LandTitleController::class, 'storeMovement'])->name('securities.movements.store');
+        Route::post('/securities/{landTitle}/checklist', [LandTitleController::class, 'storeChecklistItem'])->name('securities.checklist.store');
+        Route::patch('/securities/{landTitle}/checklist/{item}', [LandTitleController::class, 'updateChecklistItem'])->name('securities.checklist.update');
+        Route::delete('/securities/{landTitle}/checklist/{item}', [LandTitleController::class, 'destroyChecklistItem'])->name('securities.checklist.destroy');
+        Route::post('/securities/{landTitle}/milestones', [LandTitleController::class, 'storeMilestone'])->name('securities.milestones.store');
+        Route::patch('/securities/{landTitle}/milestones/{milestone}', [LandTitleController::class, 'updateMilestone'])->name('securities.milestones.update');
+        Route::delete('/securities/{landTitle}/milestones/{milestone}', [LandTitleController::class, 'destroyMilestone'])->name('securities.milestones.destroy');
+        Route::patch('/securities/{landTitle}/archive', [LandTitleController::class, 'archive'])->name('securities.archive');
         Route::get('/finance/dashboard', [FinanceController::class, 'dashboard'])->name('finance.dashboard');
         Route::get('/finance/invoices/create', [FinanceController::class, 'createInvoice'])->name('finance.invoices.create');
         Route::post('/finance/invoices', [FinanceController::class, 'storeInvoice'])->name('finance.invoices.store');

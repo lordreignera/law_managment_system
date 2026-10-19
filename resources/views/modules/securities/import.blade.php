@@ -11,19 +11,19 @@
                 <span>Upload Excel or CSV records into the securities register.</span>
             </div>
             <div class="kfms-row-actions">
-                <a class="kfms-link-btn" href="{{ route('land-titles.dashboard') }}">
+                <a class="kfms-link-btn" href="{{ route('securities.dashboard') }}">
                     <i class="mdi mdi-view-dashboard-outline"></i>
                     Dashboard
                 </a>
-                <a class="kfms-link-btn" href="{{ route('land-titles.index') }}">
+                <a class="kfms-link-btn" href="{{ route('securities.index') }}">
                     <i class="mdi mdi-format-list-bulleted"></i>
                     Register
                 </a>
-                <a class="kfms-link-btn" href="{{ route('imports.templates.download', 'land-titles') }}">CSV Template</a>
+                <a class="kfms-link-btn" href="{{ route('imports.templates.download', 'securities') }}">CSV Template</a>
             </div>
         </div>
 
-        <form class="kfms-form" method="POST" action="{{ route('land-titles.import.store') }}" enctype="multipart/form-data">
+        <form class="kfms-form" method="POST" action="{{ route('securities.import.store') }}" enctype="multipart/form-data">
             @csrf
 
             <div class="kfms-form-grid">
@@ -51,7 +51,7 @@
             </div>
 
             <div class="kfms-form-actions">
-                <a class="kfms-link-btn" href="{{ route('land-titles.index') }}">Cancel</a>
+                <a class="kfms-link-btn" href="{{ route('securities.index') }}">Cancel</a>
                 <button type="submit"><i class="mdi mdi-upload"></i> Import Securities</button>
             </div>
         </form>

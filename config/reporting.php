@@ -202,7 +202,7 @@ return [
             'source' => ['users', 'recovery_accounts', 'recovery_activities'],
             'route' => 'recoveries.reports',
         ],
-        'land-title-custody' => [
+        'securities-custody' => [
             'title' => 'Securities custody',
             'group' => 'Securities',
             'description' => 'Securities held, dispatched, returned and overdue by custody status, branch and handler.',
@@ -210,7 +210,7 @@ return [
             'statuses' => ['pending', 'received', 'in_progress', 'dispatched', 'returned', 'closed'],
             'date_rule' => 'Use received_at, dispatched_at and returned_at according to the selected custody event period.',
             'branch_rule' => 'Use security branch; permit cross-branch reporting only for securities managers and administrators.',
-            'permission_rule' => ['reports.index', 'land-titles.index'],
+            'permission_rule' => ['reports.index', 'securities.index'],
             'draft_void_archived' => 'Exclude cancelled securities from active custody; preserve returned and released securities for history.',
             'export_formats' => ['CSV', 'XLSX', 'PDF'],
             'audit_record' => 'report_generated plus security custody movement and document access audit events.',
@@ -224,7 +224,7 @@ return [
             'statuses' => ['returned', 'closed'],
             'date_rule' => 'Filter by returned_at or closed_at and calculate elapsed calendar days from received_at.',
             'branch_rule' => 'Use the security branch and permitted custody team scope.',
-            'permission_rule' => ['reports.index', 'land-titles.index'],
+            'permission_rule' => ['reports.index', 'securities.index'],
             'draft_void_archived' => 'Exclude cancelled or incomplete security cycles; retain archived completed cycles only when selected.',
             'export_formats' => ['CSV', 'XLSX', 'PDF'],
             'audit_record' => 'report_generated with security IDs, calculation version, period and actor.',

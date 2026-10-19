@@ -5,15 +5,40 @@ namespace App\Http\Controllers;
 use App\Models\Client;
 use App\Models\ClientPortalAccount;
 use App\Models\User;
+use App\Services\AttendanceService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
+use Laravel\Fortify\Http\Controllers\AuthenticatedSessionController;
+use Laravel\Fortify\Http\Requests\LoginRequest;
 use Spatie\Permission\Models\Role;
 
 class ClientPortalAuthController extends Controller
 {
+    public function login()
+    {
+        return view('auth.login', ['portal' => 'client']);
+    }
+
+    public function authenticate(LoginRequest $request, AuthenticatedSessionController $sessions)
+    {
+        $currentUser = $request->user();
+
+        if ($currentUser) {
+            if ($currentUser->staffProfile?->employment_status === 'active') {
+                app(AttendanceService::class)->checkOut($currentUser, $request, 'client-portal-switch');
+            }
+
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+        }
+
+        return $sessions->store($request);
+    }
+
     public function welcome(Request $request)
     {
         if ($request->user()?->isClientAccount()) {

@@ -88,7 +88,7 @@ permission catalogue is synced from the route table.
 | --- | --- |
 | Super Admin | All (also bypassed by Gate::before) |
 | Administrator | All (explicit so the bypass isn't required) |
-| Managing Partner | dashboard, clients, intakes, matters, recoveries, land-titles, finance, staff |
+| Managing Partner | dashboard, clients, intakes, matters, recoveries, securities, finance, staff |
 | Senior Partner | dashboard, clients, intakes, matters |
 | Advocate | dashboard, clients, intakes, matters |
 | Paralegal | dashboard, intakes, matters |

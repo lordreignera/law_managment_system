@@ -43,8 +43,8 @@ class DashboardController extends Controller
             return redirect()->route('recoveries.mine');
         }
 
-        if ($user->hasRole('Securities Manager') && $user->can('land-titles.dashboard')) {
-            return redirect()->route('land-titles.dashboard');
+        if ($user->hasRole('Securities Manager') && $user->can('securities.dashboard')) {
+            return redirect()->route('securities.dashboard');
         }
 
         $can = fn (string $permission) => $user->can($permission);
@@ -65,7 +65,7 @@ class DashboardController extends Controller
             ['label' => 'Pending Intakes', 'value' => number_format(ClientIntake::where('status', 'pending_review')->count()), 'icon' => 'mdi-account-plus-outline', 'route' => $link('intakes.index', 'intakes.index')],
             ['label' => 'Active Recoveries', 'value' => number_format(RecoveryAccount::where('status', 'active')->count()), 'icon' => 'mdi-bank-outline', 'route' => $link('recoveries.index', 'recoveries.index')],
             ['label' => 'Recovery Outstanding', 'value' => number_format($recoveryOutstanding), 'icon' => 'mdi-cash-remove', 'route' => $link('recoveries.index', 'recoveries.index')],
-            ['label' => 'Pending Securities', 'value' => number_format(LandTitle::where('status', 'pending')->count()), 'icon' => 'mdi-file-document-outline', 'route' => $link('land-titles.index', 'land-titles.index')],
+            ['label' => 'Pending Securities', 'value' => number_format(LandTitle::where('status', 'pending')->count()), 'icon' => 'mdi-file-document-outline', 'route' => $link('securities.index', 'securities.index')],
             ['label' => 'Upcoming Court Events', 'value' => number_format(CourtEvent::whereDate('starts_at', '>=', today())->whereIn('status', ['scheduled', 'adjourned'])->count()), 'icon' => 'mdi-gavel', 'route' => $link('litigation.index', 'litigation.index')],
             ['label' => 'Outstanding Invoices', 'value' => number_format(max($invoiceOutstanding, 0)), 'icon' => 'mdi-receipt-text-outline', 'route' => $link('finance.index', 'finance.index')],
             ['label' => 'Pending Requisitions', 'value' => number_format(Requisition::whereIn('status', ['draft', 'submitted'])->count()), 'icon' => 'mdi-clipboard-text-outline', 'route' => $link('requisitions.index', 'requisitions.index')],

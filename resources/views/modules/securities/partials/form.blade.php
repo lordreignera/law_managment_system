@@ -34,7 +34,7 @@
     <label>
         <span>Security Type <span class="kfms-required">*</span></span>
         <select name="security_type" required>
-            @foreach (['land_title' => 'Land Title', 'mortgage' => 'Mortgage', 'discharge' => 'Discharge', 'consent' => 'Consent', 'other' => 'Other'] as $value => $label)
+            @foreach ($securityTypes as $value => $label)
                 <option value="{{ $value }}" @selected(old('security_type', $title->security_type ?? 'land_title') === $value)>{{ $label }}</option>
             @endforeach
         </select>
@@ -69,7 +69,7 @@
     </label>
 
     <label>
-        <span>Land / Property Reference</span>
+        <span>Property Reference</span>
         <input type="text" name="land_reference" value="{{ old('land_reference', $title->land_reference) }}" placeholder="Plot, block, volume, folio">
         @error('land_reference') <small>{{ $message }}</small> @enderror
     </label>
@@ -150,6 +150,17 @@
     </label>
 
     <label>
+        <span>Client</span>
+        <select name="client_id">
+            <option value="">Select client</option>
+            @foreach ($clients as $client)
+                <option value="{{ $client->id }}" @selected((string) old('client_id', $title->client_id) === (string) $client->id)>{{ $client->display_name }}</option>
+            @endforeach
+        </select>
+        @error('client_id') <small>{{ $message }}</small> @enderror
+    </label>
+
+    <label>
         <span>Handled By</span>
         <select name="handled_by">
             <option value="">Unassigned</option>
@@ -219,7 +230,7 @@
 </div>
 
 <div class="kfms-form-actions">
-    <a class="kfms-link-btn" href="{{ route('land-titles.index') }}">Cancel</a>
+    <a class="kfms-link-btn" href="{{ route('securities.index') }}">Cancel</a>
     <button type="submit">{{ $buttonText }}</button>
 </div>
 

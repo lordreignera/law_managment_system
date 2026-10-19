@@ -29,7 +29,7 @@ class SecurityMilestoneReminder extends TemplateNotification
     protected function action(): ?array
     {
         return $this->milestone->landTitle
-            ? ['label' => 'View security', 'url' => route('land-titles.show', $this->milestone->landTitle)]
+            ? ['label' => 'View security', 'url' => route('securities.show', $this->milestone->landTitle)]
             : null;
     }
 }

@@ -1,5 +1,8 @@
 @php
-    $isClientPortalLogin = request('portal') === 'client';
+    $isClientPortalLogin = request('portal') === 'client' || ($portal ?? null) === 'client';
+    $loginAction = $isClientPortalLogin && Route::has('client.login.store')
+        ? route('client.login.store')
+        : route('login');
 @endphp
 
 <x-guest-layout>
@@ -29,7 +32,7 @@
                         @endunless
                     @endsession
 
-                    <form method="POST" action="{{ route('login') }}">
+                    <form method="POST" action="{{ $loginAction }}">
                         @csrf
 
                         <label class="kca-field" for="email">

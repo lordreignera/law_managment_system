@@ -124,7 +124,7 @@ return [
         'title' => 'Banks',
         'singular' => 'Bank',
         'model' => Bank::class,
-        'description' => 'Banks used for recoveries, land titles, payments, and clients.',
+        'description' => 'Banks used for recoveries, securities, payments, and clients.',
     ],
     'recovery-clients' => [
         'title' => 'Recovery Clients',

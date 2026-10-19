@@ -46,7 +46,7 @@
                     </div>
 
                     <div class="kca-guidelines-actions">
-                        <a class="kca-primary-button" href="{{ route('login', ['portal' => 'client']) }}">
+                        <a class="kca-primary-button" href="{{ route('client.login') }}">
                             <i class="mdi mdi-login"></i>
                             Client Sign In
                         </a>

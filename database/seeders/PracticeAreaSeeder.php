@@ -12,7 +12,7 @@ class PracticeAreaSeeder extends Seeder
         foreach ([
             ['name' => 'Litigation', 'description' => 'Court disputes, hearings, and case management.'],
             ['name' => 'Debt Recoveries', 'description' => 'Bank and institutional recovery work.'],
-            ['name' => 'Securities and Land Titles', 'description' => 'Mortgage, title, and securities documentation.'],
+            ['name' => 'Securities', 'description' => 'Mortgage, title, and security instrument documentation.'],
             ['name' => 'ESG and Advisory', 'description' => 'Advisory, governance, and compliance services.'],
             ['name' => 'General Corporate', 'description' => 'Commercial and company advisory work.'],
         ] as $index => $item) {

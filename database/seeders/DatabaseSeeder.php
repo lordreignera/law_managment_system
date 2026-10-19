@@ -86,7 +86,7 @@ class DatabaseSeeder extends Seeder
             'Super Admin' => array_keys(RoutePermissionRegistry::MODULES),
             'Administrator' => array_keys(RoutePermissionRegistry::MODULES),
 
-            'Managing Partner' => ['dashboard', 'messages', 'clients', 'intakes', 'matters', 'litigation', 'letters', 'recoveries', 'land-titles', 'finance', 'expenses', 'petty-cash', 'ledger', 'hr', 'staff', 'leave', 'requisitions', 'reports', 'branches', 'holidays'],
+            'Managing Partner' => ['dashboard', 'messages', 'clients', 'intakes', 'matters', 'litigation', 'letters', 'recoveries', 'securities', 'finance', 'expenses', 'petty-cash', 'ledger', 'hr', 'staff', 'leave', 'requisitions', 'reports', 'branches', 'holidays'],
             'Department Manager' => ['dashboard', 'messages', 'leave'],
             'Senior Partner' => ['dashboard', 'messages', 'clients', 'intakes', 'matters', 'litigation', 'letters'],
             'Litigation Officer' => ['dashboard', 'messages', 'clients', 'intakes', 'matters', 'litigation', 'letters', 'calendar'],
@@ -94,7 +94,7 @@ class DatabaseSeeder extends Seeder
             'Paralegal' => ['dashboard', 'messages', 'intakes', 'matters', 'litigation', 'letters'],
             'Recoveries Manager' => ['dashboard', 'messages', 'recoveries'],
             'Recovery Officer' => ['dashboard', 'messages', 'recoveries'],
-            'Securities Manager' => ['dashboard', 'messages', 'land-titles'],
+            'Securities Manager' => ['dashboard', 'messages', 'securities'],
             'Accountant' => ['dashboard', 'messages', 'finance', 'expenses', 'petty-cash', 'ledger', 'requisitions'],
             'HR Manager' => ['dashboard', 'messages', 'hr', 'staff', 'leave', 'attendance'],
             'Payroll Officer' => ['dashboard', 'messages', 'payroll'],
@@ -229,7 +229,7 @@ class DatabaseSeeder extends Seeder
         foreach ([
             'Litigation',
             'Recoveries',
-            'Securities and Land Titles',
+            'Securities',
             'Finance and Administration',
             'Human Resources',
         ] as $department) {

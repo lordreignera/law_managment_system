@@ -29,11 +29,56 @@ class ClientPortalTest extends TestCase
 
     public function test_client_portal_login_context_hides_staff_access_request(): void
     {
-        $this->get(route('login', ['portal' => 'client']))
+        $this->get(route('client.login'))
             ->assertOk()
             ->assertSee('Private client portal')
             ->assertSee('Access Your Portal')
             ->assertDontSee('Request Access');
+    }
+
+    public function test_staff_can_open_client_login_without_being_redirected_to_staff_dashboard(): void
+    {
+        $staff = User::factory()->create(['email_verified_at' => now()]);
+        StaffProfile::create(['user_id' => $staff->id, 'employment_status' => 'active']);
+
+        $this->actingAs($staff)
+            ->get(route('client.login'))
+            ->assertOk()
+            ->assertSee('Private client portal')
+            ->assertSee('action="'.e(route('client.login.store')).'"', false);
+    }
+
+    public function test_dedicated_client_login_can_switch_from_an_authenticated_staff_session(): void
+    {
+        $staff = User::factory()->create(['email_verified_at' => now()]);
+        StaffProfile::create(['user_id' => $staff->id, 'employment_status' => 'active']);
+
+        $client = Client::create([
+            'client_no' => MonthlyReferenceNumber::make(Client::class, 'client_no', 'CL'),
+            'client_type' => 'individual',
+            'name' => 'Switch Login Client',
+            'email' => 'switch.client@example.test',
+            'status' => 'active',
+        ]);
+        $clientUser = User::factory()->create([
+            'email' => $client->email,
+            'account_type' => 'client',
+            'email_verified_at' => now(),
+        ]);
+        ClientPortalAccount::create([
+            'client_id' => $client->id,
+            'user_id' => $clientUser->id,
+            'registered_email' => $clientUser->email,
+        ]);
+
+        $this->actingAs($staff)
+            ->post(route('client.login.store'), [
+                'email' => $clientUser->email,
+                'password' => 'password',
+            ])
+            ->assertRedirect(route('client.dashboard'));
+
+        $this->assertAuthenticatedAs($clientUser);
     }
 
     public function test_authenticated_client_opening_portal_goes_to_dashboard(): void

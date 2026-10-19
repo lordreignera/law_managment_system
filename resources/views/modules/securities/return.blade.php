@@ -11,11 +11,11 @@
                 <span>{{ $title->reference_no }} - {{ $title->borrower_name }}</span>
             </div>
             <div class="kfms-row-actions">
-                <a class="kfms-link-btn" href="{{ route('land-titles.show', $title) }}">
+                <a class="kfms-link-btn" href="{{ route('securities.show', $title) }}">
                     <i class="mdi mdi-arrow-left"></i>
                     Back to Details
                 </a>
-                <a class="kfms-link-btn" href="{{ route('land-titles.index') }}">
+                <a class="kfms-link-btn" href="{{ route('securities.index') }}">
                     <i class="mdi mdi-format-list-bulleted"></i>
                     Register
                 </a>
@@ -41,7 +41,7 @@
             </div>
         </div>
 
-        <form class="kfms-form" method="POST" action="{{ route('land-titles.return', $title) }}" enctype="multipart/form-data">
+        <form class="kfms-form" method="POST" action="{{ route('securities.return', $title) }}" enctype="multipart/form-data">
             @csrf
             @method('PATCH')
             <div class="kfms-form-grid">
@@ -68,7 +68,7 @@
                 </label>
             </div>
             <div class="kfms-form-actions">
-                <a class="kfms-link-btn" href="{{ route('land-titles.show', $title) }}">Cancel</a>
+                <a class="kfms-link-btn" href="{{ route('securities.show', $title) }}">Cancel</a>
                 <button type="submit">
                     <i class="mdi mdi-keyboard-return"></i>
                     Mark as Returned

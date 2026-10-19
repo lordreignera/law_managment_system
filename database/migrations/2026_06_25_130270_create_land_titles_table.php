@@ -15,6 +15,7 @@ return new class extends Migration
             $table->foreignId('bank_branch_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('zonal_office_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('matter_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('client_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('handled_by')->nullable()->constrained('users')->nullOnDelete();
             $table->string('reference_no')->unique();
             $table->string('security_type')->default('land_title');
@@ -39,6 +40,7 @@ return new class extends Migration
             $table->dateTime('returned_at')->nullable();
             $table->dateTime('closed_at')->nullable();
             $table->string('status')->default('pending');
+            $table->dateTime('archived_at')->nullable();
             $table->text('notes')->nullable();
             $table->timestamps();
         });

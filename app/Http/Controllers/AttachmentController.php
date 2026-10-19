@@ -6,6 +6,7 @@ use App\Models\Attachment;
 use App\Models\AuditLog;
 use App\Models\CourtEvent;
 use App\Models\LeaveRequest;
+use App\Models\LandTitle;
 use App\Models\Matter;
 use App\Models\Message;
 use App\Models\Requisition;
@@ -76,6 +77,12 @@ class AttachmentController extends Controller
 
         if ($parent instanceof LeaveRequest) {
             abort_unless($parent->user_id === $user->id || $user->can('leave.approve'), 403);
+
+            return;
+        }
+
+        if ($parent instanceof LandTitle) {
+            abort_unless(LandTitle::query()->forBranchOf($user)->whereKey($parent->id)->exists(), 403);
 
             return;
         }

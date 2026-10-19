@@ -93,15 +93,15 @@
         [
             'label' => 'Securities',
             'icon' => 'mdi-file-document',
-            'route' => 'land-titles.dashboard',
-            'active' => 'land-titles.*',
+            'route' => 'securities.dashboard',
+            'active' => 'securities.*',
             'children' => [
-                ['label' => 'Securities Dashboard', 'route' => 'land-titles.dashboard', 'active' => 'land-titles.dashboard', 'permission' => 'land-titles.dashboard'],
-                ['label' => 'Securities Register', 'route' => 'land-titles.index', 'active' => 'land-titles.index', 'permission' => 'land-titles.index'],
-                ['label' => 'Import Securities', 'route' => 'land-titles.import', 'active' => 'land-titles.import', 'permission' => 'land-titles.import'],
-                ['label' => 'Add Security', 'route' => 'land-titles.create', 'active' => 'land-titles.create', 'permission' => 'land-titles.create'],
+                ['label' => 'Securities Dashboard', 'route' => 'securities.dashboard', 'active' => 'securities.dashboard', 'permission' => 'securities.dashboard'],
+                ['label' => 'Securities Register', 'route' => 'securities.index', 'active' => 'securities.index', 'permission' => 'securities.index'],
+                ['label' => 'Import Securities', 'route' => 'securities.import', 'active' => 'securities.import', 'permission' => 'securities.import'],
+                ['label' => 'Add Security', 'route' => 'securities.create', 'active' => 'securities.create', 'permission' => 'securities.create'],
             ],
-            'permission_any' => ['land-titles.dashboard', 'land-titles.index', 'land-titles.import', 'land-titles.create'],
+            'permission_any' => ['securities.dashboard', 'securities.index', 'securities.import', 'securities.create'],
         ],
         [
             'label' => 'Finance',
@@ -172,7 +172,7 @@
             'active' => 'help.*',
             'children' => [
                 ['label' => 'Staff User Guide', 'route' => 'help.user-guide', 'active' => 'help.user-guide'],
-                ['label' => 'Client Portal', 'route' => 'client.portal', 'active' => 'client.portal'],
+                ['label' => 'Client Portal Login', 'route' => 'client.login', 'active' => 'client.login'],
             ],
         ],
     ];

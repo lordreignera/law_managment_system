@@ -55,7 +55,7 @@ class ReportingAnalyticsService
             'recovery-collections', 'recovery-promises', 'bank-performance', 'recovery-officer-performance' => $this->recoveries($user, $period, $buckets),
             'leave-utilization' => $this->leave($user, $period, $buckets),
             'attendance' => $this->attendance($user, $period, $buckets),
-            'land-title-custody', 'title-turnaround' => $this->securities($user, $period, $buckets),
+            'securities-custody', 'title-turnaround' => $this->securities($user, $period, $buckets),
             'billing-totals', 'aging', 'collections', 'expenses', 'petty-cash', 'requisitions' => $this->finance($slug, $user, $period, $buckets),
             'payroll' => $this->payroll($period, $buckets),
             'branch-comparison', 'department-comparison', 'monthly-management-pack', 'annual-management-pack' => $this->management($slug, $user, $period, $buckets),
@@ -510,10 +510,10 @@ class ReportingAnalyticsService
                 $this->card('In custody', (clone $titles)->whereIn('status', ['received', 'in_progress', 'dispatched'])->count(), 'Securities currently held or moving', self::NAVY),
                 $this->card('Received in period', $this->sum($received), 'Incoming security custody records', self::BLUE),
                 $this->card('Returned in period', $this->sum($returned), 'Completed security custody returns', self::GREEN),
-                $this->card('Overdue milestones', LandTitleMilestone::query()->whereHas('landTitle', fn (Builder $query) => $query->forBranchOf($user))->where('status', 'pending')->where('due_at', '<', now())->count(), 'Custody actions past due', self::RED),
+                $this->card('Overdue milestones', LandTitleMilestone::query()->whereHas('landTitle', fn (Builder $query) => $query->forBranchOf($user)->whereNotIn('status', ['closed', 'archived']))->where('status', 'pending')->where('due_at', '<', now())->count(), 'Custody actions past due', self::RED),
             ],
             'charts' => [
-                $this->lineChart('securities-movement', 'Custody movement', 'Titles received and returned by period.', $labels, [
+                $this->lineChart('securities-movement', 'Custody movement', 'Securities received and returned by period.', $labels, [
                     $this->dataset('Received', $received, self::BLUE),
                     $this->dataset('Returned', $returned, self::GREEN),
                 ]),
@@ -923,7 +923,7 @@ class ReportingAnalyticsService
             case 'attendance':
                 $add(AttendanceRecord::query()->whereIn('user_id', $this->staffScope($user)->select('id'))->min('attendance_date'));
                 break;
-            case 'land-title-custody':
+            case 'securities-custody':
             case 'title-turnaround':
                 $add(LandTitle::query()->forBranchOf($user)->min('received_at'));
                 $add(LandTitle::query()->forBranchOf($user)->min('instruction_date'));

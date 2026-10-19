@@ -8,10 +8,14 @@ use App\Models\LandTitleChecklistItem;
 use App\Models\LandTitleMilestone;
 use App\Models\LandTitleMilestoneReminderLog;
 use App\Models\LandTitleMovement;
+use App\Imports\LandTitlesImport;
 use App\Models\StaffProfile;
 use App\Models\User;
 use App\Notifications\SecurityMilestoneReminder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Notification;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -32,9 +36,9 @@ class SecurityWorkflowTest extends TestCase
     {
         $branch = Branch::create(['name' => 'Kampala', 'code' => 'KLA']);
         $user = $this->activeUser($branch, [
-            'land-titles.create', 'land-titles.store', 'land-titles.show', 'land-titles.update',
-            'land-titles.checklist.store', 'land-titles.checklist.update', 'land-titles.checklist.destroy',
-            'land-titles.movements.store',
+            'securities.create', 'securities.store', 'securities.show', 'securities.update',
+            'securities.checklist.store', 'securities.checklist.update', 'securities.checklist.destroy',
+            'securities.movements.store',
         ]);
 
         $title = LandTitle::create([
@@ -62,7 +66,7 @@ class SecurityWorkflowTest extends TestCase
             'event' => 'created',
         ]);
 
-        $this->actingAs($user)->put(route('land-titles.update', $title), [
+        $this->actingAs($user)->put(route('securities.update', $title), [
             'branch_id' => $branch->id,
             'security_type' => 'mortgage',
             'movement_direction' => 'outgoing',
@@ -71,7 +75,7 @@ class SecurityWorkflowTest extends TestCase
             'status' => 'dispatched',
             'dispatched_at' => now()->format('Y-m-d\\TH:i'),
             'dispatched_to' => 'Kampala Zonal Office',
-        ])->assertRedirect(route('land-titles.show', $title));
+        ])->assertRedirect(route('securities.show', $title));
 
         $this->assertDatabaseHas('land_title_movements', [
             'land_title_id' => $title->id,
@@ -80,7 +84,7 @@ class SecurityWorkflowTest extends TestCase
         ]);
 
         $item = $title->checklistItems()->firstOrFail();
-        $this->actingAs($user)->patch(route('land-titles.checklist.update', [$title, $item]), [
+        $this->actingAs($user)->patch(route('securities.checklist.update', [$title, $item]), [
             'status' => 'complete',
         ])->assertRedirect();
 
@@ -92,7 +96,7 @@ class SecurityWorkflowTest extends TestCase
     public function test_security_records_can_be_closed_only_after_required_checklist_is_complete(): void
     {
         $branch = Branch::create(['name' => 'Mbarara', 'code' => 'MBA']);
-        $user = $this->activeUser($branch, ['land-titles.update', 'land-titles.show', 'land-titles.checklist.update']);
+        $user = $this->activeUser($branch, ['securities.update', 'securities.show', 'securities.checklist.update']);
         $title = LandTitle::create([
             'branch_id' => $branch->id,
             'reference_no' => 'SEC26100002',
@@ -108,7 +112,7 @@ class SecurityWorkflowTest extends TestCase
             'status' => 'pending',
         ]);
 
-        $this->actingAs($user)->put(route('land-titles.update', $title), [
+        $this->actingAs($user)->put(route('securities.update', $title), [
             'branch_id' => $branch->id,
             'security_type' => 'land_title',
             'movement_direction' => 'incoming',
@@ -118,13 +122,13 @@ class SecurityWorkflowTest extends TestCase
 
         $item->update(['status' => 'complete', 'completed_by' => $user->id, 'completed_at' => now()]);
 
-        $this->actingAs($user)->put(route('land-titles.update', $title), [
+        $this->actingAs($user)->put(route('securities.update', $title), [
             'branch_id' => $branch->id,
             'security_type' => 'land_title',
             'movement_direction' => 'incoming',
             'borrower_name' => 'Borrower Two',
             'status' => 'closed',
-        ])->assertRedirect(route('land-titles.show', $title));
+        ])->assertRedirect(route('securities.show', $title));
 
         $this->assertSame('closed', $title->fresh()->status);
         $this->assertNotNull($title->fresh()->closed_at);
@@ -170,7 +174,7 @@ class SecurityWorkflowTest extends TestCase
     {
         $branchA = Branch::create(['name' => 'Branch A', 'code' => 'BRA']);
         $branchB = Branch::create(['name' => 'Branch B', 'code' => 'BRB']);
-        $userA = $this->activeUser($branchA, ['land-titles.index', 'land-titles.show']);
+        $userA = $this->activeUser($branchA, ['securities.index', 'securities.show']);
         $title = LandTitle::create([
             'branch_id' => $branchB->id,
             'reference_no' => 'SEC26100004',
@@ -178,8 +182,69 @@ class SecurityWorkflowTest extends TestCase
             'status' => 'pending',
         ]);
 
-        $this->actingAs($userA)->get(route('land-titles.index'))->assertOk()->assertDontSee($title->reference_no);
-        $this->actingAs($userA)->get(route('land-titles.show', $title))->assertForbidden();
+        $this->actingAs($userA)->get(route('securities.index'))->assertOk()->assertDontSee($title->reference_no);
+        $this->actingAs($userA)->get(route('securities.show', $title))->assertForbidden();
+    }
+
+    public function test_security_documents_follow_branch_visibility(): void
+    {
+        Storage::fake('local');
+        $branchA = Branch::create(['name' => 'Security A', 'code' => 'SCA']);
+        $branchB = Branch::create(['name' => 'Security B', 'code' => 'SCB']);
+        $userA = $this->activeUser($branchA, []);
+        $userB = $this->activeUser($branchB, []);
+        $title = LandTitle::create([
+            'branch_id' => $branchA->id,
+            'reference_no' => 'SEC26100005',
+            'borrower_name' => 'Document Borrower',
+            'status' => 'pending',
+        ]);
+        $this->actingAs($userA);
+        $attachment = $title->addAttachment(UploadedFile::fake()->create('security.pdf', 20, 'application/pdf'));
+
+        $this->actingAs($userA)->get(route('attachments.download', $attachment))->assertOk();
+        $this->actingAs($userB)->get(route('attachments.download', $attachment))->assertForbidden();
+    }
+
+    public function test_security_rejects_invalid_handler_and_date_order(): void
+    {
+        $branch = Branch::create(['name' => 'Validation', 'code' => 'VAL']);
+        $user = $this->activeUser($branch, ['securities.create', 'securities.store']);
+        $clientUser = User::factory()->create(['account_type' => 'client']);
+
+        $this->actingAs($user)->from(route('securities.create'))->post(route('securities.store'), [
+            'borrower_name' => 'Invalid Handler',
+            'handled_by' => $clientUser->id,
+            'instruction_date' => '2026-07-10',
+            'received_at' => '2026-07-09T09:00',
+            'status' => 'pending',
+        ])->assertSessionHasErrors('handled_by');
+
+        $this->actingAs($user)->from(route('securities.create'))->post(route('securities.store'), [
+            'borrower_name' => 'Invalid Dates',
+            'instruction_date' => '2026-07-10',
+            'received_at' => '2026-07-09T09:00',
+            'status' => 'pending',
+        ])->assertSessionHasErrors('received_at');
+    }
+
+    public function test_security_import_rejects_unknown_master_data_instead_of_nulling_it(): void
+    {
+        $branch = Branch::create(['name' => 'Import Validation', 'code' => 'IMP']);
+        $user = $this->activeUser($branch, []);
+        $import = new LandTitlesImport($user);
+        $import->collection(new Collection([
+            new Collection([
+                'borrower_name' => 'Unknown Bank Borrower',
+                'bank' => 'Bank That Does Not Exist',
+                'status' => 'pending',
+            ]),
+        ]));
+
+        $this->assertSame(0, $import->imported);
+        $this->assertSame(1, $import->skipped);
+        $this->assertStringContainsString('was not found', $import->errors[0]);
+        $this->assertDatabaseMissing('land_titles', ['borrower_name' => 'Unknown Bank Borrower']);
     }
 
     private function activeUser(Branch $branch, array $permissions): User

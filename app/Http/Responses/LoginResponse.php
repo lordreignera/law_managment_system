@@ -68,7 +68,7 @@ class LoginResponse implements LoginResponseContract
             'HR Manager' => 'hr.dashboard',
             'Recoveries Manager' => 'recoveries.dashboard',
             'Recovery Officer' => 'recoveries.mine',
-            'Securities Manager' => 'land-titles.dashboard',
+            'Securities Manager' => 'securities.dashboard',
         ];
 
         foreach ($roleDashboards as $role => $route) {

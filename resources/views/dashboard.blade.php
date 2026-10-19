@@ -116,8 +116,8 @@
                 @elsecan('recoveries.mine')
                     <a href="{{ route('recoveries.mine') }}">View my recoveries</a>
                 @endcan
-                @can('land-titles.index')
-                    <a href="{{ route('land-titles.index') }}">Track pending securities</a>
+                @can('securities.index')
+                    <a href="{{ route('securities.index') }}">Track pending securities</a>
                 @endcan
                 @can('finance.index')
                     <a href="{{ route('finance.index') }}">Approve requisitions and invoices</a>

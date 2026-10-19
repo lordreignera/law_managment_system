@@ -22,6 +22,15 @@ class LandTitle extends Model
         'dispatched' => 'Dispatched',
         'returned' => 'Returned',
         'closed' => 'Closed',
+        'archived' => 'Archived',
+    ];
+
+    public const SECURITY_TYPES = [
+        'land_title' => 'Title Instrument',
+        'mortgage' => 'Mortgage',
+        'discharge' => 'Discharge',
+        'consent' => 'Consent',
+        'other' => 'Other',
     ];
 
     protected $guarded = [];
@@ -30,7 +39,10 @@ class LandTitle extends Model
         'instruction_date' => 'date',
         'received_at' => 'datetime',
         'dispatched_at' => 'datetime',
+        'dispatch_acknowledged_at' => 'datetime',
         'returned_at' => 'datetime',
+        'closed_at' => 'datetime',
+        'archived_at' => 'datetime',
     ];
 
     public function bank()
@@ -56,6 +68,11 @@ class LandTitle extends Model
     public function matter()
     {
         return $this->belongsTo(Matter::class);
+    }
+
+    public function client()
+    {
+        return $this->belongsTo(Client::class);
     }
 
     public function handler()
@@ -86,7 +103,8 @@ class LandTitle extends Model
             'in_progress' => ['in_progress', 'dispatched', 'received'],
             'dispatched' => ['dispatched', 'returned'],
             'returned' => ['returned', 'closed', 'in_progress'],
-            'closed' => ['closed'],
+            'closed' => ['closed', 'archived'],
+            'archived' => ['archived'],
         ];
 
         return in_array($status, $allowed[$this->status] ?? [], true);

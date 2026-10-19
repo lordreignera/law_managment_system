@@ -57,7 +57,7 @@
                     <p>Use your existing portal account, or create one with the email already registered in the firm's client records.</p>
                 </div>
 
-                <a class="kca-primary-button" href="{{ route('login', ['portal' => 'client']) }}">
+                <a class="kca-primary-button" href="{{ route('client.login') }}">
                     <i class="mdi mdi-login"></i>
                     Sign In
                 </a>

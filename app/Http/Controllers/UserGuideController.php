@@ -181,10 +181,10 @@ class UserGuideController extends Controller
                 'title' => 'Securities Guide',
                 'subtitle' => 'Security registration, custody movement, dispatch, and returns.',
                 'icon' => 'mdi-file-document',
-                'route' => 'land-titles.dashboard',
-                'route_permission' => 'land-titles.dashboard',
+                'route' => 'securities.dashboard',
+                'route_permission' => 'securities.dashboard',
                 'screen' => $this->screenPreview('Securities Dashboard', 'Custody queue, institution tracking, MZO movement, and returns.', ['In Custody', 'Pending', 'Returned'], 'securities-dashboard.svg'),
-                'permissions' => ['land-titles.dashboard', 'land-titles.index', 'land-titles.create'],
+                'permissions' => ['securities.dashboard', 'securities.index', 'securities.create'],
                 'sections' => [$this->securitiesSection()],
             ],
             [
@@ -421,11 +421,11 @@ class UserGuideController extends Controller
             'subtitle' => 'Custody movement from receipt to return.',
             'steps' => [
                 'Register each security when it is received and attach the supporting document.',
-                'Capture the title number, land reference, borrower, financial institution, branch, MZO or zonal office, handler, and instruction details.',
+                'Capture the linked client or matter, security type, title or property reference, borrower, financial institution, branch, MZO or zonal office, handler, and instruction details.',
                 'Record every receipt, dispatch, return, or transfer in the custody movement history with acknowledgement details.',
                 'Use the documentation checklist to sign off required documents before closing a security.',
                 'Add due milestones; the system reminds the handler before a due date and flags overdue work.',
-                'Use return actions and the dashboard to track pending, dispatched, returned, closed, and custody records.',
+                'Use return actions and the dashboard to track pending, dispatched, returned, closed, and custody records. Archive only returned or closed records; archiving preserves the register, movement history, documents, and audit trail.',
             ],
         ];
     }

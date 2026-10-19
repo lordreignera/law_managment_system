@@ -69,7 +69,7 @@
                     </form>
 
                     <div class="kca-divider"><span>Already activated?</span></div>
-                    <a class="kca-outline-button" href="{{ route('login', ['portal' => 'client']) }}">
+                    <a class="kca-outline-button" href="{{ route('client.login') }}">
                         <i class="mdi mdi-login"></i>
                         <strong>Sign In</strong>
                     </a>

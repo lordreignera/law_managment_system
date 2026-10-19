@@ -32,7 +32,7 @@ class RoutePermissionRegistry
         'calendar' => 'Firm Calendar',
         'attendance' => 'Attendance',
         'recoveries' => 'Recoveries',
-        'land-titles' => 'Securities',
+        'securities' => 'Securities',
         'finance' => 'Finance',
         'expenses' => 'Expenses',
         'petty-cash' => 'Petty Cash',

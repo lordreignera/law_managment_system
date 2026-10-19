@@ -29,27 +29,27 @@ class LandTitleCrudTest extends TestCase
         app(PermissionRegistrar::class)->forgetCachedPermissions();
     }
 
-    public function test_security_can_be_created_viewed_updated_deleted_and_exported(): void
+    public function test_security_can_be_created_viewed_updated_archived_and_exported(): void
     {
         Storage::fake('local');
 
         $role = Role::findOrCreate('Securities Manager', 'web');
         foreach ([
             'dashboard',
-            'land-titles.dashboard',
-            'land-titles.dashboard.export',
-            'land-titles.index',
-            'land-titles.import',
-            'land-titles.import.store',
-            'land-titles.create',
-            'land-titles.store',
-            'land-titles.show',
-            'land-titles.edit',
-            'land-titles.update',
-            'land-titles.return.form',
-            'land-titles.return',
-            'land-titles.destroy',
-            'land-titles.export',
+            'securities.dashboard',
+            'securities.dashboard.export',
+            'securities.index',
+            'securities.import',
+            'securities.import.store',
+            'securities.create',
+            'securities.store',
+            'securities.show',
+            'securities.edit',
+            'securities.update',
+            'securities.return.form',
+            'securities.return',
+            'securities.archive',
+            'securities.export',
         ] as $permission) {
             $role->givePermissionTo(Permission::findOrCreate($permission, 'web'));
         }
@@ -104,7 +104,7 @@ class LandTitleCrudTest extends TestCase
         ]);
 
         $this->actingAs($user)
-            ->get(route('land-titles.create'))
+            ->get(route('securities.create'))
             ->assertOk()
             ->assertSee('Add Security')
             ->assertSee($user->name)
@@ -115,8 +115,8 @@ class LandTitleCrudTest extends TestCase
             ->assertDontSee('Date &amp; Time Returned', false);
 
         $this->actingAs($user)
-            ->from(route('land-titles.create'))
-            ->post(route('land-titles.store'), [
+            ->from(route('securities.create'))
+            ->post(route('securities.store'), [
                 'bank_id' => $bank->id,
                 'bank_branch_id' => $otherBankBranch->id,
                 'zonal_office_id' => $zonalOffice->id,
@@ -124,11 +124,11 @@ class LandTitleCrudTest extends TestCase
                 'borrower_name' => 'Jane Borrower',
                 'status' => 'pending',
             ])
-            ->assertRedirect(route('land-titles.create', absolute: false))
+            ->assertRedirect(route('securities.create', absolute: false))
             ->assertSessionHasErrors('bank_branch_id');
 
         $this->actingAs($user)
-            ->post(route('land-titles.store'), [
+            ->post(route('securities.store'), [
                 'bank_id' => $bank->id,
                 'bank_branch_id' => $bankBranch->id,
                 'zonal_office_id' => $zonalOffice->id,
@@ -136,18 +136,18 @@ class LandTitleCrudTest extends TestCase
                 'borrower_name' => 'Jane Borrower',
                 'status' => 'dispatched',
             ])
-            ->assertRedirect(route('land-titles.create', absolute: false))
+            ->assertRedirect(route('securities.create', absolute: false))
             ->assertSessionHasErrors('status');
 
         $this->actingAs($user)
-            ->post(route('land-titles.store'), [
+            ->post(route('securities.store'), [
                 'bank_id' => $bank->id,
                 'bank_branch_id' => $bankBranch->id,
                 'zonal_office_id' => $zonalOffice->id,
                 'handled_by' => $user->id,
                 'borrower_name' => 'Jane Borrower',
                 'instruction_type' => 'Mortgage registration',
-                'instruction_date' => now()->toDateString(),
+                'instruction_date' => '2026-07-08',
                 'received_from' => 'Kampala Road Branch',
                 'received_at' => '2026-07-09T09:30',
                 'status' => 'pending',
@@ -165,7 +165,7 @@ class LandTitleCrudTest extends TestCase
         $this->assertSame(1, $title->attachments()->count());
 
         $this->actingAs($user)
-            ->get(route('land-titles.show', $title))
+            ->get(route('securities.show', $title))
             ->assertOk()
             ->assertSee('Jane Borrower')
             ->assertSee('Test Bank')
@@ -173,17 +173,18 @@ class LandTitleCrudTest extends TestCase
             ->assertSee('security-title.pdf');
 
         $this->actingAs($user)
-            ->put(route('land-titles.update', $title), [
+            ->put(route('securities.update', $title), [
                 'bank_id' => $bank->id,
                 'bank_branch_id' => $bankBranch->id,
                 'zonal_office_id' => $zonalOffice->id,
                 'handled_by' => $user->id,
                 'borrower_name' => 'Jane Borrower Updated',
                 'instruction_type' => 'Mortgage release',
-                'instruction_date' => now()->toDateString(),
+                'instruction_date' => '2026-07-08',
                 'received_from' => 'Kampala Road Branch',
                 'received_at' => '2026-07-09T09:30',
                 'dispatched_at' => '2026-07-09T14:00',
+                'dispatched_to' => 'Kampala Zonal Office',
                 'status' => 'dispatched',
                 'notes' => 'Security dispatched for processing.',
             ])
@@ -192,18 +193,18 @@ class LandTitleCrudTest extends TestCase
         $this->assertSame('dispatched', $title->fresh()->status);
 
         $this->actingAs($user)
-            ->get(route('land-titles.index'))
+            ->get(route('securities.index'))
             ->assertOk()
             ->assertSee('Return');
 
         $this->actingAs($user)
-            ->get(route('land-titles.return.form', $title))
+            ->get(route('securities.return.form', $title))
             ->assertOk()
             ->assertSee('Return Security')
             ->assertSee('Date &amp; Time Returned', false);
 
         $this->actingAs($user)
-            ->patch(route('land-titles.return', $title), [
+            ->patch(route('securities.return', $title), [
                 'returned_to' => 'Kampala Road Branch',
                 'returned_at' => '2026-07-11T11:30',
                 'notes' => 'Returned with signed acknowledgment.',
@@ -214,12 +215,12 @@ class LandTitleCrudTest extends TestCase
         $this->assertSame('returned', $title->fresh()->status);
 
         $this->actingAs($user)
-            ->get(route('land-titles.index'))
+            ->get(route('securities.index'))
             ->assertOk()
-            ->assertDontSee('href="'.route('land-titles.return.form', $title, absolute: false).'"', false);
+            ->assertDontSee('href="'.route('securities.return.form', $title, absolute: false).'"', false);
 
         $this->actingAs($user)
-            ->get(route('land-titles.dashboard'))
+            ->get(route('securities.dashboard'))
             ->assertOk()
             ->assertSee('Securities Dashboard')
             ->assertSee('Securities control room')
@@ -231,27 +232,27 @@ class LandTitleCrudTest extends TestCase
             ->assertSee('Returned');
 
         $this->actingAs($user)
-            ->get(route('land-titles.dashboard.export', 'banks'))
+            ->get(route('securities.dashboard.export', 'banks'))
             ->assertOk();
 
         $this->actingAs($user)
             ->get(route('dashboard'))
-            ->assertRedirect(route('land-titles.dashboard'));
+            ->assertRedirect(route('securities.dashboard'));
 
         $this->actingAs($user)
-            ->get(route('land-titles.export'))
+            ->get(route('securities.export'))
             ->assertOk();
 
         $this->actingAs($user)
-            ->get(route('land-titles.import'))
+            ->get(route('securities.import'))
             ->assertOk()
             ->assertSee('Import Securities');
 
         $this->actingAs($user)
-            ->post(route('land-titles.import.store'), [
+            ->post(route('securities.import.store'), [
                 'file' => $this->sampleSecurityWorkbook($bank->name, $bankBranch->name, $zonalOffice->name, $user->email),
             ])
-            ->assertRedirect(route('land-titles.index', absolute: false))
+            ->assertRedirect(route('securities.index', absolute: false))
             ->assertSessionHas('status');
 
         $this->assertDatabaseHas('land_titles', [
@@ -264,11 +265,11 @@ class LandTitleCrudTest extends TestCase
         ]);
 
         $this->actingAs($user)
-            ->delete(route('land-titles.destroy', $title))
-            ->assertRedirect(route('land-titles.index', absolute: false))
-            ->assertSessionHas('status', 'Security deleted.');
+            ->patch(route('securities.archive', $title))
+            ->assertRedirect(route('securities.index', absolute: false))
+            ->assertSessionHas('status', 'Security archived.');
 
-        $this->assertDatabaseMissing('land_titles', ['id' => $title->id]);
+        $this->assertDatabaseHas('land_titles', ['id' => $title->id, 'status' => 'archived']);
     }
 
     private function sampleSecurityWorkbook(string $bank, string $branch, string $zonalOffice, string $handlerEmail): UploadedFile

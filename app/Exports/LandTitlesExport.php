@@ -16,7 +16,7 @@ class LandTitlesExport implements FromQuery, WithHeadings, WithMapping, WithTitl
     public function query()
     {
         return LandTitle::query()->forBranchOf($this->user)
-            ->with(['bank', 'bankBranch', 'zonalOffice', 'matter', 'handler'])
+            ->with(['bank', 'bankBranch', 'zonalOffice', 'matter', 'client', 'handler'])
             ->when(($this->filters['search'] ?? null), function ($query, $search) {
                 $query->where(function ($query) use ($search) {
                     $query
@@ -27,12 +27,29 @@ class LandTitlesExport implements FromQuery, WithHeadings, WithMapping, WithTitl
                         ->orWhere('instruction_type', 'like', "%{$search}%")
                         ->orWhere('received_from', 'like', "%{$search}%")
                         ->orWhere('returned_to', 'like', "%{$search}%")
+                        ->orWhereHas('client', fn ($query) => $query
+                            ->where('client_no', 'like', "%{$search}%")
+                            ->orWhere('name', 'like', "%{$search}%")
+                            ->orWhere('organization_name', 'like', "%{$search}%")
+                            ->orWhere('first_name', 'like', "%{$search}%")
+                            ->orWhere('last_name', 'like', "%{$search}%"))
+                        ->orWhereHas('matter', fn ($query) => $query
+                            ->where('reference_no', 'like', "%{$search}%")
+                            ->orWhere('title', 'like', "%{$search}%"))
                         ->orWhereHas('bank', fn ($query) => $query->where('name', 'like', "%{$search}%"))
                         ->orWhereHas('bankBranch', fn ($query) => $query->where('name', 'like', "%{$search}%"))
                         ->orWhereHas('zonalOffice', fn ($query) => $query->where('name', 'like', "%{$search}%"));
                 });
             })
             ->when(($this->filters['status'] ?? null), fn ($query, $status) => $query->where('status', $status))
+            ->when(($this->filters['movement_direction'] ?? null), fn ($query, $direction) => $query->where('movement_direction', $direction))
+            ->when(($this->filters['security_type'] ?? null), fn ($query, $type) => $query->where('security_type', $type))
+            ->when(($this->filters['bank_id'] ?? null), fn ($query, $bankId) => $query->where('bank_id', $bankId))
+            ->when(($this->filters['bank_branch_id'] ?? null), fn ($query, $branchId) => $query->where('bank_branch_id', $branchId))
+            ->when(($this->filters['zonal_office_id'] ?? null), fn ($query, $officeId) => $query->where('zonal_office_id', $officeId))
+            ->when(($this->filters['handled_by'] ?? null), fn ($query, $handlerId) => $query->where('handled_by', $handlerId))
+            ->when(($this->filters['received_from'] ?? null), fn ($query, $date) => $query->whereDate('received_at', '>=', $date))
+            ->when(($this->filters['received_to'] ?? null), fn ($query, $date) => $query->whereDate('received_at', '<=', $date))
             ->latest();
     }
 
@@ -44,6 +61,7 @@ class LandTitlesExport implements FromQuery, WithHeadings, WithMapping, WithTitl
             'Direction',
             'Borrower',
             'Borrower Contact',
+            'Client',
             'Title Number',
             'Land Reference',
             'Tenure',
@@ -66,6 +84,7 @@ class LandTitlesExport implements FromQuery, WithHeadings, WithMapping, WithTitl
             'Returned At',
             'Handled By',
             'Status',
+            'Archived At',
             'Notes',
             'Created On',
         ];
@@ -82,6 +101,7 @@ class LandTitlesExport implements FromQuery, WithHeadings, WithMapping, WithTitl
             str($title->movement_direction)->headline()->toString(),
             $title->borrower_name,
             $title->borrower_contact,
+            $title->client?->display_name,
             $title->title_number,
             $title->land_reference,
             $title->tenure,
@@ -104,6 +124,7 @@ class LandTitlesExport implements FromQuery, WithHeadings, WithMapping, WithTitl
             optional($title->returned_at)->format('Y-m-d H:i'),
             $title->handler?->name,
             $title->statusLabel(),
+            optional($title->archived_at)->format('Y-m-d H:i'),
             $title->notes,
             optional($title->created_at)->format('Y-m-d'),
         ];

@@ -124,7 +124,7 @@ class ReportingCatalogueTest extends TestCase
             'expenses',
             'petty-cash',
             'requisitions',
-            'land-title-custody',
+            'securities-custody',
             'title-turnaround',
             'payroll',
             'branch-comparison',

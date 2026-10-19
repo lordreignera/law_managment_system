@@ -22,6 +22,8 @@ class SendSecurityMilestoneReminders extends Command
         LandTitleMilestone::with(['landTitle.handler'])
             ->where('status', 'pending')
             ->whereNotNull('due_at')
+            ->whereHas('landTitle', fn ($query) => $query->whereNotIn('status', ['closed', 'archived']))
+            ->whereHas('landTitle.handler.staffProfile', fn ($query) => $query->where('employment_status', 'active'))
             ->get()
             ->each(function (LandTitleMilestone $milestone) use ($today, &$sent) {
                 $type = $milestone->due_at->isPast() ? 'overdue' : ($milestone->due_at->copy()->startOfDay()->subDays($milestone->reminder_days_before)->equalTo($today) ? 'upcoming' : null);
