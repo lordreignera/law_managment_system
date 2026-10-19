@@ -5,8 +5,8 @@
 @section('content')
     <div class="kfms-report-page kfms-report-detail-page">
         <div class="kfms-report-detail-topbar">
-            <a class="kfms-report-back" href="{{ route('reports.index') }}"><i class="mdi mdi-arrow-left"></i> Reports &amp; Analytics</a>
-            <span class="kfms-report-count">{{ $report['group'] }}</span>
+            <a class="kfms-report-back" href="{{ route('reports.index', $category ? ['category' => $category] : ['group' => $report['group']]) }}"><i class="mdi mdi-arrow-left"></i> {{ $categoryLabel }} reports</a>
+            <span class="kfms-report-count">{{ $groupLabel }}</span>
         </div>
 
         <section class="kfms-report-detail-hero">
@@ -20,6 +20,24 @@
                 <a class="kfms-report-button" href="{{ route($report['route']) }}">Open operational report <i class="mdi mdi-open-in-new"></i></a>
             @endif
         </section>
+
+        <nav class="kfms-report-sequence" aria-label="Related report navigation">
+            <div>
+                @if ($previousReport)
+                    <a class="kfms-link-btn" href="{{ route('reports.show', array_filter(['report' => $previousReport['slug'], 'category' => $category, 'period' => $analytics['period'] ?? request('period', 'monthly')])) }}" rel="prev">Previous report</a>
+                @else
+                    <span class="kfms-muted-text">First report</span>
+                @endif
+            </div>
+            <span>Report {{ $reportPosition }} of {{ $reportTotal }}</span>
+            <div>
+                @if ($nextReport)
+                    <a class="kfms-link-btn" href="{{ route('reports.show', array_filter(['report' => $nextReport['slug'], 'category' => $category, 'period' => $analytics['period'] ?? request('period', 'monthly')])) }}" rel="next">Next report</a>
+                @else
+                    <span class="kfms-muted-text">Last report</span>
+                @endif
+            </div>
+        </nav>
 
         @if ($analytics)
             <section class="kfms-report-analytics-panel">
@@ -40,14 +58,14 @@
                     </form>
                 </div>
 
-                <div class="kfms-report-analytics-cards">
+                <div class="kfms-stat-grid kfms-report-analytics-cards">
                     @foreach ($analytics['cards'] as $card)
-                        <article class="kfms-report-analytics-card" style="--report-card-accent: {{ $card['color'] }}">
-                            <span>{{ $card['label'] }}</span>
-                            <strong>
+                        <article class="kfms-card kfms-report-analytics-card" style="--kfms-kpi-accent: {{ $card['color'] }}">
+                            <span class="kfms-card-label">{{ $card['label'] }}</span>
+                            <strong class="kfms-stat">
                                 @if ($card['money']) UGX @endif{{ $card['value'] }}@if ($card['suffix']) <small>{{ $card['suffix'] }}</small>@endif
                             </strong>
-                            <em>{{ $card['caption'] }}</em>
+                            <em class="kfms-stat-caption">{{ $card['caption'] }}</em>
                         </article>
                     @endforeach
                 </div>

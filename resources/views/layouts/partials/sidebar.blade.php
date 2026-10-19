@@ -1,4 +1,11 @@
 @php
+    $activeReportGroup = request()->routeIs('reports.show')
+        ? config('reporting.reports.'.request()->route('report').'.group')
+        : (request('group') ?: null);
+    $activeReportCategory = request()->routeIs('reports.show')
+        ? \App\Support\ReportNavigation::categoryForGroup($activeReportGroup)
+        : (request('category') ?: \App\Support\ReportNavigation::categoryForGroup($activeReportGroup));
+
     $items = [
         ['label' => 'Dashboard', 'icon' => 'mdi-view-dashboard', 'route' => 'dashboard', 'permission' => 'dashboard'],
         ['label' => 'Messages', 'icon' => 'mdi-chat-outline', 'route' => 'messages.index', 'active' => 'messages.*', 'permission' => 'messages.index'],
@@ -45,7 +52,7 @@
         ],
         [
             'label' => 'Letters & Opinions',
-            'icon' => 'mdi-file-sign',
+            'icon' => 'mdi-file-document-edit-outline',
             'route' => 'letters.dashboard',
             'active' => ['letters.*'],
             'children' => [
@@ -61,20 +68,23 @@
         ['label' => 'Firm Calendar', 'icon' => 'mdi-calendar-month', 'route' => 'calendar.index', 'active' => 'calendar.*', 'permission' => 'calendar.index'],
         [
             'label' => 'Reports & Analytics',
-            'icon' => 'mdi-chart-box-outline',
+            'icon' => 'mdi-chart-bar',
             'route' => 'reports.index',
             'active' => 'reports.*',
             'permission' => 'reports.index',
-            'children' => collect(config('reporting.reports', []))
-                ->map(fn (array $report, string $slug) => [
-                    'label' => $report['title'],
-                    'route' => 'reports.show',
-                    'params' => ['report' => $slug],
-                    'active' => 'reports.show',
-                    'permission' => 'reports.show',
-                ])
-                ->values()
-                ->all(),
+            'children' => array_merge(
+                [['label' => 'All Reports', 'route' => 'reports.index', 'report_category' => null]],
+                \App\Support\ReportNavigation::categories()
+                    ->map(fn (array $category, string $slug) => [
+                        'label' => $category['label'],
+                        'route' => 'reports.index',
+                        'query' => ['category' => $slug],
+                        'report_category' => $slug,
+                        'active' => ['reports.index', 'reports.show'],
+                    ])
+                    ->values()
+                    ->all()
+            ),
         ],
         [
             'label' => 'Recoveries',
@@ -162,7 +172,7 @@
             'permission_any' => ['access.users.index', 'access.approvals.index', 'access.roles.index', 'access.permissions.index'],
         ],
         ['label' => 'System Settings', 'icon' => 'mdi-tune', 'route' => 'settings.system.overview', 'active' => 'settings.system.*', 'permission' => 'settings.system.overview'],
-        ['label' => 'Branches', 'icon' => 'mdi-office-building-marker', 'route' => 'branches.index', 'active' => 'branches.*', 'permission' => 'branches.index'],
+        ['label' => 'Branches', 'icon' => 'mdi-office-building', 'route' => 'branches.index', 'active' => 'branches.*', 'permission' => 'branches.index'],
         ['label' => 'Public Holidays', 'icon' => 'mdi-calendar-star', 'route' => 'holidays.index', 'active' => 'holidays.*', 'permission' => 'holidays.index'],
         ['label' => 'Company Settings', 'icon' => 'mdi-settings', 'route' => 'settings.company.edit', 'active' => 'settings.company.*', 'permission' => 'settings.company.edit'],
         [
@@ -224,9 +234,12 @@
                                             : (isset($child['query'])
                                             ? ($childRouteActive && collect($child['query'])->every(fn ($value, $key) => request($key) === $value))
                                             : ($childRouteActive && ! request()->has('status')));
+                                        if (array_key_exists('report_category', $child)) {
+                                            $childActive = $childRouteActive && $activeReportCategory === $child['report_category'];
+                                        }
                                     @endphp
                                     <li class="nav-item {{ $childActive ? 'active' : '' }}">
-                                        <a class="nav-link" href="{{ $childUrl }}">{{ $child['label'] }}</a>
+                                        <a class="nav-link" href="{{ $childUrl }}" @if ($childActive) aria-current="page" @endif>{{ $child['label'] }}</a>
                                     </li>
                                 @endforeach
                             </ul>

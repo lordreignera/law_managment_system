@@ -32,19 +32,9 @@
         </div>
     </section>
 
-    @php
-        $statIcons = [
-            'My Open Events' => 'mdi-calendar-account-outline',
-            'Today' => 'mdi-calendar-today-outline',
-            'This Week' => 'mdi-calendar-week-outline',
-            'Overdue' => 'mdi-calendar-alert-outline',
-        ];
-    @endphp
-
     <div class="kfms-stat-grid kfms-dashboard-kpis">
         @foreach ($stats as $label => $value)
             <section class="kfms-card kfms-stat-card">
-                <span class="kfms-stat-icon"><i class="mdi {{ $statIcons[$label] ?? 'mdi-calendar-outline' }}"></i></span>
                 <span class="kfms-stat-body">
                     <span class="kfms-card-label">{{ $label }}</span>
                     <strong class="kfms-stat">{{ number_format($value) }}</strong>

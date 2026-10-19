@@ -35,7 +35,6 @@
     <div class="kfms-stat-grid kfms-dashboard-kpis">
         @foreach ($stats as $stat)
             <section class="kfms-card kfms-stat-card">
-                <span class="kfms-stat-icon"><i class="mdi {{ $stat['icon'] }}"></i></span>
                 <span class="kfms-stat-body">
                     <span class="kfms-card-label">{{ $stat['label'] }}</span>
                     <strong class="kfms-stat">{{ number_format($stat['value']) }}</strong>

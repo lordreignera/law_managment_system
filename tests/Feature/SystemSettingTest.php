@@ -113,6 +113,33 @@ class SystemSettingTest extends TestCase
         $this->assertSame('Kampala Road Branch', BankBranch::first()->name);
     }
 
+    public function test_settings_search_matches_initial_letters_and_keeps_all_cards_available_for_live_clearing(): void
+    {
+        $response = $this->actingAs($this->settingsUser())->get(route('settings.system.overview', ['search' => 'B']))
+            ->assertOk()->assertSee('data-settings-search', false)
+            ->assertSee('data-live-setting', false)->assertSee('settings-search-status');
+        $response->assertViewHas('settings', fn ($settings) => $settings->contains('slug', 'banks')
+            && $settings->contains('slug', 'bank-branches')
+            && $settings->every(fn ($setting) => str_starts_with(strtolower($setting['title']), 'b')));
+        $response->assertViewHas('allSettings', fn ($settings) => $settings->count() === count(config('system_settings')));
+        $this->get(route('settings.system.overview', ['search' => 'zzzz-no-match']))
+            ->assertOk()->assertViewHas('settings', fn ($settings) => $settings->isEmpty());
+    }
+
+    public function test_back_links_keep_settings_search_filters_and_ignore_external_referrers(): void
+    {
+        $this->actingAs($this->settingsUser());
+        $filtered = route('settings.system.overview', ['search' => 'B']);
+        foreach ([$filtered => $filtered, 'https://untrusted.example/path' => route('settings.system.overview')] as $referrer => $expected) {
+            $response = $this->from($referrer)->get(route('settings.system.index', 'banks'))->assertOk();
+            $document = new \DOMDocument();
+            @$document->loadHTML($response->getContent());
+            $back = (new \DOMXPath($document))->query('//a[@data-workspace-back]')->item(0);
+            $this->assertNotNull($back);
+            $this->assertSame($expected, $back->getAttribute('href'));
+        }
+    }
+
     private function settingsUser(): User
     {
         $role = Role::findOrCreate('Settings Manager');

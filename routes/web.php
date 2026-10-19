@@ -406,6 +406,10 @@ Route::middleware([
             Route::get('/users/{user}/edit', [AccessControlController::class, 'editUser'])->name('users.edit');
             Route::put('/users/{user}', [AccessControlController::class, 'updateUser'])->name('users.update');
             Route::patch('/users/{user}/approve', [AccessControlController::class, 'approveUser'])->name('users.approve');
+            Route::patch('/approvals/approve-selected', [AccessControlController::class, 'bulkApproveUsers'])
+                ->withoutMiddleware('route.permission')
+                ->middleware('permission:access.users.approve')
+                ->name('users.bulk-approve');
             Route::delete('/users/{user}', [AccessControlController::class, 'destroyUser'])->name('users.destroy');
             Route::get('/approvals', [AccessControlController::class, 'approvals'])->name('approvals.index');
             Route::get('/approvals/{profile}', [AccessControlController::class, 'showApproval'])->name('approvals.show');

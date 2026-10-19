@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Branch;
+use App\Models\AuditLog;
 use App\Models\Department;
 use App\Models\StaffProfile;
 use App\Models\User;
@@ -11,7 +12,10 @@ use App\Support\ReferenceData;
 use App\Support\RoutePermissionRegistry;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
@@ -120,48 +124,104 @@ class AccessControlController extends Controller
     {
         $this->ensureCanManageAccessControl();
 
+        $data = $request->validate($this->approvalRules($user->staffProfile));
+        $result = $this->approveSelectedUsers([$user->id], [$user->id => $data]);
+
+        return redirect()
+            ->route('access.approvals.index')
+            ->with('status', $user->name.' approved.')
+            ->with('approval_notice_failures', $result['notice_failures']);
+    }
+
+    public function bulkApproveUsers(Request $request)
+    {
+        $this->ensureCanManageAccessControl();
+        abort_unless($request->user()->can('access.users.approve'), 403);
         $data = $request->validate([
+            'user_ids' => ['required', 'array', 'min:1', 'max:100'],
+            'user_ids.*' => ['required', 'integer', 'distinct', 'exists:users,id'],
+            'search' => ['nullable', 'string', 'max:191'],
+        ]);
+        $result = $this->approveSelectedUsers($data['user_ids']);
+        $count = $result['approved'];
+        $status = $count.' '.($count === 1 ? 'user' : 'users').' approved.';
+        if ($result['skipped'] > 0) {
+            $status .= ' '.$result['skipped'].' already approved; no duplicate approvals were made.';
+        }
+
+        return redirect()->route('access.approvals.index', array_filter(['search' => $data['search'] ?? null]))
+            ->with('status', $status)
+            ->with('approval_notice_failures', $result['notice_failures']);
+    }
+
+    private function approvalRules(?StaffProfile $profile): array
+    {
+        return [
             'phone' => ['required', 'string', 'max:60'],
-            'job_title' => ['required', 'string', 'max:191', ReferenceData::jobTitleRule($user->staffProfile?->job_title)],
-            'branch_id' => ['required', 'exists:branches,id'],
-            'department_id' => ['required', 'exists:departments,id'],
+            'job_title' => ['required', 'string', 'max:191', ReferenceData::jobTitleRule($profile?->job_title)],
+            'branch_id' => ['required', Rule::exists('branches', 'id')->where('is_active', true)],
+            'department_id' => ['required', Rule::exists('departments', 'id')->where('is_active', true)],
             'requested_role' => [
                 'required',
                 'string',
                 Rule::exists('roles', 'name')->where(fn ($query) => $query->whereNotIn('name', ['Super Admin', 'Administrator'])),
             ],
-        ]);
+        ];
+    }
 
-        $requestedRole = $data['requested_role'];
+    private function approveSelectedUsers(array $userIds, array $overrides = []): array
+    {
+        $approved = [];
+        $skipped = 0;
+        DB::transaction(function () use ($userIds, $overrides, &$approved, &$skipped) {
+            $users = User::whereIn('id', $userIds)->orderBy('id')->lockForUpdate()->get();
+            $profiles = StaffProfile::whereIn('user_id', $userIds)->orderBy('user_id')->lockForUpdate()->get()->keyBy('user_id');
+            if ($users->count() !== count($userIds)) {
+                throw ValidationException::withMessages(['user_ids' => 'A selected request is no longer available. Refresh the list and try again.']);
+            }
+            foreach ($users as $user) {
+                $profile = $profiles->get($user->id);
+                if (! $profile || $user->account_type === 'client' || $user->hasAnyRole(['Super Admin', 'Administrator'])) {
+                    throw ValidationException::withMessages(['user_ids' => $user->name.' is not a pending staff access request.']);
+                }
+                if ($profile->employment_status === 'active') {
+                    $skipped++;
+                    continue;
+                }
+                if ($profile->employment_status !== 'pending') {
+                    throw ValidationException::withMessages(['user_ids' => $user->name.' is no longer pending approval.']);
+                }
+                $data = $overrides[$user->id] ?? $profile->only(['phone', 'job_title', 'branch_id', 'department_id', 'requested_role']);
+                $validator = Validator::make($data, $this->approvalRules($profile));
+                if ($validator->fails()) {
+                    throw ValidationException::withMessages(['user_ids' => $user->name.' needs review: '.$validator->errors()->first()]);
+                }
+                $department = Department::find($data['department_id']);
+                if ($department->branch_id && (int) $department->branch_id !== (int) $data['branch_id']) {
+                    throw ValidationException::withMessages(['user_ids' => $user->name.' needs review: the department must belong to the selected branch.']);
+                }
+                $user->forceFill(['branch_id' => $data['branch_id'], 'department_id' => $data['department_id']])->save();
+                if (! $user->hasVerifiedEmail()) {
+                    $user->markEmailAsVerified();
+                }
+                $user->syncRoles([$data['requested_role']]);
+                $profile->fill($data + ['employment_status' => 'active'])->save();
+                AuditLog::recordFor($user, 'access_approved', ['employment_status' => 'pending'], $data + ['employment_status' => 'active']);
+                $approved[] = [$user, $data['requested_role']];
+            }
+        });
 
-        $user->forceFill([
-            'branch_id' => $data['branch_id'],
-            'department_id' => $data['department_id'],
-        ])->save();
-
-        if (! $user->hasVerifiedEmail()) {
-            $user->markEmailAsVerified();
+        $noticeFailures = 0;
+        foreach ($approved as [$user, $role]) {
+            try {
+                $user->notify(new StaffAccountApproved($role));
+            } catch (\Throwable $exception) {
+                $noticeFailures++;
+                report($exception);
+            }
         }
 
-        $user->syncRoles([$requestedRole]);
-
-        $user->staffProfile()->updateOrCreate(
-            ['user_id' => $user->id],
-            [
-                'employment_status' => 'active',
-                'requested_role' => $requestedRole,
-                'branch_id' => $data['branch_id'],
-                'department_id' => $data['department_id'],
-                'job_title' => $data['job_title'],
-                'phone' => $data['phone'],
-            ]
-        );
-
-        $user->notify(new StaffAccountApproved($requestedRole));
-
-        return redirect()
-            ->route('access.approvals.index')
-            ->with('status', $user->name.' approved.');
+        return ['approved' => count($approved), 'skipped' => $skipped, 'notice_failures' => $noticeFailures];
     }
 
     public function updateUser(Request $request, User $user)

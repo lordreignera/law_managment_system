@@ -18,21 +18,25 @@ class SystemSettingController extends Controller
     {
         $search = trim($request->string('search')->toString());
         $searchTerm = mb_strtolower($search);
-        $settings = collect(config('system_settings'))->map(function ($setting, $slug) {
+        $allSettings = collect(config('system_settings'))->map(function ($setting, $slug) {
             $setting['slug'] = $slug;
             $setting['count'] = $setting['model']::count();
 
             return $setting;
-        })->filter(function (array $setting) use ($searchTerm) {
+        })->values();
+        $settings = $allSettings->filter(function (array $setting) use ($searchTerm) {
             if ($searchTerm === '') {
                 return true;
             }
 
-            return str_contains(mb_strtolower($setting['title'].' '.$setting['description']), $searchTerm);
+            return mb_strlen($searchTerm) === 1
+                ? str_starts_with(mb_strtolower($setting['title']), $searchTerm)
+                : str_contains(mb_strtolower($setting['title'].' '.$setting['description']), $searchTerm);
         })->values();
 
         return view('modules.system-settings.overview', [
             'settings' => $settings,
+            'allSettings' => $allSettings,
             'search' => $search,
         ]);
     }

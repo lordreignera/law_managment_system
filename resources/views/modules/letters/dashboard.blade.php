@@ -32,19 +32,9 @@
         </div>
     </section>
 
-    @php
-        $summaryIcons = [
-            'Drafts' => 'mdi-email-edit-outline',
-            'Pending Review' => 'mdi-clipboard-clock-outline',
-            'Sent' => 'mdi-send-check-outline',
-            'Received Copies' => 'mdi-file-check-outline',
-        ];
-    @endphp
-
     <div class="kfms-stat-grid kfms-dashboard-kpis">
         @foreach ($summary as $label => $value)
             <section class="kfms-card kfms-stat-card">
-                <span class="kfms-stat-icon"><i class="mdi {{ $summaryIcons[$label] ?? 'mdi-file-document-outline' }}"></i></span>
                 <span class="kfms-stat-body">
                     <span class="kfms-card-label">{{ $label }}</span>
                     <strong class="kfms-stat">{{ number_format($value) }}</strong>

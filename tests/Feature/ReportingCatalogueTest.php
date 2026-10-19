@@ -61,14 +61,86 @@ class ReportingCatalogueTest extends TestCase
 
         $this->actingAs($user)->get(route('reports.index', ['group' => 'Recoveries']))
             ->assertOk()
+            ->assertViewHas('totalReports', 4)
+            ->assertViewHas('operationalReports', 4)
+            ->assertViewHas('managementPacks', 0)
             ->assertSee('<h3>Recovery collections</h3>', false)
             ->assertDontSee('<h3>Matter workload</h3>', false);
 
         $this->actingAs($user)->get(route('reports.index', ['q' => 'turnaround']))
             ->assertOk()
+            ->assertViewHas('totalReports', 2)
             ->assertSee('<h3>Matter turnaround</h3>', false)
             ->assertSee('<h3>Securities turnaround</h3>', false)
             ->assertDontSee('<h3>Recovery collections</h3>', false);
+    }
+
+    public function test_sidebar_compacts_reports_into_module_links_without_submenu_icons(): void
+    {
+        $user = $this->activeUser();
+        $response = $this->actingAs($user)->get(route('reports.index'))->assertOk();
+        $document = new \DOMDocument();
+        @$document->loadHTML($response->getContent());
+        $xpath = new \DOMXPath($document);
+        $links = $xpath->query('//div[@id="sidebar-reports-analytics"]//a');
+        $expectedGroups = [
+            '' => 'All Reports',
+            'casework' => 'Clients & Legal Work',
+            'recoveries-securities' => 'Recoveries & Securities',
+            'finance-payroll' => 'Finance & Payroll',
+            'people' => 'HR & Attendance',
+            'management' => 'Management',
+        ];
+
+        $this->assertCount(6, $links);
+        foreach (array_keys($expectedGroups) as $index => $group) {
+            $link = $links->item($index);
+            $this->assertSame($expectedGroups[$group], trim($link->textContent));
+            $this->assertSame(route('reports.index', $group === '' ? [] : ['category' => $group]), $link->getAttribute('href'));
+        }
+        $this->assertSame(0, $xpath->query('//div[@id="sidebar-reports-analytics"]//i')->length);
+    }
+
+    public function test_report_module_stays_selected_in_the_catalogue_and_individual_reports(): void
+    {
+        $user = $this->activeUser();
+        $moduleUrl = route('reports.index', ['category' => 'recoveries-securities']);
+
+        foreach ([$moduleUrl, route('reports.show', 'bank-performance')] as $url) {
+            $response = $this->actingAs($user)->get($url)
+                ->assertOk()
+                ->assertSee('Recoveries &amp; Securities reports', false);
+            $document = new \DOMDocument();
+            @$document->loadHTML($response->getContent());
+            $xpath = new \DOMXPath($document);
+            $activeLinks = $xpath->query('//div[@id="sidebar-reports-analytics"]//a[@aria-current="page"]');
+
+            $this->assertCount(1, $activeLinks);
+            $this->assertSame($moduleUrl, $activeLinks->item(0)->getAttribute('href'));
+        }
+
+        $this->actingAs($user)->get(route('reports.show', 'bank-performance'))
+            ->assertSee('class="kfms-report-back" href="'.e($moduleUrl).'"', false);
+    }
+
+    public function test_combined_categories_include_all_related_reports_and_keep_the_period_when_switching(): void
+    {
+        $user = $this->activeUser();
+        $this->actingAs($user)->get(route('reports.index', ['category' => 'finance-payroll']))
+            ->assertOk()->assertViewHas('totalReports', 7)
+            ->assertSee('<h3>Billing totals</h3>', false)->assertSee('<h3>Payroll</h3>', false)
+            ->assertDontSee('<h3>Matter workload</h3>', false);
+        $response = $this->get(route('reports.show', ['report' => 'aging', 'period' => 'quarterly']))
+            ->assertOk()->assertSee('Report 2 of 7');
+        foreach (['billing-totals' => 'prev', 'collections' => 'next'] as $slug => $relation) {
+            $url = route('reports.show', ['report' => $slug, 'category' => 'finance-payroll', 'period' => 'quarterly']);
+            $response->assertSee('href="'.e($url).'" rel="'.$relation.'"', false);
+        }
+        $groups = collect(config('reporting.navigation_groups'))->flatMap(fn ($category) => $category['groups']);
+        $this->assertCount($groups->unique()->count(), $groups);
+        foreach (config('reporting.reports') as $report) {
+            $this->assertTrue($groups->contains($report['group']));
+        }
     }
 
     public function test_report_definition_page_displays_the_reporting_contract(): void

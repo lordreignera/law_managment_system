@@ -34,35 +34,27 @@
 
     <div class="kfms-stat-grid kfms-dashboard-kpis">
         <section class="kfms-card kfms-stat-card">
-            <span class="kfms-stat-icon"><i class="mdi mdi-file-document-outline"></i></span>
             <span class="kfms-stat-body"><span class="kfms-card-label">Total Securities</span><strong class="kfms-stat">{{ number_format($summary['total']) }}</strong></span>
         </section>
         <section class="kfms-card kfms-stat-card">
-            <span class="kfms-stat-icon"><i class="mdi mdi-lock-outline"></i></span>
             <span class="kfms-stat-body"><span class="kfms-card-label">In Custody</span><strong class="kfms-stat">{{ number_format($summary['in_custody']) }}</strong></span>
         </section>
         <section class="kfms-card kfms-stat-card">
-            <span class="kfms-stat-icon"><i class="mdi mdi-clock-outline"></i></span>
             <span class="kfms-stat-body"><span class="kfms-card-label">Pending</span><strong class="kfms-stat">{{ number_format($summary['pending']) }}</strong></span>
         </section>
         <section class="kfms-card kfms-stat-card">
-            <span class="kfms-stat-icon"><i class="mdi mdi-truck-delivery"></i></span>
             <span class="kfms-stat-body"><span class="kfms-card-label">Dispatched</span><strong class="kfms-stat">{{ number_format($summary['dispatched']) }}</strong></span>
         </section>
         <section class="kfms-card kfms-stat-card">
-            <span class="kfms-stat-icon"><i class="mdi mdi-check-circle-outline"></i></span>
             <span class="kfms-stat-body"><span class="kfms-card-label">Returned</span><strong class="kfms-stat">{{ number_format($summary['returned']) }}</strong></span>
         </section>
         <section class="kfms-card kfms-stat-card">
-            <span class="kfms-stat-icon"><i class="mdi mdi-calendar-month-outline"></i></span>
             <span class="kfms-stat-body"><span class="kfms-card-label">Received This Month</span><strong class="kfms-stat">{{ number_format($summary['received_this_month']) }}</strong></span>
         </section>
         <section class="kfms-card kfms-stat-card">
-            <span class="kfms-stat-icon"><i class="mdi mdi-alert-circle-outline"></i></span>
             <span class="kfms-stat-body"><span class="kfms-card-label">Overdue Milestones</span><strong class="kfms-stat">{{ number_format($summary['overdue_milestones']) }}</strong></span>
         </section>
         <section class="kfms-card kfms-stat-card">
-            <span class="kfms-stat-icon"><i class="mdi mdi-calendar-clock-outline"></i></span>
             <span class="kfms-stat-body"><span class="kfms-card-label">Upcoming Milestones</span><strong class="kfms-stat">{{ number_format($summary['upcoming_milestones']) }}</strong></span>
         </section>
     </div>

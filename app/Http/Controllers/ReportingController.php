@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Exports\ReportingTableExport;
 use App\Models\AuditLog;
 use App\Services\ReportingAnalyticsService;
+use App\Support\ReportNavigation;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -18,9 +19,15 @@ class ReportingController extends Controller
         $catalogue = $this->catalogue();
         $search = trim($request->string('q')->toString());
         $group = trim($request->string('group')->toString());
+        $category = trim($request->string('category')->toString());
+        $categoryDefinition = ReportNavigation::categories()->get($category);
+        abort_if($category !== '' && ! $categoryDefinition, 404);
 
         $reports = $catalogue
-            ->filter(function (array $report) use ($search, $group): bool {
+            ->filter(function (array $report) use ($search, $group, $categoryDefinition): bool {
+                if ($categoryDefinition && ! in_array($report['group'], $categoryDefinition['groups'], true)) {
+                    return false;
+                }
                 if ($group !== '' && $report['group'] !== $group) {
                     return false;
                 }
@@ -36,17 +43,19 @@ class ReportingController extends Controller
                     $report['formula'],
                 ])), Str::lower($search));
             })
-            ->sortBy(fn (array $report) => $report['title'])
             ->values();
 
         return view('modules.reports.index', [
             'reports' => $reports,
-            'groups' => $catalogue->pluck('group')->unique()->sort()->values(),
+            'groups' => $catalogue->when($categoryDefinition, fn ($items) => $items->whereIn('group', $categoryDefinition['groups']))->pluck('group')->unique()->sort()->values(),
+            'groupLabels' => config('reporting.group_labels', []),
             'selectedGroup' => $group,
+            'selectedCategory' => $category,
+            'categoryLabel' => $categoryDefinition['label'] ?? null,
             'search' => $search,
-            'totalReports' => $catalogue->count(),
-            'managementPacks' => $catalogue->where('group', 'Management')->count(),
-            'operationalReports' => $catalogue->whereNotIn('group', ['Management'])->count(),
+            'totalReports' => $reports->count(),
+            'managementPacks' => $reports->where('group', 'Management')->count(),
+            'operationalReports' => $reports->whereNotIn('group', ['Management'])->count(),
         ]);
     }
 
@@ -56,17 +65,27 @@ class ReportingController extends Controller
 
         abort_if(! is_array($definition), 404);
 
+        $category = ReportNavigation::categoryForGroup($definition['group']);
+        $categoryDefinition = ReportNavigation::categories()->get($category);
+        $categoryReports = $this->catalogue()->whereIn('group', $categoryDefinition['groups'] ?? [$definition['group']])->values();
+        $position = $categoryReports->search(fn (array $item) => $item['slug'] === $report);
+
         return view('modules.reports.show', [
             'report' => array_merge($definition, ['slug' => $report]),
+            'groupLabel' => config('reporting.group_labels.'.$definition['group'], $definition['group']),
+            'category' => $category,
+            'categoryLabel' => $categoryDefinition['label'] ?? $definition['group'],
+            'previousReport' => $position > 0 ? $categoryReports->get($position - 1) : null,
+            'nextReport' => $categoryReports->get($position + 1),
+            'reportPosition' => $position + 1,
+            'reportTotal' => $categoryReports->count(),
             'analytics' => $analyticsService->build(
                 $report,
                 $request->user(),
                 $request->string('period')->toString() ?: ($report === 'annual-management-pack' ? 'yearly' : 'monthly')
             ),
-            'relatedReports' => $this->catalogue()
-                ->filter(fn (array $item, string $slug) => $slug !== $report && $item['group'] === $definition['group'])
-                ->sortBy('title')
-                ->take(5)
+            'relatedReports' => $categoryReports
+                ->filter(fn (array $item) => $item['slug'] !== $report)
                 ->values(),
         ]);
     }

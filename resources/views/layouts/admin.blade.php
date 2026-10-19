@@ -12,7 +12,7 @@
         @include('layouts.partials.session-history')
         @livewireStyles
     </head>
-    <body class="kfms-template" style="--kfms-primary: {{ $companySetting->primary_color }}; --kfms-secondary: {{ $companySetting->secondary_color }};">
+    <body class="kfms-template" data-workspace-user="{{ auth()->id() }}" style="--kfms-primary: {{ $companySetting->primary_color }}; --kfms-secondary: {{ $companySetting->secondary_color }};">
         <x-banner />
 
         <div class="container-scroller">
@@ -40,6 +40,7 @@
         <script src="{{ asset('admin/assets/js/off-canvas.js') }}"></script>
         <script src="{{ asset('admin/assets/js/kfms-sidebar.js') }}?v={{ file_exists(public_path('admin/assets/js/kfms-sidebar.js')) ? filemtime(public_path('admin/assets/js/kfms-sidebar.js')) : time() }}"></script>
         <script src="{{ asset('admin/assets/js/kfms-forms.js') }}?v={{ file_exists(public_path('admin/assets/js/kfms-forms.js')) ? filemtime(public_path('admin/assets/js/kfms-forms.js')) : time() }}"></script>
+        <script src="{{ asset('admin/assets/js/kfms-workspace.js') }}?v={{ file_exists(public_path('admin/assets/js/kfms-workspace.js')) ? filemtime(public_path('admin/assets/js/kfms-workspace.js')) : time() }}"></script>
         @stack('scripts')
     </body>
 </html>

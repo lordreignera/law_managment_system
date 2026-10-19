@@ -27,6 +27,15 @@ class ClientPortalTest extends TestCase
             ->assertSee('Sign In');
     }
 
+    public function test_staff_login_page_can_share_the_client_portal_login_link(): void
+    {
+        $this->get(route('login'))
+            ->assertOk()
+            ->assertSee('Share Client Portal Link')
+            ->assertSee('data-portal-share-link', false)
+            ->assertSee('href="'.e(route('client.login')).'"', false);
+    }
+
     public function test_client_portal_login_context_hides_staff_access_request(): void
     {
         $this->get(route('client.login'))

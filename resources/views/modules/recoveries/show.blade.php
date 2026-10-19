@@ -86,22 +86,22 @@
                 <small>{{ $recoveryRate }}% recovered from tracked collections</small>
             </div>
 
-            <div class="kfms-recovery-money-grid">
-                <div>
-                    <span>Net Outstanding</span>
-                    <strong>{{ $currency }} {{ number_format($netOutstanding, 2) }}</strong>
+            <div class="kfms-stat-grid kfms-recovery-money-grid">
+                <div class="kfms-card">
+                    <span class="kfms-card-label">Net Outstanding</span>
+                    <strong class="kfms-stat">{{ $currency }} {{ number_format($netOutstanding, 2) }}</strong>
                 </div>
-                <div>
-                    <span>Recovered</span>
-                    <strong>{{ $currency }} {{ number_format($recovered, 2) }}</strong>
+                <div class="kfms-card">
+                    <span class="kfms-card-label">Recovered</span>
+                    <strong class="kfms-stat">{{ $currency }} {{ number_format($recovered, 2) }}</strong>
                 </div>
-                <div>
-                    <span>Original Outstanding</span>
-                    <strong>{{ $currency }} {{ number_format($originalOutstanding, 2) }}</strong>
+                <div class="kfms-card">
+                    <span class="kfms-card-label">Original Outstanding</span>
+                    <strong class="kfms-stat">{{ $currency }} {{ number_format($originalOutstanding, 2) }}</strong>
                 </div>
-                <div>
-                    <span>Interest</span>
-                    <strong>{{ $currency }} {{ number_format($interest, 2) }}</strong>
+                <div class="kfms-card">
+                    <span class="kfms-card-label">Interest</span>
+                    <strong class="kfms-stat">{{ $currency }} {{ number_format($interest, 2) }}</strong>
                 </div>
             </div>
         </div>

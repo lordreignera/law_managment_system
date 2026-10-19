@@ -17,6 +17,7 @@ body.kfms-auth-body {
 
 .kca-auth-stage {
     align-items: center;
+    box-sizing: border-box;
     display: flex;
     justify-content: center;
     min-height: 100vh;
@@ -99,7 +100,7 @@ body.kfms-auth-body {
 }
 
 .kca-login-card-centered {
-    grid-template-columns: minmax(0, 430px);
+    grid-template-columns: minmax(0, 1fr);
     min-height: auto;
     width: min(100%, 470px);
 }
@@ -115,11 +116,14 @@ body.kfms-auth-body {
 }
 
 .kca-login-card-centered .kca-form-panel {
+    min-width: 0;
     padding: 26px 38px 22px;
 }
 
 .kca-login-card-centered .kca-form-wrap {
-    margin: 0;
+    margin: 0 auto;
+    min-width: 0;
+    width: 100%;
 }
 
 .kca-login-refined .kca-form-panel {
@@ -767,18 +771,59 @@ body.kfms-auth-body {
     font-size: 17px;
 }
 
+.kca-text-link,
 .kca-login-support a,
 .kca-client-welcome-note a {
     color: var(--kca-navy);
     display: inline-block;
+    font-size: 12px;
     font-weight: 900;
-    margin-left: 6px;
     text-decoration: none;
 }
 
+.kca-login-support a,
+.kca-client-welcome-note a {
+    margin-left: 6px;
+}
+
+.kca-text-link:hover,
 .kca-login-support a:hover,
 .kca-client-welcome-note a:hover {
     color: #0759b8;
+}
+
+.kca-text-link:focus-visible {
+    border-radius: 3px;
+    outline: 2px solid var(--kca-gold);
+    outline-offset: 3px;
+}
+
+.kca-login-share {
+    margin-top: 12px;
+    text-align: center;
+}
+
+.kca-login-share-status {
+    color: var(--kca-muted);
+    font-size: 12px;
+    line-height: 1.4;
+    margin: 6px 0 0;
+}
+
+.kca-login-share-status:empty {
+    display: none;
+}
+
+.kca-login-share-url {
+    background: #fbfcfe;
+    border: 1px solid var(--kca-border);
+    border-radius: 7px;
+    box-sizing: border-box;
+    color: var(--kca-text);
+    font-size: 12px;
+    margin-top: 8px;
+    padding: 8px;
+    width: 100%;
 }
 
 .kca-guidelines-card {
@@ -1420,8 +1465,8 @@ body.kfms-auth-body {
     }
 
     .kca-login-support {
-        align-items: flex-start;
-        text-align: left;
+        align-items: center;
+        text-align: center;
     }
 
     .kca-guidelines-card .kca-form-panel {
@@ -1449,8 +1494,9 @@ body.kfms-auth-body {
 
     .kca-auth-row,
     .kca-auth-footer {
-        align-items: flex-start;
+        align-items: center;
         flex-direction: column;
+        gap: 10px;
     }
 
     .kca-register-heading {

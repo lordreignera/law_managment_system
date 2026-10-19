@@ -85,6 +85,14 @@
                         </a>
                     @endif
 
+                    @if (! $isClientPortalLogin && Route::has('client.login'))
+                        <div class="kca-login-share" data-portal-share>
+                            <a class="kca-text-link" href="{{ route('client.login') }}" data-portal-share-link>Share Client Portal Link</a>
+                            <p class="kca-login-share-status" data-portal-share-status role="status"></p>
+                            <input class="kca-login-share-url" type="url" value="{{ route('client.login') }}" aria-label="Client portal login link" data-portal-share-url readonly hidden>
+                        </div>
+                    @endif
+
                     <div class="kca-login-support">
                         <i class="mdi {{ $isClientPortalLogin ? 'mdi-shield-check-outline' : 'mdi-scale-balance' }}"></i>
                         <span>

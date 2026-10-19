@@ -25,6 +25,25 @@ return [
         'Management',
     ],
 
+    'navigation_groups' => [
+        'casework' => ['label' => 'Clients & Legal Work', 'groups' => ['Operations', 'Litigation']],
+        'recoveries-securities' => ['label' => 'Recoveries & Securities', 'groups' => ['Recoveries', 'Securities']],
+        'finance-payroll' => ['label' => 'Finance & Payroll', 'groups' => ['Finance', 'Payroll']],
+        'people' => ['label' => 'HR & Attendance', 'groups' => ['Human Resources']],
+        'management' => ['label' => 'Management', 'groups' => ['Management']],
+    ],
+
+    'group_labels' => [
+        'Operations' => 'Clients & Matters',
+        'Litigation' => 'Litigation',
+        'Human Resources' => 'HR & Attendance',
+        'Recoveries' => 'Recoveries',
+        'Securities' => 'Securities',
+        'Finance' => 'Finance',
+        'Payroll' => 'Payroll',
+        'Management' => 'Management',
+    ],
+
     'reports' => [
         'client-activity' => [
             'title' => 'Client activity',

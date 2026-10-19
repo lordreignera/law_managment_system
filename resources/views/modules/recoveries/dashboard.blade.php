@@ -38,19 +38,15 @@
 
     <div class="kfms-stat-grid kfms-dashboard-kpis">
         <section class="kfms-card kfms-stat-card">
-            <span class="kfms-stat-icon"><i class="mdi mdi-bank-outline"></i></span>
             <span class="kfms-stat-body"><span class="kfms-card-label">Active Accounts</span><strong class="kfms-stat">{{ number_format($summary['active']) }}</strong></span>
         </section>
         <section class="kfms-card kfms-stat-card">
-            <span class="kfms-stat-icon"><i class="mdi mdi-account-clock-outline"></i></span>
             <span class="kfms-stat-body"><span class="kfms-card-label">Unassigned</span><strong class="kfms-stat">{{ number_format($summary['unassigned']) }}</strong></span>
         </section>
         <section class="kfms-card kfms-stat-card">
-            <span class="kfms-stat-icon"><i class="mdi mdi-cash-remove"></i></span>
             <span class="kfms-stat-body"><span class="kfms-card-label">Net Outstanding</span><strong class="kfms-stat">{{ number_format($summary['outstanding']) }}</strong></span>
         </section>
         <section class="kfms-card kfms-stat-card">
-            <span class="kfms-stat-icon"><i class="mdi mdi-cash-check"></i></span>
             <span class="kfms-stat-body"><span class="kfms-card-label">Recovered</span><strong class="kfms-stat">{{ number_format($summary['recovered']) }}</strong></span>
         </section>
     </div>

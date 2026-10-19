@@ -40,7 +40,6 @@
         @foreach ($stats as $stat)
             @can('matters.index')
                 <a class="kfms-card kfms-stat-card" href="{{ $stat['route'] }}">
-                    <span class="kfms-stat-icon"><i class="mdi {{ $stat['icon'] }}"></i></span>
                     <span class="kfms-stat-body">
                         <span class="kfms-card-label">{{ $stat['label'] }}</span>
                         <strong class="kfms-stat">{{ number_format($stat['value']) }}</strong>
@@ -48,7 +47,6 @@
                 </a>
             @else
                 <section class="kfms-card kfms-stat-card">
-                    <span class="kfms-stat-icon"><i class="mdi {{ $stat['icon'] }}"></i></span>
                     <span class="kfms-stat-body">
                         <span class="kfms-card-label">{{ $stat['label'] }}</span>
                         <strong class="kfms-stat">{{ number_format($stat['value']) }}</strong>

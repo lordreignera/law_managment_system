@@ -49,7 +49,6 @@
             @php($canOpen = $stat['route'] && (! $stat['permission'] || auth()->user()?->can($stat['permission'])))
             @if ($canOpen)
                 <a class="kfms-card kfms-stat-card" href="{{ $stat['route'] }}">
-                    <span class="kfms-stat-icon"><i class="mdi {{ $stat['icon'] }}"></i></span>
                     <span class="kfms-stat-body">
                         <span class="kfms-card-label">{{ $stat['label'] }}</span>
                         <strong class="kfms-stat">{{ $stat['value'] }}</strong>
@@ -57,7 +56,6 @@
                 </a>
             @else
                 <section class="kfms-card kfms-stat-card">
-                    <span class="kfms-stat-icon"><i class="mdi {{ $stat['icon'] }}"></i></span>
                     <span class="kfms-stat-body">
                         <span class="kfms-card-label">{{ $stat['label'] }}</span>
                         <strong class="kfms-stat">{{ $stat['value'] }}</strong>
