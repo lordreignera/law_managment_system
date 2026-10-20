@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Branch;
 use App\Models\AuditLog;
+use App\Models\Branch;
 use App\Models\Department;
 use App\Models\StaffProfile;
 use App\Models\User;
@@ -11,8 +11,8 @@ use App\Notifications\StaffAccountApproved;
 use App\Support\ReferenceData;
 use App\Support\RoutePermissionRegistry;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -186,6 +186,7 @@ class AccessControlController extends Controller
                 }
                 if ($profile->employment_status === 'active') {
                     $skipped++;
+
                     continue;
                 }
                 if ($profile->employment_status !== 'pending') {

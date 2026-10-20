@@ -228,12 +228,12 @@
                 <div class="kfms-report-section-heading">
                     <div>
                         <span class="kfms-report-eyebrow">Continue exploring</span>
-                        <h2>Related {{ $report['group'] }} reports</h2>
+                        <h2>Related {{ $categoryLabel }} reports</h2>
                     </div>
                 </div>
                 <div class="kfms-report-related-links">
                     @foreach ($relatedReports as $related)
-                        <a href="{{ route('reports.show', $related['slug']) }}">{{ $related['title'] }} <i class="mdi mdi-arrow-right"></i></a>
+                        <a href="{{ route('reports.show', array_filter(['report' => $related['slug'], 'category' => $category, 'period' => $analytics['period'] ?? request('period', 'monthly')])) }}">{{ $related['title'] }} <i class="mdi mdi-arrow-right"></i></a>
                     @endforeach
                 </div>
             </section>

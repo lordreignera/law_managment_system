@@ -78,11 +78,12 @@ class ClientPortalAuthController extends Controller
 
         return response()->json([
             'exists' => true,
+            'phone' => $client->phone,
             'client_no' => $client->client_no,
             'has_portal_account' => $client->portalAccount()->exists(),
             'message' => $client->portalAccount()->exists()
                 ? 'A portal account already exists for this client. Please sign in or use forgot password.'
-                : 'Client record found. Your registered phone number has been filled in.',
+                : ($client->phone ? 'Client record found. Your registered phone number has been filled in.' : 'Client record found. No phone number is recorded with the firm.'),
         ]);
     }
 

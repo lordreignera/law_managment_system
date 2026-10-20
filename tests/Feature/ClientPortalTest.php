@@ -194,8 +194,39 @@ class ClientPortalTest extends TestCase
             ->assertJson([
                 'exists' => true,
                 'has_portal_account' => false,
-            ])
-            ->assertJsonMissing(['phone' => '+256 700 999111']);
+                'phone' => '+256 700 999111',
+            ]);
+    }
+
+    public function test_lookup_phone_can_be_used_to_activate_the_portal_and_wrong_phone_is_rejected(): void
+    {
+        $client = Client::create([
+            'client_no' => MonthlyReferenceNumber::make(Client::class, 'client_no', 'CL'),
+            'name' => 'Approved Client', 'email' => 'approved.client@example.test',
+            'phone' => '+256 700 123456', 'status' => 'active',
+        ]);
+        $lookup = $this->getJson(route('client.lookup', ['email' => 'APPROVED.CLIENT@example.test']))->assertOk();
+        $this->post(route('client.register.store'), [
+            'email' => $client->email, 'phone' => '0000000000',
+            'password' => 'password', 'password_confirmation' => 'password',
+        ])->assertSessionHasErrors('phone');
+        $this->assertDatabaseMissing('client_portal_accounts', ['client_id' => $client->id]);
+        $this->post(route('client.register.store'), [
+            'email' => $client->email, 'phone' => $lookup->json('phone'),
+            'password' => 'password', 'password_confirmation' => 'password',
+        ])->assertRedirect(route('verification.notice'));
+        $this->assertDatabaseHas('client_portal_accounts', ['client_id' => $client->id, 'registered_phone' => $client->phone]);
+    }
+
+    public function test_lookup_does_not_return_phone_for_an_inactive_client(): void
+    {
+        Client::create([
+            'client_no' => MonthlyReferenceNumber::make(Client::class, 'client_no', 'CL'),
+            'name' => 'Inactive Client', 'email' => 'inactive@example.test',
+            'phone' => '+256 700 222222', 'status' => 'inactive',
+        ]);
+        $this->getJson(route('client.lookup', ['email' => 'inactive@example.test']))
+            ->assertNotFound()->assertJsonMissingPath('phone');
     }
 
     public function test_client_lookup_rejects_unknown_email(): void

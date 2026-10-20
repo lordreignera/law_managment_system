@@ -79,7 +79,7 @@ class ReportingCatalogueTest extends TestCase
     {
         $user = $this->activeUser();
         $response = $this->actingAs($user)->get(route('reports.index'))->assertOk();
-        $document = new \DOMDocument();
+        $document = new \DOMDocument;
         @$document->loadHTML($response->getContent());
         $xpath = new \DOMXPath($document);
         $links = $xpath->query('//div[@id="sidebar-reports-analytics"]//a');
@@ -110,7 +110,7 @@ class ReportingCatalogueTest extends TestCase
             $response = $this->actingAs($user)->get($url)
                 ->assertOk()
                 ->assertSee('Recoveries &amp; Securities reports', false);
-            $document = new \DOMDocument();
+            $document = new \DOMDocument;
             @$document->loadHTML($response->getContent());
             $xpath = new \DOMXPath($document);
             $activeLinks = $xpath->query('//div[@id="sidebar-reports-analytics"]//a[@aria-current="page"]');

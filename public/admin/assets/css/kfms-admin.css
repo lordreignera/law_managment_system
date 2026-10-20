@@ -7580,7 +7580,10 @@ a.kfms-bar-row:hover > span {
 .kfms-template .sidebar .nav.sub-menu.kfms-sub-menu .nav-item .nav-link:hover {
     font-size: 13px;
     font-weight: 500 !important;
+    height: auto;
     letter-spacing: 0;
+    line-height: 1.35;
+    min-height: 34px;
 }
 
 .kfms-button-row {

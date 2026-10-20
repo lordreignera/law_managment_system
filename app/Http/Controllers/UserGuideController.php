@@ -224,6 +224,44 @@ class UserGuideController extends Controller
                 'sections' => [$this->payrollSection()],
             ],
             [
+                'title' => 'Access Requests Guide',
+                'subtitle' => 'Review staff registration details and approve requests in batches.',
+                'icon' => 'mdi-shield-account',
+                'route' => 'access.approvals.index',
+                'route_permission' => 'access.approvals.index',
+                'permissions' => ['access.users.index', 'access.approvals.index', 'access.users.approve'],
+                'sections' => [[
+                    'id' => 'access-requests',
+                    'title' => 'Staff Access Approval',
+                    'subtitle' => 'Approve complete requests using each staff member\'s requested role and office.',
+                    'steps' => [
+                        'Open User Management, then Approval Requests. Check the requested role, branch, department, job title, and phone.',
+                        'Select individual rows, Select 5, Select 10, or the header checkbox to select complete requests on the current page.',
+                        'Choose Approve Selected. Each user keeps their own requested role and receives an approval notice. Approval permission is required.',
+                        'Requests marked Review first need missing or incorrect details corrected on their Review page before approval.',
+                        'If any selected request is invalid, the whole batch stays unapproved until corrected. Repeated approval does not duplicate role grants or notices.',
+                    ],
+                ]],
+            ],
+            [
+                'title' => 'System Configuration Guide',
+                'subtitle' => 'Find and manage the firm\'s controlled reference data.',
+                'icon' => 'mdi-tune',
+                'route' => 'settings.system.overview',
+                'route_permission' => 'settings.system.overview',
+                'permissions' => ['settings.system.overview'],
+                'sections' => [[
+                    'id' => 'system-configuration',
+                    'title' => 'Find a System Setting',
+                    'subtitle' => 'Search configuration cards as you type.',
+                    'steps' => [
+                        'Open System Settings and start typing a name. Typing B immediately shows settings beginning with B, including Banks and Bank Branches.',
+                        'Continue typing to narrow the results. Clear restores the full configuration list without a page reload.',
+                        'The shared Back link returns to the previously visited page and retains its search filters.',
+                    ],
+                ]],
+            ],
+            [
                 'title' => 'Reporting & Analytics Guide',
                 'subtitle' => 'Controlled report definitions, management packs, exports, and audit rules.',
                 'icon' => 'mdi-chart-box-outline',
@@ -283,6 +321,7 @@ class UserGuideController extends Controller
                 'Open your profile from the top-right menu and upload your profile photo.',
                 'Upload your signature if you will sign letters, opinions, or other documents.',
                 'Use the left sidebar to open the modules available to your role.',
+                'Use the Back link above workspace pages to return to the previous page with its filters. Forms use centered, rounded sections for easier reading.',
                 'If a menu is missing, ask the system administrator to review your role permissions.',
             ],
         ];
@@ -500,6 +539,8 @@ class UserGuideController extends Controller
             'subtitle' => 'Use one controlled definition for every management report.',
             'steps' => [
                 'Open Reports & Analytics to browse the catalogue by group or search for a report by name, formula, or module.',
+                'The sidebar combines reports into Clients & Legal Work, Recoveries & Securities, Finance & Payroll, HR & Attendance, and Management. All Reports shows the complete catalogue.',
+                'Use Previous report and Next report to move through a category. The report counter shows your position and the selected time period follows you to the next report.',
                 'Open a report definition before exporting so that the included statuses, date rule, branch rule, permission rule, and draft or void treatment are clear.',
                 'Use the Weekly, Monthly, Quarterly, or Yearly selector on supported report pages to apply the same scope to KPI cards, line trends, bar comparisons, pie charts, and the decision table.',
                 'Download any chart as a PNG, or export the decision table as CSV, Excel, or PDF. Read the management insight below each chart before making a decision, then open the linked operational report when you need to work on the underlying records.',

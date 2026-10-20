@@ -67,7 +67,7 @@ Route::post('/client-portal/login', [ClientPortalAuthController::class, 'authent
 
 Route::middleware('guest')->group(function () {
     Route::get('/client-portal/register', [ClientPortalAuthController::class, 'create'])->name('client.register');
-    Route::get('/client-portal/lookup', [ClientPortalAuthController::class, 'lookup'])->name('client.lookup');
+    Route::get('/client-portal/lookup', [ClientPortalAuthController::class, 'lookup'])->middleware('throttle:60,1')->name('client.lookup');
     Route::post('/client-portal/register', [ClientPortalAuthController::class, 'store'])->name('client.register.store');
 });
 

@@ -2,9 +2,9 @@
 
 namespace Tests\Feature;
 
-use App\Models\CompanySetting;
 use App\Models\Bank;
 use App\Models\BankBranch;
+use App\Models\CompanySetting;
 use App\Models\InstructionType;
 use App\Models\StaffProfile;
 use App\Models\User;
@@ -132,7 +132,7 @@ class SystemSettingTest extends TestCase
         $filtered = route('settings.system.overview', ['search' => 'B']);
         foreach ([$filtered => $filtered, 'https://untrusted.example/path' => route('settings.system.overview')] as $referrer => $expected) {
             $response = $this->from($referrer)->get(route('settings.system.index', 'banks'))->assertOk();
-            $document = new \DOMDocument();
+            $document = new \DOMDocument;
             @$document->loadHTML($response->getContent());
             $back = (new \DOMXPath($document))->query('//a[@data-workspace-back]')->item(0);
             $this->assertNotNull($back);
