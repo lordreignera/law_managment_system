@@ -6,8 +6,11 @@ use App\Models\Client;
 use App\Models\ClientPortalAccount;
 use App\Models\User;
 use App\Services\AttendanceService;
+use App\Services\EmailVerificationService;
+use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
@@ -78,12 +81,11 @@ class ClientPortalAuthController extends Controller
 
         return response()->json([
             'exists' => true,
-            'phone' => $client->phone,
-            'client_no' => $client->client_no,
+            'phone_hint' => $this->phoneHint($client->phone),
             'has_portal_account' => $client->portalAccount()->exists(),
             'message' => $client->portalAccount()->exists()
                 ? 'A portal account already exists for this client. Please sign in or use forgot password.'
-                : ($client->phone ? 'Client record found. Your registered phone number has been filled in.' : 'Client record found. No phone number is recorded with the firm.'),
+                : ($client->phone ? 'Client record found. Your registered phone number is partly hidden until you verify your email.' : 'Client record found. No phone number is recorded with the firm.'),
         ]);
     }
 
@@ -91,7 +93,6 @@ class ClientPortalAuthController extends Controller
     {
         $data = $request->validate([
             'email' => ['required', 'email', 'max:191'],
-            'phone' => ['nullable', 'string', 'max:60'],
             'password' => ['required', 'confirmed', Password::defaults()],
         ]);
 
@@ -107,12 +108,6 @@ class ClientPortalAuthController extends Controller
             ]);
         }
 
-        if ($client->phone && ($this->normalizePhone($data['phone'] ?? null) !== $this->normalizePhone($client->phone))) {
-            throw ValidationException::withMessages([
-                'phone' => 'The phone number does not match the client record held by the firm.',
-            ]);
-        }
-
         if ($client->portalAccount()->exists()) {
             throw ValidationException::withMessages([
                 'email' => 'A client portal account already exists for this client. Please sign in or use forgot password.',
@@ -125,35 +120,51 @@ class ClientPortalAuthController extends Controller
             ]);
         }
 
-        $user = User::create([
-            'name' => $client->display_name,
-            'email' => $email,
-            'account_type' => 'client',
-            'password' => Hash::make($data['password']),
-        ]);
+        $user = DB::transaction(function () use ($client, $email, $data) {
+            $lockedClient = Client::query()->lockForUpdate()->findOrFail($client->id);
 
-        if (Role::where('name', 'Client')->exists()) {
-            $user->assignRole('Client');
-        }
+            if ($lockedClient->status !== 'active' || strtolower(trim($lockedClient->email)) !== $email || $lockedClient->portalAccount()->exists()
+                || User::whereRaw('LOWER(email) = ?', [$email])->exists()) {
+                throw ValidationException::withMessages([
+                    'email' => 'Portal access is already registered or this client is no longer active. Please sign in or contact the firm.',
+                ]);
+            }
 
-        $portalAccount = ClientPortalAccount::create([
-            'client_id' => $client->id,
-            'user_id' => $user->id,
-            'registered_email' => $email,
-            'registered_phone' => $client->phone,
-        ]);
+            $user = User::create([
+                'name' => $lockedClient->display_name,
+                'email' => $email,
+                'account_type' => 'client',
+                'password' => Hash::make($data['password']),
+            ]);
+
+            if (Role::where('name', 'Client')->exists()) {
+                $user->assignRole('Client');
+            }
+
+            ClientPortalAccount::create([
+                'client_id' => $lockedClient->id,
+                'user_id' => $user->id,
+                'registered_email' => $email,
+                'registered_phone' => $lockedClient->phone,
+            ]);
+
+            return $user;
+        });
 
         Auth::login($user);
+        $request->session()->regenerate();
+
+        $verification = app(EmailVerificationService::class)->send($user, fn () => event(new Registered($user)));
 
         return redirect()
             ->route('verification.notice')
-            ->with('status', 'Your account was created. Check your email to verify it before entering the portal.');
+            ->with('status', $verification['status'] === 'sent' ? 'verification-link-sent' : 'verification-delivery-failed');
     }
 
-    private function normalizePhone(?string $phone): ?string
+    private function phoneHint(?string $phone): ?string
     {
         $phone = preg_replace('/\D+/', '', (string) $phone);
 
-        return $phone === '' ? null : $phone;
+        return $phone === '' ? null : '••••'.(strlen($phone) > 4 ? ' '.substr($phone, -4) : '');
     }
 }

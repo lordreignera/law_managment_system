@@ -3,11 +3,13 @@
 namespace App\Actions\Fortify;
 
 use App\Models\User;
+use App\Services\EmailVerificationService;
 use App\Support\StorageUrl;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Laravel\Fortify\Contracts\UpdatesUserProfileInformation;
 
 class UpdateUserProfileInformation implements UpdatesUserProfileInformation
@@ -25,6 +27,12 @@ class UpdateUserProfileInformation implements UpdatesUserProfileInformation
             'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
             'signature' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
         ])->validateWithBag('updateProfileInformation');
+
+        if ($user->isClientAccount() && strtolower(trim($input['email'])) !== strtolower(trim($user->email))) {
+            throw ValidationException::withMessages([
+                'email' => 'Please contact the firm to change the registered email for your client portal.',
+            ])->errorBag('updateProfileInformation');
+        }
 
         if (isset($input['photo'])) {
             $user->updateProfilePhoto($input['photo']);
@@ -64,6 +72,6 @@ class UpdateUserProfileInformation implements UpdatesUserProfileInformation
             'email_verified_at' => null,
         ])->save();
 
-        $user->sendEmailVerificationNotification();
+        session()->flash('profile_verification_result', app(EmailVerificationService::class)->send($user));
     }
 }

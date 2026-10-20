@@ -11,8 +11,8 @@
         @include('layouts.partials.favicon')
         <link rel="stylesheet" href="{{ asset('admin/assets/vendors/mdi/css/materialdesignicons.min.css') }}">
         <link rel="stylesheet" href="{{ asset('admin/assets/vendors/css/vendor.bundle.base.css') }}">
-        <link rel="stylesheet" href="{{ asset('admin/assets/css/kfms-admin.css') }}?v={{ file_exists(public_path('admin/assets/css/kfms-admin.css')) ? filemtime(public_path('admin/assets/css/kfms-admin.css')) : time() }}">
         @vite(['resources/css/app.css', 'resources/js/app.js'])
+        <link rel="stylesheet" href="{{ asset('admin/assets/css/kfms-admin.css') }}?v={{ file_exists(public_path('admin/assets/css/kfms-admin.css')) ? filemtime(public_path('admin/assets/css/kfms-admin.css')) : time() }}">
     </head>
     <body class="kfms-client-portal" style="--kfms-primary: {{ $companySetting->primary_color }}; --kfms-secondary: {{ $companySetting->secondary_color }};">
         @php
@@ -21,7 +21,9 @@
         @endphp
 
         <div class="kfms-client-shell">
-            <aside class="kfms-client-sidebar">
+            <button class="kfms-client-backdrop" type="button" data-client-menu-close aria-label="Close navigation" tabindex="-1" hidden></button>
+            <aside class="kfms-client-sidebar" id="client-navigation" aria-label="Client navigation">
+                <button class="kfms-client-menu-close" type="button" data-client-menu-close aria-label="Close navigation"><i class="mdi mdi-close" aria-hidden="true"></i></button>
                 <a class="kfms-client-brand" href="{{ route('client.dashboard') }}">
                     <x-company-logo mark-class="kfms-client-logo-mark" image-class="kfms-client-logo-image" />
                 </a>
@@ -50,23 +52,26 @@
                     </a>
                 </nav>
 
-                <form class="kfms-client-logout" method="POST" action="{{ route('logout') }}">
-                    @csrf
-                    <input type="hidden" name="client_portal_logout" value="1">
-                    <button type="submit"><i class="mdi mdi-logout"></i> Sign Out</button>
-                </form>
             </aside>
 
             <div class="kfms-client-workspace">
                 <header class="kfms-client-header">
-                    <div>
+                    <button class="kfms-client-menu-toggle" type="button" data-client-menu-toggle aria-controls="client-navigation" aria-expanded="false" aria-label="Open navigation"><i class="mdi mdi-menu" aria-hidden="true"></i></button>
+                    <div class="kfms-client-header-title">
                         <span>{{ $companySetting->company_name ?: 'Kalikumutima & Co Advocates' }}</span>
                         <strong>@yield('title', 'Client Portal')</strong>
                     </div>
-                    <a href="{{ route('client.messages.index') }}" @class(['kfms-client-header-action', 'is-active' => request()->routeIs('client.messages.*')])>
-                        <i class="mdi mdi-message-text-outline"></i>
-                        Messages
-                    </a>
+                    <div class="kfms-client-header-actions">
+                        <a href="{{ route('client.messages.index') }}" @class(['kfms-client-header-action', 'is-active' => request()->routeIs('client.messages.*')]) aria-label="Messages">
+                            <i class="mdi mdi-message-text-outline" aria-hidden="true"></i>
+                            <span>Messages</span>
+                        </a>
+                        <form method="POST" action="{{ route('logout') }}" class="kfms-client-header-logout">
+                            @csrf
+                            <input type="hidden" name="client_portal_logout" value="1">
+                            <button type="submit" aria-label="Sign Out"><i class="mdi mdi-logout" aria-hidden="true"></i> <span>Sign Out</span></button>
+                        </form>
+                    </div>
                 </header>
 
                 <main class="kfms-client-main">
@@ -78,5 +83,6 @@
                 </main>
             </div>
         </div>
+        <script src="{{ asset('admin/assets/js/kfms-client-layout.js') }}?v={{ filemtime(public_path('admin/assets/js/kfms-client-layout.js')) }}"></script>
     </body>
 </html>

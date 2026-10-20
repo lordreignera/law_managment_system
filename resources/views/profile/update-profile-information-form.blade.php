@@ -113,23 +113,23 @@
         <!-- Email -->
         <div class="col-span-6 sm:col-span-4">
             <x-label for="email" value="{{ __('Email') }}" />
-            <x-input id="email" type="email" class="mt-1 block w-full" wire:model="state.email" required autocomplete="username" />
+            <x-input id="email" type="email" class="mt-1 block w-full" wire:model="state.email" required autocomplete="username" :readonly="$this->user->isClientAccount()" />
+            @if ($this->user->isClientAccount())
+                <p class="text-sm text-gray-600 mt-1">Contact the firm to change the registered email for your client portal.</p>
+            @endif
             <x-input-error for="email" class="mt-2" />
 
             @if (Laravel\Fortify\Features::enabled(Laravel\Fortify\Features::emailVerification()) && ! $this->user->hasVerifiedEmail())
-                <p class="text-sm mt-2">
-                    {{ __('Your email address is unverified.') }}
-
-                    <button type="button" class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" wire:click.prevent="sendEmailVerification">
-                        {{ __('Click here to re-send the verification email.') }}
+                <div class="text-sm mt-2" data-profile-verification x-data="{ remaining: @js($verificationRetryAfter), deadline: Date.now() + @js($verificationRetryAfter) * 1000, timer: null, init() { this.timer = setInterval(() => { this.remaining = Math.max(0, Math.ceil((this.deadline - Date.now()) / 1000)); }, 1000); }, destroy() { clearInterval(this.timer); } }" x-on:verification-resend.window="deadline = Date.now() + $event.detail.retryAfter * 1000; remaining = $event.detail.retryAfter">
+                    <p>{{ __('Your email address is unverified.') }}</p>
+                    <button type="button" class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50" wire:click.prevent="sendEmailVerification" wire:loading.attr="disabled" wire:target="sendEmailVerification" x-bind:disabled="remaining > 0">
+                        <span wire:loading.remove wire:target="sendEmailVerification" x-text="remaining > 0 ? 'Resend in ' + remaining + 's' : 'Resend Verification Email'">Resend Verification Email</span>
+                        <span wire:loading wire:target="sendEmailVerification">Sending verification email...</span>
                     </button>
-                </p>
-
-                @if ($this->verificationLinkSent)
-                    <p class="mt-2 font-medium text-sm text-green-600">
-                        {{ __('A new verification link has been sent to your email address.') }}
-                    </p>
-                @endif
+                    @if ($verificationMessage)
+                        <p @class(['mt-2 font-medium text-sm', 'text-green-600' => $verificationState === 'success', 'text-red-600' => $verificationState === 'error', 'text-gray-600' => $verificationState === 'info']) role="status" aria-live="polite">{{ $verificationMessage }}</p>
+                    @endif
+                </div>
             @endif
         </div>
 

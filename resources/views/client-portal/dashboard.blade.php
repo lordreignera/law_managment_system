@@ -8,6 +8,7 @@
             <span>Client workspace</span>
             <h1>Welcome, {{ $client->display_name }}</h1>
             <p>View your matters, shared documents, and communication with the advocates assigned to your work.</p>
+            <p class="mt-2 text-sm">Registered phone: {{ $client->phone ?: 'Not recorded' }}</p>
         </div>
         <div class="kfms-client-hero-actions">
             <a href="{{ route('client.matters.index') }}"><i class="mdi mdi-briefcase-search-outline"></i> View My Matters</a>

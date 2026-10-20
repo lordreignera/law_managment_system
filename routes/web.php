@@ -15,6 +15,7 @@ use App\Http\Controllers\ClientPortalController;
 use App\Http\Controllers\CompanySettingController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DocumentBundleController;
+use App\Http\Controllers\EmailVerificationController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\FinanceController;
 use App\Http\Controllers\HrController;
@@ -64,6 +65,10 @@ Route::get('/client-portal/login', [ClientPortalAuthController::class, 'login'])
 Route::post('/client-portal/login', [ClientPortalAuthController::class, 'authenticate'])
     ->middleware('throttle:login')
     ->name('client.login.store');
+
+Route::post('/email/verification/switch-account', [EmailVerificationController::class, 'switchAccount'])
+    ->middleware(['auth', 'throttle:6,1'])
+    ->name('verification.switch-account');
 
 Route::middleware('guest')->group(function () {
     Route::get('/client-portal/register', [ClientPortalAuthController::class, 'create'])->name('client.register');

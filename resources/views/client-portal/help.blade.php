@@ -29,8 +29,13 @@
         <ol class="kfms-guide-list">
             <li>Use the portal link shared by the firm.</li>
             <li>Create an account only with the email already registered in the firm records.</li>
+            <li>Your saved phone number fills automatically and is partly hidden before verification. Create a password, then open the verification link sent to your registered email. Your verified dashboard shows the full number.</li>
+            <li>If you return without verifying, sign in and choose Resend Verification Email in the verification prompt. Check your spam folder and use the latest link.</li>
+            <li>If another account is signed in when you open the link, choose Sign out and switch accounts. Sign in with the account that received the email to resume the link.</li>
             <li>If your email is not recognised, contact the firm to update your client details.</li>
             <li>After login, you can only see matters connected to your client record.</li>
+            <li>On a phone, use the menu button in the top bar to open navigation. Sign Out is also in the top bar.</li>
+            <li>If a session or form expires, use the recovery screen to sign in again. Expired email links have a separate prompt to request a fresh link.</li>
         </ol>
     </section>
 

@@ -26,7 +26,7 @@
                             <i class="mdi mdi-account-key-outline"></i>
                             <div>
                                 <strong>Access Your Portal</strong>
-                                <span>Enter your registered email, confirm the phone number shown, create a password, and continue to your portal.</span>
+                                <span>Enter your registered email, check the partly hidden phone number filled from your client record, create a password, and verify the link sent to your email. The full number is shown on your verified dashboard.</span>
                             </div>
                         </article>
                         <article>
@@ -45,6 +45,7 @@
                         </article>
                     </div>
 
+                    <p class="kca-modal-note">If you did not open the verification email, sign in with your password to see the prompt again. Choose Resend Verification Email, check your spam folder, and use the latest link. The same countdown applies on the verification and profile screens. If another account is signed in, choose Sign out and switch accounts to continue with the original email link.</p>
                     <div class="kca-guidelines-actions">
                         <a class="kca-primary-button" href="{{ route('client.login') }}">
                             <i class="mdi mdi-login"></i>

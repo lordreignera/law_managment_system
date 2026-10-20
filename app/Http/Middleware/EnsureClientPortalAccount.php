@@ -12,7 +12,8 @@ class EnsureClientPortalAccount
     {
         $user = $request->user();
 
-        if (! $user || ! $user->isClientAccount() || ! $user->clientPortalAccount?->is_active) {
+        if (! $user || ! $user->isClientAccount() || ! $user->clientPortalAccount?->is_active
+            || strtolower(trim($user->email)) !== strtolower(trim($user->clientPortalAccount->registered_email))) {
             abort(403);
         }
 

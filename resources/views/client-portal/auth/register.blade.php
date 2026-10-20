@@ -35,10 +35,10 @@
                             <span>Registered Phone Number</span>
                             <div>
                                 <i class="mdi mdi-phone-outline"></i>
-                                <input id="phone" type="text" name="phone" value="{{ old('phone') }}" placeholder="Filled after email is confirmed" autocomplete="tel" readonly>
+                                <input id="phone" type="text" value="" placeholder="Partly hidden after email lookup" autocomplete="off" aria-describedby="phone-privacy-note" readonly>
                             </div>
                         </label>
-                        <input id="client_no" type="hidden" name="client_no" value="">
+                        <p class="kca-lookup-message" id="phone-privacy-note">Your saved number fills automatically and is partly hidden until you verify your email.</p>
 
                         <label class="kca-field" for="password">
                             <span>Create Password</span>

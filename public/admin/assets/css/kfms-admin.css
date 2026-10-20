@@ -7574,6 +7574,62 @@ a.kfms-bar-row:hover > span {
     }
 }
 
+/* Client navigation follows the admin's mobile drawer pattern. */
+.kfms-client-portal { margin: 0; min-width: 0; }
+.kfms-client-sidebar { box-sizing: border-box; height: 100vh; height: 100dvh; min-height: 0; overflow-y: auto; }
+.kfms-client-header { align-items: center; flex-direction: row; flex-wrap: nowrap; gap: 14px; }
+.kfms-client-header-title { flex: 1; min-width: 0; }
+.kfms-client-header-title strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kfms-client-header .kfms-client-header-actions { align-items: center; display: flex; flex-shrink: 0; gap: 8px; }
+.kfms-client-header-actions span { color: inherit; font-size: 13px; font-weight: 750; }
+.kfms-client-header-actions i { font-size: 18px; }
+.kfms-client-header .kfms-client-header-logout button { min-height: 42px; }
+.kfms-client-header-actions form { margin: 0; }
+.kfms-client-menu-toggle,
+.kfms-client-menu-close { align-items: center; background: #fff; border: 1px solid #d8e1ec; border-radius: 8px; color: #071f3f; display: none; flex-shrink: 0; height: 40px; justify-content: center; width: 40px; }
+.kfms-client-menu-toggle i,
+.kfms-client-menu-close i { font-size: 23px; }
+.kfms-client-backdrop { background: rgba(3, 19, 40, 0.58); border: 0; inset: 0; position: fixed; z-index: 1090; }
+.kfms-client-backdrop[hidden] { display: none; }
+.kfms-client-main { box-sizing: border-box; min-width: 0; width: 100%; }
+.kfms-client-main .kfms-panel,
+.kfms-client-main .kfms-client-hero > div { min-width: 0; }
+.kfms-client-thread p,
+.kfms-client-user strong,
+.kfms-client-hero h1 { overflow-wrap: anywhere; }
+
+@media (max-width: 991px) {
+    .kfms-client-shell { grid-template-columns: minmax(0, 1fr); }
+    .kfms-client-sidebar { inset: 0 auto 0 0; max-width: calc(100vw - 48px); padding-top: 68px; position: fixed; transform: translateX(-105%); transition: transform 180ms ease, visibility 180ms; visibility: hidden; width: 270px; z-index: 1100; }
+    .kfms-client-menu-open { overflow: hidden; }
+    .kfms-client-menu-open .kfms-client-sidebar { transform: translateX(0); visibility: visible; }
+    .kfms-client-menu-close { background: transparent; border-color: rgba(255, 255, 255, 0.25); color: #fff; display: inline-flex; position: absolute; right: 16px; top: 16px; }
+    .kfms-client-menu-toggle { display: inline-flex; }
+    .kfms-client-nav { grid-template-columns: minmax(0, 1fr); }
+    .kfms-client-nav a { justify-content: flex-start; }
+    .kfms-client-header { padding: 12px 16px; }
+    .kfms-client-header-title strong { font-size: 20px; }
+    .kfms-client-chat { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 640px) {
+    .kfms-client-header { align-items: center; gap: 8px; min-height: 64px; padding: 10px 12px; }
+    .kfms-client-header-title > span { display: none; }
+    .kfms-client-header-title strong { font-size: 16px; }
+    .kfms-client-header-action { justify-content: center; min-width: 38px; padding: 0 9px; }
+    .kfms-client-header-action span { display: none; }
+    .kfms-client-header .kfms-client-header-logout button { gap: 5px; min-height: 40px; padding: 0 8px; }
+    .kfms-client-header-logout span { font-size: 12px; }
+    .kfms-client-main { padding: 14px; }
+    .kfms-client-hero { padding: 18px; }
+    .kfms-client-hero h1 { font-size: 22px; }
+    .kfms-client-thread article { max-width: 95%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .kfms-client-sidebar { transition: none; }
+}
+
 /* Sidebar submenu typography: child links should stay lighter than module headings. */
 .kfms-template .sidebar .nav.sub-menu.kfms-sub-menu .nav-item .nav-link,
 .kfms-template .sidebar .nav.sub-menu.kfms-sub-menu .nav-item.active .nav-link,

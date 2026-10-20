@@ -4,7 +4,6 @@
         var emailInput = document.querySelector('[data-client-lookup-url]');
         var message = document.querySelector('[data-client-lookup-message]');
         var phoneInput = document.getElementById('phone');
-        var clientNoInput = document.getElementById('client_no');
         if (!emailInput || !message || !phoneInput) return;
         var form = emailInput.closest('form');
         var timer;
@@ -20,7 +19,6 @@
         function clearMatch() {
             phoneInput.value = '';
             matchedEmail = '';
-            if (clientNoInput) clientNoInput.value = '';
         }
         function lookup() {
             var requestedEmail = email();
@@ -45,10 +43,9 @@
                         setMessage(payload.message || 'This email is not registered as an active client.', 'error');
                         return false;
                     }
-                    phoneInput.value = payload.phone || '';
+                    phoneInput.value = payload.phone_hint || '';
                     phoneInput.readOnly = true;
-                    phoneInput.placeholder = payload.phone ? 'Registered phone number' : 'No phone number recorded';
-                    if (clientNoInput) clientNoInput.value = payload.client_no || '';
+                    phoneInput.placeholder = payload.phone_hint ? 'Registered phone number (partly hidden)' : 'No phone number recorded';
                     matchedEmail = requestedEmail;
                     setMessage(payload.message || 'Client record found.', payload.has_portal_account ? 'warning' : 'success');
                     return true;

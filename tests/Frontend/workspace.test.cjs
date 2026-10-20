@@ -108,7 +108,7 @@ test('Back ignores external and sign-in history entries', () => {
 
 function clientAccess(fetch) {
     const email = element({ dataset: { clientLookupUrl: '/client-portal/lookup' }, checkValidity() { return this.value.includes('@'); } });
-    const phone = element(); const clientNo = element(); const message = element();
+    const phone = element(); const message = element();
     let ready; let submissions = 0;
     const form = element({ requestSubmit() { submissions++; this.fire('submit'); } });
     email.closest = () => form;
@@ -116,22 +116,21 @@ function clientAccess(fetch) {
     const document = {
         addEventListener: (name, listener) => { ready = listener; },
         querySelector: selector => selector.includes('message') ? message : email,
-        getElementById: id => id === 'phone' ? phone : clientNo,
+        getElementById: id => id === 'phone' ? phone : null,
     };
     vm.runInNewContext(source('kfms-client-access.js'), { document, window, URL, AbortController, fetch });
     ready();
-    return { email, phone, clientNo, message, form, submissions: () => submissions };
+    return { email, phone, message, form, submissions: () => submissions };
 }
-const response = phone => ({ ok: true, json: async () => ({ exists: true, phone, client_no: 'CL-1' }) });
+const response = phoneHint => ({ ok: true, json: async () => ({ exists: true, phone_hint: phoneHint }) });
 const settle = () => new Promise(resolve => setImmediate(resolve));
 
-test('client activation fills the registered phone from an email lookup', async () => {
-    const app = clientAccess(async () => response('+256700111222'));
+test('client activation automatically displays only the masked phone hint', async () => {
+    const app = clientAccess(async () => response('•••• 1222'));
     app.email.value = 'client@example.test'; app.email.fire('blur');
     await settle();
-    assert.equal(app.phone.value, '+256700111222');
+    assert.equal(app.phone.value, '•••• 1222');
     assert.equal(app.phone.readOnly, true);
-    assert.equal(app.clientNo.value, 'CL-1');
 });
 
 test('client activation ignores stale lookups when the email changes', async () => {
@@ -139,23 +138,22 @@ test('client activation ignores stale lookups when the email changes', async () 
     const app = clientAccess(() => new Promise(resolve => requests.push(resolve)));
     app.email.value = 'first@example.test'; app.email.fire('blur');
     app.email.value = 'second@example.test'; app.email.fire('input'); app.email.fire('blur');
-    requests[1](response('+256700222222')); await settle();
-    requests[0](response('+256700111111')); await settle();
-    assert.equal(app.phone.value, '+256700222222');
+    requests[1](response('•••• 2222')); await settle();
+    requests[0](response('•••• 1111')); await settle();
+    assert.equal(app.phone.value, '•••• 2222');
     app.email.value = ''; app.email.fire('input');
     assert.equal(app.phone.value, '');
-    assert.equal(app.clientNo.value, '');
 });
 
-test('client activation waits for lookup before submitting the registered phone', async () => {
+test('client activation waits for the masked lookup before submitting once', async () => {
     let finish;
     const app = clientAccess(() => new Promise(resolve => { finish = resolve; }));
     app.email.value = 'client@example.test';
     const submitted = app.form.fire('submit');
     app.form.fire('submit');
     assert.equal(app.submissions(), 0);
-    finish(response('+256700333333'));
+    finish(response('•••• 3333'));
     await submitted;
     assert.equal(app.submissions(), 1);
-    assert.equal(app.phone.value, '+256700333333');
+    assert.equal(app.phone.value, '•••• 3333');
 });

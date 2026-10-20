@@ -14,8 +14,13 @@ class LoginResponse implements LoginResponseContract
     public function toResponse($request): JsonResponse|RedirectResponse
     {
         $user = $request->user();
+        $resumingVerification = $request->session()->pull('verification.resume_after_login', false);
 
         if ($user?->isClientAccount()) {
+            if (! $user->hasVerifiedEmail()) {
+                return redirect()->intended(route('verification.notice'));
+            }
+
             $portalAccount = $user->clientPortalAccount;
 
             $portalAccount?->update([
@@ -35,7 +40,9 @@ class LoginResponse implements LoginResponseContract
             $request->session()->put('attendance_record_id', $record->id);
         }
 
-        return redirect($this->staffHome($user));
+        return $resumingVerification
+            ? redirect()->intended(route('verification.notice'))
+            : redirect($this->staffHome($user));
     }
 
     private function staffIsPendingApproval($user): bool

@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Profile;
 
+use App\Services\EmailVerificationService;
 use App\Support\StorageUrl;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -21,13 +22,24 @@ class UpdateProfileInformationForm extends Component
 
     public bool $verificationLinkSent = false;
 
+    public string $verificationMessage = '';
+
+    public string $verificationState = 'info';
+
+    public int $verificationRetryAfter = 0;
+
     public function mount(): void
     {
         $user = Auth::user();
+        $this->verificationRetryAfter = app(EmailVerificationService::class)->remaining($user);
 
         $this->state = array_merge([
             'email' => $user->email,
         ], $user->withoutRelations()->toArray());
+
+        if ($result = session()->pull('profile_verification_result')) {
+            $this->applyVerificationResult($result);
+        }
     }
 
     public function updateProfileInformation(UpdatesUserProfileInformation $updater)
@@ -47,6 +59,10 @@ class UpdateProfileInformationForm extends Component
         $updater->update(Auth::user(), $input);
 
         Auth::setUser(Auth::user()->fresh());
+
+        if ($result = session()->pull('profile_verification_result')) {
+            $this->applyVerificationResult($result);
+        }
 
         if ($this->photo || $this->signature) {
             return redirect()->route('profile.show');
@@ -82,9 +98,16 @@ class UpdateProfileInformationForm extends Component
 
     public function sendEmailVerification(): void
     {
-        Auth::user()->sendEmailVerificationNotification();
+        $this->applyVerificationResult(app(EmailVerificationService::class)->send(Auth::user()));
+    }
 
-        $this->verificationLinkSent = true;
+    private function applyVerificationResult(array $result): void
+    {
+        $this->verificationLinkSent = $result['status'] === 'sent';
+        $this->verificationMessage = $result['message'];
+        $this->verificationState = $result['status'] === 'failed' ? 'error' : ($this->verificationLinkSent ? 'success' : 'info');
+        $this->verificationRetryAfter = $result['retry_after'];
+        $this->dispatch('verification-resend', retryAfter: $this->verificationRetryAfter);
     }
 
     public function getUserProperty()

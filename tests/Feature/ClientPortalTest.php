@@ -178,7 +178,7 @@ class ClientPortalTest extends TestCase
         ])->assertSessionHasErrors('email');
     }
 
-    public function test_client_lookup_returns_registered_phone_for_active_client(): void
+    public function test_client_lookup_returns_only_a_masked_phone_for_active_client(): void
     {
         Client::create([
             'client_no' => MonthlyReferenceNumber::make(Client::class, 'client_no', 'CL'),
@@ -194,11 +194,12 @@ class ClientPortalTest extends TestCase
             ->assertJson([
                 'exists' => true,
                 'has_portal_account' => false,
-                'phone' => '+256 700 999111',
-            ]);
+                'phone_hint' => '•••• 9111',
+            ])->assertJsonMissingPath('phone')->assertJsonMissingPath('client_no')
+            ->assertDontSee('+256 700 999111');
     }
 
-    public function test_lookup_phone_can_be_used_to_activate_the_portal_and_wrong_phone_is_rejected(): void
+    public function test_portal_activation_uses_saved_contact_details_instead_of_submitted_values(): void
     {
         $client = Client::create([
             'client_no' => MonthlyReferenceNumber::make(Client::class, 'client_no', 'CL'),
@@ -206,16 +207,13 @@ class ClientPortalTest extends TestCase
             'phone' => '+256 700 123456', 'status' => 'active',
         ]);
         $lookup = $this->getJson(route('client.lookup', ['email' => 'APPROVED.CLIENT@example.test']))->assertOk();
+        $lookup->assertJsonPath('phone_hint', '•••• 3456')->assertJsonMissingPath('phone');
         $this->post(route('client.register.store'), [
-            'email' => $client->email, 'phone' => '0000000000',
-            'password' => 'password', 'password_confirmation' => 'password',
-        ])->assertSessionHasErrors('phone');
-        $this->assertDatabaseMissing('client_portal_accounts', ['client_id' => $client->id]);
-        $this->post(route('client.register.store'), [
-            'email' => $client->email, 'phone' => $lookup->json('phone'),
+            'email' => $client->email, 'phone' => '0000000000', 'client_no' => 'TAMPERED', 'name' => 'Not the registered client',
             'password' => 'password', 'password_confirmation' => 'password',
         ])->assertRedirect(route('verification.notice'));
         $this->assertDatabaseHas('client_portal_accounts', ['client_id' => $client->id, 'registered_phone' => $client->phone]);
+        $this->assertDatabaseHas('users', ['email' => $client->email, 'name' => $client->display_name]);
     }
 
     public function test_lookup_does_not_return_phone_for_an_inactive_client(): void
