@@ -10,11 +10,6 @@
             <p>View your matters, shared documents, and communication with the advocates assigned to your work.</p>
             <p class="mt-2 text-sm">Registered phone: {{ $client->phone ?: 'Not recorded' }}</p>
         </div>
-        <div class="kfms-client-hero-actions">
-            <a href="{{ route('client.matters.index') }}"><i class="mdi mdi-briefcase-search-outline"></i> View My Matters</a>
-            <a href="{{ route('client.messages.index') }}"><i class="mdi mdi-message-text-outline"></i> Messages</a>
-            <a href="https://kalikumutima.com/" target="_blank" rel="noopener noreferrer"><i class="mdi mdi-web"></i> Visit Kalikumutima website</a>
-        </div>
     </section>
 
     <div class="kfms-stat-grid kfms-client-kpis">

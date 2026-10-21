@@ -47,6 +47,14 @@
                         <i class="mdi mdi-message-text-outline"></i>
                         <span>Messages</span>
                     </a>
+                    <a href="{{ route('client.profile') }}" @class(['is-active' => request()->routeIs('client.profile')])>
+                        <i class="mdi mdi-account-outline"></i>
+                        <span>My Profile</span>
+                    </a>
+                    <a href="https://kalikumutima.com/" target="_blank" rel="noopener noreferrer" aria-label="Visit Kalikumutima website">
+                        <i class="mdi mdi-web"></i>
+                        <span>Visit Website</span>
+                    </a>
                     <a href="{{ route('client.help') }}" @class(['is-active' => request()->routeIs('client.help')])>
                         <i class="mdi mdi-book-open-page-variant"></i>
                         <span>Help Guide</span>

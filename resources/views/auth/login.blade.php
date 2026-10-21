@@ -85,11 +85,11 @@
                         </a>
                     @endif
 
-                    @if (! $isClientPortalLogin && Route::has('client.login'))
+                    @if (! $isClientPortalLogin && Route::has('client.portal'))
                         <div class="kca-login-share" data-portal-share>
-                            <a class="kca-text-link" href="{{ route('client.login') }}" data-portal-share-link>Share Client Portal Link</a>
+                            <a class="kca-text-link" href="{{ route('client.portal') }}" data-portal-share-link>Share Client Portal Link</a>
                             <p class="kca-login-share-status" data-portal-share-status role="status"></p>
-                            <input class="kca-login-share-url" type="url" value="{{ route('client.login') }}" aria-label="Client portal login link" data-portal-share-url readonly hidden>
+                            <input class="kca-login-share-url" type="url" value="{{ route('client.portal') }}" aria-label="Client portal link" data-portal-share-url readonly hidden>
                         </div>
                     @endif
 

@@ -46,6 +46,13 @@ class ClientPortalController extends Controller
         ]);
     }
 
+    public function profile(Request $request)
+    {
+        return view('client-portal.profile', [
+            'profileUser' => $request->user()->fresh(),
+        ]);
+    }
+
     public function matters(Request $request)
     {
         $client = $this->client($request);

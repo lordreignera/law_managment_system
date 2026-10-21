@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Livewire\Profile\UpdateProfileInformationForm;
 use App\Models\Client;
 use App\Models\ClientPortalAccount;
 use App\Models\Conversation;
@@ -11,6 +12,7 @@ use App\Models\StaffProfile;
 use App\Models\User;
 use App\Support\MonthlyReferenceNumber;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -33,7 +35,7 @@ class ClientPortalTest extends TestCase
             ->assertOk()
             ->assertSee('Share Client Portal Link')
             ->assertSee('data-portal-share-link', false)
-            ->assertSee('href="'.e(route('client.login')).'"', false);
+            ->assertSee('href="'.e(route('client.portal')).'"', false);
     }
 
     public function test_client_portal_login_context_hides_staff_access_request(): void
@@ -382,7 +384,9 @@ class ClientPortalTest extends TestCase
         $this->actingAs($portalUser)->get(route('client.dashboard'))
             ->assertOk()
             ->assertSee('Client Visible Matter')
-            ->assertSee('https://kalikumutima.com/')
+            ->assertSee('href="'.e(route('client.profile')).'"', false)
+            ->assertSee('href="https://kalikumutima.com/"', false)
+            ->assertDontSee('kfms-client-hero-actions', false)
             ->assertDontSee('Other Client Matter');
 
         $this->actingAs($portalUser)->get(route('client.matters.show', $otherMatter))
@@ -415,5 +419,62 @@ class ClientPortalTest extends TestCase
             ->assertSee('Message')
             ->assertSee('Client Visible Matter')
             ->assertSee('Lead Advocate');
+    }
+
+    public function test_client_can_open_their_portal_profile(): void
+    {
+        $client = Client::create([
+            'client_no' => MonthlyReferenceNumber::make(Client::class, 'client_no', 'CL'),
+            'client_type' => 'individual',
+            'name' => 'Profile Client',
+            'email' => 'profile.client@example.test',
+            'status' => 'active',
+        ]);
+        $user = User::factory()->create([
+            'email' => $client->email,
+            'account_type' => 'client',
+            'email_verified_at' => now(),
+        ]);
+        ClientPortalAccount::create([
+            'client_id' => $client->id,
+            'user_id' => $user->id,
+            'registered_email' => $user->email,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('client.profile'))
+            ->assertOk()
+            ->assertSee('My Profile')
+            ->assertSee('Profile Information')
+            ->assertSee('Save Profile Changes');
+    }
+
+    public function test_client_can_update_profile_information_from_the_portal(): void
+    {
+        $client = Client::create([
+            'client_no' => MonthlyReferenceNumber::make(Client::class, 'client_no', 'CL'),
+            'client_type' => 'individual',
+            'name' => 'Editable Profile Client',
+            'email' => 'editable.profile@example.test',
+            'status' => 'active',
+        ]);
+        $user = User::factory()->create([
+            'email' => $client->email,
+            'account_type' => 'client',
+            'email_verified_at' => now(),
+        ]);
+        ClientPortalAccount::create([
+            'client_id' => $client->id,
+            'user_id' => $user->id,
+            'registered_email' => $user->email,
+        ]);
+
+        $this->actingAs($user);
+
+        Livewire::test(UpdateProfileInformationForm::class)
+            ->set('state.name', 'Updated Portal Name')
+            ->call('updateProfileInformation');
+
+        $this->assertSame('Updated Portal Name', $user->fresh()->name);
     }
 }

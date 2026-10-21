@@ -95,6 +95,7 @@ Route::middleware([
 
     Route::middleware('client.portal')->prefix('client')->name('client.')->group(function () {
         Route::get('/dashboard', [ClientPortalController::class, 'dashboard'])->name('dashboard');
+        Route::get('/profile', [ClientPortalController::class, 'profile'])->name('profile');
         Route::view('/help', 'client-portal.help')->name('help');
         Route::get('/messages', [ClientPortalController::class, 'messages'])->name('messages.index');
         Route::get('/messages/{conversation}', [ClientPortalController::class, 'messages'])->name('messages.show');

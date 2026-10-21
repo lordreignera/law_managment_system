@@ -65,7 +65,7 @@ class UpdateProfileInformationForm extends Component
         }
 
         if ($this->photo || $this->signature) {
-            return redirect()->route('profile.show');
+            return redirect()->route(Auth::user()->isClientAccount() ? 'client.profile' : 'profile.show');
         }
 
         $this->dispatch('saved');
