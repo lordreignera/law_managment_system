@@ -125,3 +125,55 @@ test('profile resend countdown expires after a background tab resumes', () => {
     assert.equal(widget.remaining, 0);
     widget.destroy(); assert.equal(cleared, true);
 });
+
+function sessionGuard({ authenticated = true, userId = '7', token = 'fresh-token' } = {}) {
+    let submit;
+    const replacements = [];
+    class Form {}
+    const tokenInput = { value: 'stale-token' };
+    const meta = { content: 'stale-token' };
+    const body = {
+        dataset: { kfmsSessionUser: '7' },
+        classList: { contains: () => false },
+        appendChild() {},
+    };
+    const document = {
+        body,
+        addEventListener(name, handler, capture) { if (name === 'submit' && capture) submit = handler; },
+        querySelector(selector) {
+            if (selector === 'meta[name="kfms-session-status"]') return { content: '/session/status' };
+            if (selector === 'meta[name="csrf-token"]') return meta;
+            return null;
+        },
+        querySelectorAll: () => [tokenInput],
+        createElement: () => ({ setAttribute() {}, style: {}, appendChild() {}, textContent: '' }),
+    };
+    const window = { axios: { defaults: { headers: { common: {} } } }, location: { origin: 'http://localhost', pathname: '/dashboard', replace: url => replacements.push(url) } };
+    const form = Object.assign(new Form(), {
+        action: '/logout', method: 'POST', dataset: {},
+        querySelector() { return null; },
+        requestSubmit() { form.submitted = true; },
+    });
+    const fetch = async () => ({ ok: true, json: async () => ({ authenticated, user_id: authenticated ? userId : null, csrf_token: token }) });
+    vm.runInNewContext(source('kfms-session.js'), { document, window, fetch, URL, HTMLFormElement: Form });
+    return { form, document, window, tokenInput, meta, submit, event: { target: form, submitter: null, preventDefault() { this.prevented = true; } }, replacements };
+}
+
+test('session guard refreshes the token before submitting logout once', async () => {
+    const app = sessionGuard();
+    app.submit(app.event);
+    assert.equal(app.event.prevented, true);
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(app.tokenInput.value, 'fresh-token');
+    assert.equal(app.meta.content, 'fresh-token');
+    assert.equal(app.form.submitted, true);
+    assert.deepEqual(app.replacements, []);
+});
+
+test('session guard never posts logout after the authenticated session has expired', async () => {
+    const app = sessionGuard({ authenticated: false });
+    app.submit(app.event);
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(app.form.submitted, undefined);
+    assert.deepEqual(app.replacements, ['/login']);
+});

@@ -4,6 +4,7 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
+        <meta name="kfms-session-status" content="{{ route('session.status', absolute: false) }}">
         @include('layouts.partials.session-history')
 
         <title>{{ $companySetting->company_name ?: config('app.name', 'KFMS') }}</title>
@@ -20,7 +21,7 @@
         <!-- Styles -->
         @livewireStyles
     </head>
-    <body class="font-sans antialiased">
+    <body class="font-sans antialiased" data-kfms-session-user="{{ auth()->id() }}">
         <x-banner />
 
         <div class="min-h-screen bg-gray-100">
@@ -44,5 +45,6 @@
         @stack('modals')
 
         @livewireScripts
+        <script src="{{ asset('admin/assets/js/kfms-session.js') }}?v={{ file_exists(public_path('admin/assets/js/kfms-session.js')) ? filemtime(public_path('admin/assets/js/kfms-session.js')) : time() }}"></script>
     </body>
 </html>

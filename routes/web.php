@@ -48,6 +48,7 @@ use App\Http\Controllers\RecoveryController;
 use App\Http\Controllers\RecoveryReportController;
 use App\Http\Controllers\ReportingController;
 use App\Http\Controllers\RequisitionController;
+use App\Http\Controllers\SessionController;
 use App\Http\Controllers\StaffController;
 use App\Http\Controllers\SystemSettingController;
 use App\Http\Controllers\UserGuideController;
@@ -65,6 +66,12 @@ Route::get('/client-portal/login', [ClientPortalAuthController::class, 'login'])
 Route::post('/client-portal/login', [ClientPortalAuthController::class, 'authenticate'])
     ->middleware('throttle:login')
     ->name('client.login.store');
+
+// Open tabs can refresh the CSRF token for the session that is currently
+// active. This route does not extend authentication or replay any request.
+Route::get('/session/status', [SessionController::class, 'status'])
+    ->middleware('throttle:120,1')
+    ->name('session.status');
 
 Route::post('/email/verification/switch-account', [EmailVerificationController::class, 'switchAccount'])
     ->middleware(['auth', 'throttle:6,1'])

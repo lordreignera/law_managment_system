@@ -5,6 +5,7 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
+        <meta name="kfms-session-status" content="{{ route('session.status', absolute: false) }}">
 
         <title>@yield('title', 'Client Portal') - {{ $companySetting->company_name ?: config('app.name', 'KFMS') }}</title>
 
@@ -14,7 +15,7 @@
         @vite(['resources/css/app.css', 'resources/js/app.js'])
         <link rel="stylesheet" href="{{ asset('admin/assets/css/kfms-admin.css') }}?v={{ file_exists(public_path('admin/assets/css/kfms-admin.css')) ? filemtime(public_path('admin/assets/css/kfms-admin.css')) : time() }}">
     </head>
-    <body class="kfms-client-portal" style="--kfms-primary: {{ $companySetting->primary_color }}; --kfms-secondary: {{ $companySetting->secondary_color }};">
+    <body class="kfms-client-portal" data-kfms-session-user="{{ auth()->id() }}" style="--kfms-primary: {{ $companySetting->primary_color }}; --kfms-secondary: {{ $companySetting->secondary_color }};">
         @php
             $portalClient = auth()->user()?->clientPortalAccount?->client;
             $portalName = $portalClient?->display_name ?: auth()->user()?->name;
@@ -83,6 +84,7 @@
                 </main>
             </div>
         </div>
+        <script src="{{ asset('admin/assets/js/kfms-session.js') }}?v={{ file_exists(public_path('admin/assets/js/kfms-session.js')) ? filemtime(public_path('admin/assets/js/kfms-session.js')) : time() }}"></script>
         <script src="{{ asset('admin/assets/js/kfms-client-layout.js') }}?v={{ filemtime(public_path('admin/assets/js/kfms-client-layout.js')) }}"></script>
     </body>
 </html>

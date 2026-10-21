@@ -43,6 +43,16 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions) {
         $exceptions->render(function (HttpExceptionInterface $exception, Request $request) {
+            if ($exception->getStatusCode() === 419 && $request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Your session has expired. Refresh the page and try again.',
+                    'session_expired' => true,
+                    'login_url' => ($request->is('client*') || $request->boolean('client_portal_logout'))
+                        ? route('client.login')
+                        : route('login'),
+                ], 419);
+            }
+
             if ($exception->getStatusCode() === 403 && $request->routeIs('verification.verify') && $request->user() && ! $request->expectsJson()) {
                 return app(EmailVerificationController::class)->linkError($request);
             }

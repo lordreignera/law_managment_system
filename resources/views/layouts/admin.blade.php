@@ -4,6 +4,7 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
+        <meta name="kfms-session-status" content="{{ route('session.status', absolute: false) }}">
 
         <title>@yield('title', 'Dashboard') - {{ $companySetting->company_name ?: config('app.name', 'KFMS') }}</title>
 
@@ -12,7 +13,7 @@
         @include('layouts.partials.session-history')
         @livewireStyles
     </head>
-    <body class="kfms-template" data-workspace-user="{{ auth()->id() }}" style="--kfms-primary: {{ $companySetting->primary_color }}; --kfms-secondary: {{ $companySetting->secondary_color }};">
+    <body class="kfms-template" data-workspace-user="{{ auth()->id() }}" data-kfms-session-user="{{ auth()->id() }}" style="--kfms-primary: {{ $companySetting->primary_color }}; --kfms-secondary: {{ $companySetting->secondary_color }};">
         <x-banner />
 
         <div class="container-scroller">
@@ -38,6 +39,7 @@
         @livewireScripts
         <script src="{{ asset('admin/assets/vendors/js/vendor.bundle.base.js') }}"></script>
         <script src="{{ asset('admin/assets/js/off-canvas.js') }}"></script>
+        <script src="{{ asset('admin/assets/js/kfms-session.js') }}?v={{ file_exists(public_path('admin/assets/js/kfms-session.js')) ? filemtime(public_path('admin/assets/js/kfms-session.js')) : time() }}"></script>
         <script src="{{ asset('admin/assets/js/kfms-sidebar.js') }}?v={{ file_exists(public_path('admin/assets/js/kfms-sidebar.js')) ? filemtime(public_path('admin/assets/js/kfms-sidebar.js')) : time() }}"></script>
         <script src="{{ asset('admin/assets/js/kfms-forms.js') }}?v={{ file_exists(public_path('admin/assets/js/kfms-forms.js')) ? filemtime(public_path('admin/assets/js/kfms-forms.js')) : time() }}"></script>
         <script src="{{ asset('admin/assets/js/kfms-workspace.js') }}?v={{ file_exists(public_path('admin/assets/js/kfms-workspace.js')) ? filemtime(public_path('admin/assets/js/kfms-workspace.js')) : time() }}"></script>

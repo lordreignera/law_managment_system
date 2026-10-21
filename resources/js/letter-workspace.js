@@ -13,7 +13,12 @@ if (workspace) {
     const pageInput = workspace.querySelector('[data-page-input]');
     const dialog = document.querySelector('[data-letter-email-dialog]');
     const emailForm = dialog?.querySelector('form');
-    const csrf = document.querySelector('meta[name="csrf-token"]').content;
+    const csrf = () => window.KfmsSession?.token()
+        || document.querySelector('meta[name="csrf-token"]').content;
+    const refreshCsrf = async () => {
+        await window.KfmsSession?.refresh?.();
+        return csrf();
+    };
     let revision = 0;
     let renderedRevision = -1;
     let dirty = false;
@@ -127,12 +132,13 @@ if (workspace) {
         const promise = (async () => {
             let next;
             try {
+                const previewToken = form ? await refreshCsrf() : csrf();
                 const data = form ? new FormData(form) : null;
                 data?.delete('_method');
                 data?.delete('documents[]');
                 const response = await checkedResponse(await fetch(workspace.dataset.previewUrl, {
                     method: form ? 'POST' : 'GET',
-                    headers: { Accept: 'application/pdf, application/json', 'X-CSRF-TOKEN': csrf },
+                    headers: { Accept: 'application/pdf, application/json', 'X-CSRF-TOKEN': previewToken },
                     body: data,
                     signal,
                 }));
@@ -270,13 +276,14 @@ if (workspace) {
         if (!form || saving) return;
         saving = true;
         const version = revision;
-        const data = new FormData(form);
         form.inert = true;
         saveStatus.textContent = 'Saving...';
         showError(workspace.querySelector('[data-letter-error]'));
         try {
+            const saveToken = await refreshCsrf();
+            const data = new FormData(form);
             const response = await checkedResponse(await fetch(form.action, {
-                method: 'POST', body: data, headers: { Accept: 'application/json', 'X-CSRF-TOKEN': csrf },
+                method: 'POST', body: data, headers: { Accept: 'application/json', 'X-CSRF-TOKEN': saveToken },
             }));
             const saved = await response.json();
             form.action = saved.update_url;
@@ -398,9 +405,10 @@ if (workspace) {
             if (form && (dirty || form.dataset.saved !== 'true')) await saveLetter();
             workspace.inert = true;
             status.textContent = 'Sending...';
+            const emailToken = await refreshCsrf();
             const response = await checkedResponse(await fetch(workspace.dataset.emailUrl, {
                 method: 'POST', body: new FormData(emailForm),
-                headers: { Accept: 'application/json', 'X-CSRF-TOKEN': csrf },
+                headers: { Accept: 'application/json', 'X-CSRF-TOKEN': emailToken },
             }));
             const result = await response.json();
             saveStatus.textContent = result.message;

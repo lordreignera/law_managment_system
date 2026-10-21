@@ -5,6 +5,7 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
+        <meta name="kfms-session-status" content="{{ route('session.status', absolute: false) }}">
 
         <title>{{ $companySetting->company_name ?: config('app.name', 'KFMS') }}</title>
 
@@ -24,12 +25,13 @@
         <link rel="stylesheet" href="{{ asset('admin/assets/css/kfms-auth.css') }}?v={{ $guestAssetVersion('admin/assets/css/kfms-auth.css') }}">
         @livewireStyles
     </head>
-    <body class="kfms-auth-body" style="--kfms-primary: {{ $companySetting->primary_color }}; --kfms-secondary: {{ $companySetting->secondary_color }};">
+    <body class="kfms-auth-body" data-kfms-session-user="{{ auth()->id() }}" style="--kfms-primary: {{ $companySetting->primary_color }}; --kfms-secondary: {{ $companySetting->secondary_color }};">
         <div>
             {{ $slot }}
         </div>
 
         @livewireScripts
+        <script src="{{ asset('admin/assets/js/kfms-session.js') }}?v={{ $guestAssetVersion('admin/assets/js/kfms-session.js') }}"></script>
         <script src="{{ asset('admin/assets/js/kfms-auth.js') }}?v={{ $guestAssetVersion('admin/assets/js/kfms-auth.js') }}"></script>
     </body>
 </html>
