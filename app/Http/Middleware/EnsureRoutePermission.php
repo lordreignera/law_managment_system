@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\LegalLetter;
 use Closure;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Http\Request;
@@ -35,6 +36,17 @@ class EnsureRoutePermission
 
         if ($user->can($routeName)) {
             return $next($request);
+        }
+
+        if (in_array($routeName, ['letters.show', 'letters.pdf'], true)) {
+            $letter = $route?->parameter('letter');
+            if (! $letter instanceof LegalLetter && is_numeric($letter)) {
+                $letter = LegalLetter::query()->find($letter);
+            }
+
+            if ($letter instanceof LegalLetter && $letter->isPrivateWorkflow() && $letter->isWorkflowParticipant($user)) {
+                return $next($request);
+            }
         }
 
         abort(403, "You do not have permission to use {$routeName}.");

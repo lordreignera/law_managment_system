@@ -34,7 +34,8 @@ class ClientAdrController extends Controller
             'title' => ['required', 'string', 'max:191'],
             'intake_conflict_party_id' => [$hasConflictParties ? 'required' : 'nullable', 'integer'],
             'conflict_party_name' => [$hasConflictParties ? 'nullable' : 'required', 'string', 'max:191'],
-            'conflict_party_contact' => ['nullable', 'string', 'max:191'],
+            'conflict_party_phone' => ['nullable', 'string', 'max:60'],
+            'conflict_party_email' => ['nullable', 'email', 'max:191'],
             'method' => ['nullable', Rule::in(['call', 'email', 'letter', 'meeting', 'mediation', 'other'])],
             'resolved_on' => ['nullable', 'date'],
             'response' => ['required', Rule::in(['pending', 'accepted_negotiation', 'declined', 'no_response', 'settled', 'court_required', 'other'])],
@@ -53,7 +54,8 @@ class ClientAdrController extends Controller
             }
 
             $data['conflict_party_name'] = $selectedConflictParty->name;
-            $data['conflict_party_contact'] = $selectedConflictParty->contact;
+            $data['conflict_party_phone'] = $selectedConflictParty->phone;
+            $data['conflict_party_email'] = $selectedConflictParty->email;
         }
 
         $adr = AdrResolution::create($data + [
@@ -64,9 +66,11 @@ class ClientAdrController extends Controller
             'status' => $data['response'] === 'settled' ? 'settled' : 'open',
         ]);
 
-        return redirect()
-            ->route('clients.adr.show', $adr)
-            ->with('status', 'ADR resolution recorded for '.$client->display_name.'.');
+        $redirect = $request->input('_client_profile_modal') === 'adr'
+            ? redirect()->route('clients.show', $client)
+            : redirect()->route('clients.adr.show', $adr);
+
+        return $redirect->with('status', 'ADR resolution recorded for '.$client->display_name.'.');
     }
 
     public function show(AdrResolution $adr)

@@ -73,9 +73,16 @@ class PhaseOneMasterDataTest extends TestCase
             $this->get(route('settings.master-data.template', $slug))->assertOk();
             $this->get(route('settings.master-data.export', $slug))->assertOk();
         }
-        foreach (['judicial_officers', 'opposing_counsels', 'centenary_regions', 'centenary_branches', 'recovery_clients', 'clients', 'matters'] as $table) {
+        foreach (['judicial_officers', 'opposing_counsels', 'centenary_regions', 'centenary_branches', 'recovery_accounts', 'clients', 'matters'] as $table) {
             $this->assertDatabaseCount($table, 0);
         }
+        $this->assertDatabaseCount('recovery_clients', 4);
+        $officerRole = Role::findByName('Recovery Officer', 'web');
+        $this->assertTrue($officerRole->hasPermissionTo('recoveries.mine'));
+        $this->assertFalse($officerRole->hasPermissionTo('recoveries.import.store'));
+        $this->assertFalse($officerRole->hasPermissionTo('recoveries.assignment.update'));
+        $this->assertFalse($officerRole->hasPermissionTo('recoveries.templates.store'));
+        $this->assertTrue(Role::findByName('Recoveries Manager', 'web')->hasPermissionTo('recoveries.templates.store'));
         $this->assertDatabaseCount('banks', 34);
         $this->assertDatabaseCount('bank_branches', 37);
         $this->assertDatabaseHas('branches', ['name' => 'Kampala', 'city' => 'Kampala']);
@@ -277,7 +284,7 @@ class PhaseOneMasterDataTest extends TestCase
         $this->post(route('recoveries.import.store'), [
             'recovery_client_id' => $client->id,
             'portfolio_type' => 'NPL',
-            'file' => UploadedFile::fake()->createWithContent('accounts.csv', "acct_name,foracid,acct_crncy_code\nTest Debtor,ACC-001,ZZZ\n"),
+            'file' => UploadedFile::fake()->createWithContent('accounts.csv', "debtor_name,account_number,outstanding_amount,currency\nTest Debtor,ACC-001,100000,ZZZ\n"),
         ])->assertRedirect()->assertSessionHas('import_errors');
         $this->assertDatabaseCount('recovery_accounts', 0);
         $this->assertDatabaseHas('recovery_import_batches', ['imported_rows' => 0, 'skipped_rows' => 1]);

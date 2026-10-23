@@ -19,10 +19,6 @@ class Matter extends Model
     use SoftDeletes;
 
     public const STATUSES = [
-        'inquiry' => 'Inquiry',
-        'consultation' => 'Consultation',
-        'conflict_check' => 'Conflict Check',
-        'file_pending' => 'File Pending',
         'open' => 'Open',
         'planning' => 'Planning',
         'active' => 'Active',
@@ -45,7 +41,7 @@ class Matter extends Model
 
     public function client()
     {
-        return $this->belongsTo(Client::class);
+        return $this->belongsTo(Client::class)->withTrashed();
     }
 
     public function branch()
@@ -60,7 +56,7 @@ class Matter extends Model
 
     public function ultimateClient()
     {
-        return $this->belongsTo(Client::class, 'ultimate_client_id');
+        return $this->belongsTo(Client::class, 'ultimate_client_id')->withTrashed();
     }
 
     public function practiceArea()

@@ -132,17 +132,21 @@ class RecoveryAccount extends Model
             ->orderBy('id')
             ->get()
             ->each(function (RecoveryActivity $activity) use (&$runningRecovered, $openingOutstanding, &$settledExternally) {
-                $runningRecovered += (float) $activity->amount_paid;
+                if ($activity->review_status === 'approved') {
+                    $runningRecovered += (float) $activity->amount_paid;
+                }
 
-                if ($activity->response_outcome === 'fully_repaid') {
+                if ($activity->review_status === 'approved' && $activity->response_outcome === 'fully_repaid') {
                     $settledExternally = true;
                 }
 
-                $balanceAfter = $settledExternally
-                    ? 0
-                    : max($openingOutstanding - $runningRecovered, 0);
+                $balanceAfter = $activity->review_status !== 'approved'
+                    ? null
+                    : ($settledExternally ? 0 : max($openingOutstanding - $runningRecovered, 0));
 
-                if ((float) $activity->outstanding_balance_after !== $balanceAfter) {
+                if (($activity->outstanding_balance_after === null && $balanceAfter !== null)
+                    || ($activity->outstanding_balance_after !== null && $balanceAfter === null)
+                    || ($balanceAfter !== null && (float) $activity->outstanding_balance_after !== (float) $balanceAfter)) {
                     $activity->forceFill(['outstanding_balance_after' => $balanceAfter])->save();
                 }
             });
@@ -169,5 +173,28 @@ class RecoveryAccount extends Model
     public function skipTraceStatusLabel(): string
     {
         return self::SKIP_TRACE_STATUSES[$this->skip_trace_status] ?? str($this->skip_trace_status)->headline()->toString();
+    }
+
+    public function sourceReportedRecovery(): float
+    {
+        return (float) (($this->raw_payload ?? [])['_source_reported_recovery'] ?? 0);
+    }
+
+    public function importedNotes(): array
+    {
+        $notes = [];
+
+        foreach ($this->raw_payload ?? [] as $field => $value) {
+            if (! preg_match('/(^|_)comments?($|_)/', (string) $field) || ! is_scalar($value)) {
+                continue;
+            }
+
+            $value = trim((string) $value);
+            if ($value !== '' && ! in_array(strtolower($value), ['null', 'n/a', 'na', '.'], true)) {
+                $notes[str($field)->replace('_', ' ')->headline()->toString()] = $value;
+            }
+        }
+
+        return $notes;
     }
 }

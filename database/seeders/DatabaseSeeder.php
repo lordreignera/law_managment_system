@@ -41,6 +41,7 @@ class DatabaseSeeder extends Seeder
             OpposingCounselSeeder::class,
             BankSeeder::class,
             BankBranchSeeder::class,
+            RecoveryClientSeeder::class,
             ZonalOfficeSeeder::class,
             CentenaryRegionSeeder::class,
             LeaveTypeSeeder::class,
@@ -87,13 +88,13 @@ class DatabaseSeeder extends Seeder
             'Administrator' => array_keys(RoutePermissionRegistry::MODULES),
 
             'Managing Partner' => ['dashboard', 'messages', 'clients', 'intakes', 'matters', 'litigation', 'letters', 'recoveries', 'securities', 'finance', 'expenses', 'petty-cash', 'ledger', 'hr', 'staff', 'leave', 'requisitions', 'reports', 'branches', 'holidays'],
-            'Department Manager' => ['dashboard', 'messages', 'leave'],
+            'Department Manager' => ['dashboard', 'messages', 'leave', 'letters.dashboard', 'letters.index', 'letters.show', 'letters.approve'],
             'Senior Partner' => ['dashboard', 'messages', 'clients', 'intakes', 'matters', 'litigation', 'letters'],
             'Litigation Officer' => ['dashboard', 'messages', 'clients', 'intakes', 'matters', 'litigation', 'letters', 'calendar'],
             'Advocate' => ['dashboard', 'messages', 'clients', 'intakes', 'matters', 'litigation', 'letters'],
             'Paralegal' => ['dashboard', 'messages', 'intakes', 'matters', 'litigation', 'letters'],
             'Recoveries Manager' => ['dashboard', 'messages', 'recoveries'],
-            'Recovery Officer' => ['dashboard', 'messages', 'recoveries'],
+            'Recovery Officer' => ['dashboard', 'messages', 'recoveries.mine', 'recoveries.mine.export', 'recoveries.show', 'recoveries.activities.store', 'recoveries.skip-trace.store'],
             'Securities Manager' => ['dashboard', 'messages', 'securities'],
             'Accountant' => ['dashboard', 'messages', 'finance', 'expenses', 'petty-cash', 'ledger', 'requisitions'],
             'HR Manager' => ['dashboard', 'messages', 'hr', 'staff', 'leave', 'attendance'],
@@ -103,11 +104,28 @@ class DatabaseSeeder extends Seeder
         ];
 
         foreach ($roleModuleMap as $roleName => $modules) {
-            $perms = in_array($roleName, ['Super Admin', 'Administrator'], true)
-                ? $allPermissions
-                : $registry->permissionsForModules($modules);
+            $perms = $allPermissions;
+
+            if (! in_array($roleName, ['Super Admin', 'Administrator'], true)) {
+                $moduleSlugs = array_values(array_filter(
+                    $modules,
+                    fn ($name) => array_key_exists($name, RoutePermissionRegistry::MODULES)
+                ));
+                $explicitRoutes = array_values(array_filter(
+                    $modules,
+                    fn ($name) => in_array($name, $allPermissions, true)
+                ));
+                $perms = array_values(array_unique(array_merge(
+                    $registry->permissionsForModules($moduleSlugs),
+                    $explicitRoutes
+                )));
+            }
+
             Role::create(['name' => $roleName, 'guard_name' => 'web'])->syncPermissions($perms);
         }
+
+        $this->call(RecoveryOfficerPermissionSeeder::class);
+        $this->call(RecoveryImportTemplatePermissionSeeder::class);
 
         Role::firstOrCreate(['name' => 'Client', 'guard_name' => 'web']);
 
@@ -175,16 +193,6 @@ class DatabaseSeeder extends Seeder
         foreach (['Super Admin', 'Administrator', 'Managing Partner', 'Department Manager', 'HR Manager'] as $roleName) {
             Role::findByName($roleName)->givePermissionTo($attendanceManagerPermissions);
         }
-
-        // Recovery Officers get a limited slice of the Recoveries module: they
-        // view their own assigned accounts and log demands/payments, but do not
-        // register, edit, or reassign accounts (that is the manager's job).
-        $recoveryOfficerSelfService = array_values(array_intersect(
-            ['recoveries.mine', 'recoveries.mine.export', 'recoveries.show', 'recoveries.activities.store'],
-            $allPermissions
-        ));
-
-        Role::findByName('Recovery Officer')->givePermissionTo($recoveryOfficerSelfService);
 
         foreach ([
             ['name' => 'Kampala', 'city' => 'Kampala', 'address' => 'Kampala office'],

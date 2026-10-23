@@ -20,6 +20,36 @@ class ClientManagementFlowTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_legacy_client_creation_routes_direct_users_through_intake(): void
+    {
+        $role = Role::findOrCreate('Client Intake Redirect Test');
+        foreach (['clients.create', 'clients.store', 'intakes.create'] as $permissionName) {
+            $role->givePermissionTo(Permission::findOrCreate($permissionName));
+        }
+
+        $user = User::factory()->create();
+        $user->assignRole($role);
+        StaffProfile::create([
+            'user_id' => $user->id,
+            'employment_status' => 'active',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('clients.create'))
+            ->assertRedirect(route('intakes.create', absolute: false));
+        $this->get(route('intakes.create'))
+            ->assertOk()
+            ->assertSee('Start with a client intake so conflicts are checked before a client record is approved.');
+
+        $this->actingAs($user)
+            ->post(route('clients.store'), ['name' => 'Unscreened Client'])
+            ->assertRedirect(route('intakes.create', absolute: false));
+        $this->get(route('intakes.create'))
+            ->assertSee('Direct client creation is closed. Record the enquiry as an intake, complete conflict screening, and approve it to create the client record.');
+
+        $this->assertDatabaseCount('clients', 0);
+    }
+
     public function test_approved_client_can_be_viewed_updated_and_given_new_engagement(): void
     {
         $role = Role::findOrCreate('Client Manager');
@@ -60,9 +90,51 @@ class ClientManagementFlowTest extends TestCase
         ]);
 
         $this->actingAs($user)
+            ->get(route('clients.index'))
+            ->assertOk()
+            ->assertSee('kfms-client-action-menu', false)
+            ->assertSee('client-actions-'.$client->id, false)
+            ->assertSee('View Client Details')
+            ->assertDontSee('Delete Client');
+
+        $this->actingAs($user)
+            ->get(route('clients.show', ['client' => $client, 'modal' => 1]))
+            ->assertOk()
+            ->assertSee('Additional client information')
+            ->assertSee('View full profile')
+            ->assertDontSee('Other contacts')
+            ->assertDontSee('data-client-delete-open', false);
+
+        $superAdmin = User::factory()->create();
+        $superAdmin->assignRole(Role::findOrCreate('Super Admin', 'web'));
+        StaffProfile::create([
+            'user_id' => $superAdmin->id,
+            'employment_status' => 'active',
+        ]);
+
+        $this->actingAs($superAdmin)
+            ->get(route('clients.index'))
+            ->assertOk()
+            ->assertSee('Delete Client');
+
+        $this->actingAs($superAdmin)
+            ->get(route('clients.show', ['client' => $client, 'modal' => 1]))
+            ->assertOk()
+            ->assertSee('Delete client')
+            ->assertSee('data-client-delete-open', false);
+
+        $this->actingAs($user)
             ->get(route('clients.show', $client))
             ->assertOk()
-            ->assertSee('Jane Client');
+            ->assertSee('Jane Client')
+            ->assertSee('kfms-client-details', false)
+            ->assertDontSee('kfms-detail-grid', false)
+            ->assertSee('Add ADR')
+            ->assertSee('Add File')
+            ->assertSee('Add Matter')
+            ->assertSee('id="clientAdrModal"', false)
+            ->assertSee('id="clientFileModal"', false)
+            ->assertSee('id="clientMatterModal"', false);
 
         $this->actingAs($user)
             ->put(route('clients.details.update', $client), [
@@ -112,29 +184,35 @@ class ClientManagementFlowTest extends TestCase
             ->post(route('clients.adr.store', $client), [
                 'title' => 'Shareholder agreement',
                 'conflict_party_name' => 'Acme Holdings',
-                'conflict_party_contact' => 'legal@acme.example',
+                'conflict_party_phone' => '+256 700 123456',
+                'conflict_party_email' => 'legal@acme.example',
                 'method' => 'email',
                 'resolved_on' => now()->toDateString(),
                 'response' => 'accepted_negotiation',
                 'response_notes' => 'Conflict party agreed to resolve before filing.',
+                '_client_profile_modal' => 'adr',
             ])
-            ->assertRedirect();
+            ->assertRedirect(route('clients.show', $client, absolute: false));
 
         $adr = $client->fresh()->adrResolutions()->first();
 
         $this->assertNotNull($adr);
         $this->assertMatchesRegularExpression('/^ADR\d{8}$/', $adr->adr_no);
         $this->assertSame('Acme Holdings', $adr->conflict_party_name);
+        $this->assertSame('+256 700 123456', $adr->conflict_party_phone);
+        $this->assertSame('legal@acme.example', $adr->conflict_party_email);
         $this->assertSame('accepted_negotiation', $adr->response);
         $this->assertNull($client->fresh()->matters()->first());
 
         $this->actingAs($user)
             ->post(route('clients.files.store', $client), [
                 'file_name' => 'Shareholder agreement',
+                'adr_resolution_id' => $adr->id,
                 'billing_type_id' => $billingType->id,
                 'agreed_fee_amount' => 1500000,
                 'client_accepted_on' => now()->toDateString(),
                 'notes' => 'Client accepted the file terms.',
+                '_client_profile_modal' => 'file',
             ])
             ->assertRedirect(route('clients.show', $client, absolute: false));
 
@@ -143,7 +221,7 @@ class ClientManagementFlowTest extends TestCase
         $this->assertNotNull($file);
         $this->assertMatchesRegularExpression('/^FL\d{8}$/', $file->file_number);
         $this->assertSame('1500000.00', $file->agreed_fee_amount);
-        $this->assertNull($file->adr_resolution_id);
+        $this->assertSame($adr->id, $file->adr_resolution_id);
         $this->assertNull($file->matter_id);
 
         $this->actingAs($user)
@@ -155,8 +233,9 @@ class ClientManagementFlowTest extends TestCase
                 'description' => 'Prepare and review shareholder agreement.',
                 'file_ids' => [$file->id],
                 'partner_ids' => [$user->id],
+                '_client_profile_modal' => 'matter',
             ])
-            ->assertRedirect();
+            ->assertRedirect(route('clients.show', $client, absolute: false));
 
         $matter = $client->fresh()->matters()->first();
 
@@ -165,5 +244,20 @@ class ClientManagementFlowTest extends TestCase
         $this->assertSame('Shareholder agreement', $matter->title);
         $this->assertSame($matter->id, $file->fresh()->matter_id);
         $this->assertTrue($matter->files->contains($file));
+
+        $this->actingAs($user)
+            ->delete(route('clients.destroy', $client))
+            ->assertForbidden();
+
+        $this->actingAs($superAdmin)
+            ->delete(route('clients.destroy', $client))
+            ->assertRedirect(route('clients.index', absolute: false));
+
+        $this->assertSoftDeleted('clients', ['id' => $client->id]);
+        $this->assertDatabaseHas('audit_logs', [
+            'auditable_type' => $client->getMorphClass(),
+            'auditable_id' => $client->id,
+            'event' => 'deleted',
+        ]);
     }
 }

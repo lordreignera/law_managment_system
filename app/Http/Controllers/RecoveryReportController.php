@@ -88,6 +88,8 @@ class RecoveryReportController extends Controller
         $accountIds = $filteredAccounts->pluck('id');
 
         $payments = RecoveryActivity::whereIn('recovery_account_id', $accountIds)
+            ->where('review_status', 'approved')
+            ->where('amount_paid', '>', 0)
             ->whereBetween('activity_at', [$dateFrom, $dateTo])
             ->get();
 
@@ -336,9 +338,9 @@ class RecoveryReportController extends Controller
                     'officer' => $first->account?->assignee?->name ?: 'Unassigned',
                     'accounts' => $group->pluck('recovery_account_id')->unique()->count(),
                     'activities' => $group->count(),
-                    'payments' => $group->filter(fn ($activity) => $activity->activity_type === 'payment' || (float) $activity->amount_paid > 0)->count(),
+                    'payments' => $group->filter(fn ($activity) => $activity->review_status === 'approved' && (float) $activity->amount_paid > 0)->count(),
                     'promised' => (float) $group->sum('promised_amount'),
-                    'recovered' => (float) $group->sum('amount_paid'),
+                    'recovered' => (float) $group->filter(fn ($activity) => $activity->review_status === 'approved')->sum('amount_paid'),
                     'sort_key' => $periodStart->timestamp,
                 ];
             })

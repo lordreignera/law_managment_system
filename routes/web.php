@@ -20,6 +20,7 @@ use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\FinanceController;
 use App\Http\Controllers\HrController;
 use App\Http\Controllers\ImportTemplateController;
+use App\Http\Controllers\RecoveryImportTemplateController;
 use App\Http\Controllers\InvoiceDocumentController;
 use App\Http\Controllers\LandTitleController;
 use App\Http\Controllers\LeaveController;
@@ -46,6 +47,7 @@ use App\Http\Controllers\PublicHolidayController;
 use App\Http\Controllers\RecoveryActivityController;
 use App\Http\Controllers\RecoveryController;
 use App\Http\Controllers\RecoveryReportController;
+use App\Http\Controllers\RecoveryReviewController;
 use App\Http\Controllers\ReportingController;
 use App\Http\Controllers\RequisitionController;
 use App\Http\Controllers\SessionController;
@@ -154,6 +156,7 @@ Route::middleware([
         Route::get('/imports/templates/{template}', [ImportTemplateController::class, 'download'])
             ->withoutMiddleware('route.permission')->name('imports.templates.download');
         Route::get('/clients/{client}', [ClientController::class, 'show'])->name('clients.show');
+        Route::delete('/clients/{client}', [ClientController::class, 'destroy'])->name('clients.destroy');
         Route::get('/clients/{client}/details', [ClientController::class, 'editDetails'])->name('clients.details.edit');
         Route::put('/clients/{client}/details', [ClientController::class, 'updateDetails'])->name('clients.details.update');
         Route::get('/clients/{client}/adr/create', [ClientAdrController::class, 'create'])->name('clients.adr.create');
@@ -170,7 +173,10 @@ Route::middleware([
         Route::get('/intakes', [ClientIntakeController::class, 'index'])->name('intakes.index');
         Route::get('/intakes/create', [ClientIntakeController::class, 'create'])->name('intakes.create');
         Route::post('/intakes', [ClientIntakeController::class, 'store'])->name('intakes.store');
+        Route::get('/intakes/{intake}/edit', [ClientIntakeController::class, 'edit'])->name('intakes.edit');
+        Route::patch('/intakes/{intake}', [ClientIntakeController::class, 'update'])->name('intakes.update');
         Route::get('/intakes/{intake}', [ClientIntakeController::class, 'show'])->name('intakes.show');
+        Route::patch('/intakes/{intake}/conflict-check', [ClientIntakeController::class, 'conflictCheck'])->name('intakes.conflict-check');
         Route::patch('/intakes/{intake}/review', [ClientIntakeController::class, 'review'])->name('intakes.review');
 
         // Matters
@@ -263,9 +269,14 @@ Route::middleware([
         Route::get('/recoveries/mine/export', [RecoveryController::class, 'exportMineReport'])->name('recoveries.mine.export');
         Route::get('/recoveries/import', [RecoveryController::class, 'importForm'])->name('recoveries.import');
         Route::post('/recoveries/import', [RecoveryController::class, 'importStore'])->name('recoveries.import.store');
+        Route::post('/recoveries/import-templates', [RecoveryImportTemplateController::class, 'store'])->name('recoveries.templates.store');
+        Route::get('/recoveries/import-templates/{template}/download', [RecoveryImportTemplateController::class, 'download'])->name('recoveries.templates.download');
+        Route::delete('/recoveries/import-templates/{template}', [RecoveryImportTemplateController::class, 'destroy'])->name('recoveries.templates.destroy');
         Route::post('/recoveries/clients', [RecoveryController::class, 'storeClient'])->name('recoveries.clients.store');
+        Route::post('/recoveries/clients/{client}/portfolios', [RecoveryController::class, 'storeClientPortfolio'])->name('recoveries.clients.portfolios.store');
         Route::get('/recoveries/accounts/export', [RecoveryController::class, 'exportAccounts'])->name('recoveries.accounts.export');
         Route::get('/recoveries/imports/{batch}', [RecoveryController::class, 'batchShow'])->name('recoveries.batches.show');
+        Route::post('/recoveries/imports/{batch}/commit', [RecoveryController::class, 'commitImport'])->name('recoveries.batches.commit');
         Route::patch('/recoveries/imports/{batch}/assign', [RecoveryController::class, 'assignBatch'])->name('recoveries.batches.assign');
         Route::get('/recoveries/reports', [RecoveryReportController::class, 'index'])->name('recoveries.reports');
         Route::get('/recoveries/reports/export', [RecoveryReportController::class, 'export'])->name('recoveries.export');
@@ -279,6 +290,9 @@ Route::middleware([
         Route::patch('/recoveries/{recovery}/assignment', [RecoveryController::class, 'updateAssignment'])->name('recoveries.assignment.update');
         Route::delete('/recoveries/{recovery}', [RecoveryController::class, 'destroy'])->name('recoveries.destroy');
         Route::post('/recoveries/{recovery}/activities', [RecoveryActivityController::class, 'store'])->name('recoveries.activities.store');
+        Route::get('/recoveries/reviews/pending', [RecoveryReviewController::class, 'index'])->name('recoveries.reviews.index');
+        Route::post('/recoveries/reviews/{activity}/decision', [RecoveryReviewController::class, 'decision'])->name('recoveries.reviews.decision');
+        Route::post('/recoveries/reviews/{activity}/reverse', [RecoveryReviewController::class, 'reverse'])->name('recoveries.reviews.reverse');
         Route::post('/recoveries/{recovery}/skip-trace', [RecoveryController::class, 'storeSkipTrace'])->name('recoveries.skip-trace.store');
         Route::get('/securities/dashboard', [LandTitleController::class, 'dashboard'])->name('securities.dashboard');
         Route::get('/securities/dashboard/export/{section}', [LandTitleController::class, 'dashboardExport'])->name('securities.dashboard.export');

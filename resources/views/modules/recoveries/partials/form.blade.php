@@ -20,11 +20,8 @@
 
     <label>
         <span>Status</span>
-        <select name="status" required>
-            @foreach ($statuses as $value => $label)
-                <option value="{{ $value }}" @selected(old('status', $account?->status ?? 'active') === $value)>{{ $label }}</option>
-            @endforeach
-        </select>
+        <input type="text" value="{{ $statuses[$account?->status ?? 'active'] ?? 'Active' }}" readonly>
+        <small>Payment, settlement, and write-off decisions control account status.</small>
         @error('status') <small>{{ $message }}</small> @enderror
     </label>
 
@@ -32,6 +29,7 @@
         <span>Pipeline Stage</span>
         <select name="pipeline_stage" required>
             @foreach (\App\Models\RecoveryAccount::PIPELINE_STAGES as $value => $label)
+                @if (in_array($value, ['closed', 'recovered'], true) && $account?->pipeline_stage !== $value) @continue @endif
                 <option value="{{ $value }}" @selected(old('pipeline_stage', $account?->pipeline_stage ?? 'new') === $value)>{{ $label }}</option>
             @endforeach
         </select>
@@ -242,8 +240,8 @@
     <label>
         <span>SMS reminders</span>
         <select name="sms_opt_in">
-            <option value="1" @selected(old('sms_opt_in', $account?->sms_opt_in ?? true))>Allowed</option>
-            <option value="0" @selected(! old('sms_opt_in', $account?->sms_opt_in ?? true))>Do not send</option>
+            <option value="0" @selected(! old('sms_opt_in', $account?->sms_opt_in ?? false))>Do not send</option>
+            <option value="1" @selected(old('sms_opt_in', $account?->sms_opt_in ?? false))>Allowed</option>
         </select>
         @error('sms_opt_in') <small>{{ $message }}</small> @enderror
     </label>

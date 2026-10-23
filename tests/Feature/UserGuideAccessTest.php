@@ -107,7 +107,7 @@ class UserGuideAccessTest extends TestCase
 
     public function test_advocate_sees_matter_guide_with_dashboard_preview(): void
     {
-        $user = $this->staffUserWithPermissions(['matters.dashboard', 'matters.index'], 'Advocate');
+        $user = $this->staffUserWithPermissions(['matters.dashboard', 'matters.index', 'litigation.dashboard', 'litigation.index', 'litigation.create'], 'Advocate');
 
         $this->actingAs($user)
             ->get(route('help.user-guide'))
@@ -118,11 +118,27 @@ class UserGuideAccessTest extends TestCase
             ->assertSeeInOrder([
                 'Matter Flow',
                 'admin/assets/images/guides/matter-dashboard.svg',
-                'Create a matter from the approved client or Matter Management.',
+                'Create a matter for an approved client from the client record or Matter Management. One client can have several separate matters.',
             ])
             ->assertSee('Pipeline, active files, responsible teams, and recent matters.')
+            ->assertSee('The matter starts as Open.')
+            ->assertSee('Schedule Court Event')
+            ->assertSee('Reopen a closed or archived matter before scheduling new court work.')
             ->assertSee('href="'.e(route('matters.dashboard')).'"', false)
             ->assertDontSee('Finance Flow');
+    }
+
+    public function test_client_guide_explains_conflict_clearance_before_approval(): void
+    {
+        $user = $this->staffUserWithPermissions(['intakes.index', 'clients.index'], 'Client Intake Reviewer');
+
+        $this->actingAs($user)
+            ->get(route('help.user-guide'))
+            ->assertOk()
+            ->assertSee('Client Flow')
+            ->assertSee('An intake can be approved only after the check is recorded as cleared.')
+            ->assertSee('resubmitting a returned intake requires a fresh conflict check')
+            ->assertSee('Approval creates the client record.');
     }
 
     public function test_role_specific_guide_can_be_downloaded_as_pdf(): void

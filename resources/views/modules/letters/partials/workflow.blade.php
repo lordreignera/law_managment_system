@@ -12,16 +12,15 @@
     $currentIndex = max(array_search($letter->status ?? 'draft', $stepKeys, true), 0);
 @endphp
 
-<div class="kfms-letter-steps" aria-label="Letter workflow steps">
+<div class="kfms-letter-steps" role="list" aria-label="Letter workflow steps">
     @foreach ($letterSteps as $status => $step)
         @php
             $index = array_search($status, $stepKeys, true);
             $state = $index < $currentIndex ? 'done' : ($index === $currentIndex ? 'current' : 'next');
         @endphp
-        <div class="kfms-letter-step is-{{ $state }}">
+        <div class="kfms-letter-step is-{{ $state }}" role="listitem" title="{{ $step['help'] }}" aria-label="Step {{ $index + 1 }}: {{ $step['label'] }}. {{ $step['help'] }}">
             <span>{{ $index + 1 }}</span>
             <strong>{{ $step['label'] }}</strong>
-            <em>{{ $step['help'] }}</em>
         </div>
     @endforeach
 </div>

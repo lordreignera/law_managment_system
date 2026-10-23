@@ -11,6 +11,7 @@ use App\Models\Matter;
 use App\Models\User;
 use App\Support\Litigation\LitigationQueryFilters;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -72,7 +73,7 @@ class LitigationController extends Controller
                 'My Open Events' => $this->scopedEvents($user)->open()->where('assigned_to', $user->id)->count(),
                 'Today' => $this->scopedEvents($user)->open()->whereDate('starts_at', today())->count(),
                 'This Week' => $this->scopedEvents($user)->open()->whereBetween('starts_at', [now()->startOfWeek(), now()->endOfWeek()])->count(),
-                'Overdue' => $this->scopedEvents($user)->where('status', 'scheduled')->where('starts_at', '<', now())->count(),
+                'Overdue' => $this->scopedEvents($user)->overdue()->count(),
             ],
             'lifecycle' => $this->litigationLifecycleSummary($litigationMatters, $user),
             'myEvents' => $myEvents,
@@ -104,7 +105,7 @@ class LitigationController extends Controller
             'summary' => [
                 'Today' => $this->scopedEvents($request->user())->open()->whereDate('starts_at', today())->count(),
                 'This Week' => $this->scopedEvents($request->user())->open()->whereBetween('starts_at', [now()->startOfWeek(), now()->endOfWeek()])->count(),
-                'Overdue' => $this->scopedEvents($request->user())->where('status', 'scheduled')->where('starts_at', '<', now())->count(),
+                'Overdue' => $this->scopedEvents($request->user())->overdue()->count(),
                 'Completed' => $this->scopedEvents($request->user())->where('status', 'completed')->count(),
             ],
         ]);
@@ -113,7 +114,11 @@ class LitigationController extends Controller
     public function create(Request $request)
     {
         return view('modules.litigation.create', [
-            'matters' => Matter::visibleTo($request->user())->orderByDesc('id')->limit(300)->get(['id', 'reference_no', 'title']),
+            'matters' => Matter::visibleTo($request->user())
+                ->whereNotIn('status', ['closed', 'archived'])
+                ->orderByDesc('id')
+                ->limit(300)
+                ->get(['id', 'reference_no', 'title']),
             'courts' => Court::where('is_active', true)->orderBy('name')->get(['id', 'name']),
             'judicialOfficers' => JudicialOfficer::where('is_active', true)->with('court')->orderBy('sort_order')->orderBy('name')->get(),
             'officers' => $this->staffOfficers(),
@@ -128,11 +133,20 @@ class LitigationController extends Controller
     {
         $data = $this->validateEvent($request);
 
-        $event = CourtEvent::create($data);
+        $event = DB::transaction(function () use ($data, $request) {
+            $event = CourtEvent::create($data);
+            $matter = $event->matter;
 
-        if ($request->hasFile('attachment')) {
-            $event->addAttachment($request->file('attachment'), ['category' => 'court-document']);
-        }
+            if (in_array($matter->status, ['open', 'planning'], true)) {
+                $matter->update(['status' => 'active']);
+            }
+
+            if ($request->hasFile('attachment')) {
+                $event->addAttachment($request->file('attachment'), ['category' => 'court-document']);
+            }
+
+            return $event;
+        });
 
         return redirect()
             ->route('litigation.show', $event)
@@ -155,7 +169,14 @@ class LitigationController extends Controller
 
         return view('modules.litigation.edit', [
             'event' => $litigation,
-            'matters' => Matter::visibleTo(request()->user())->orderByDesc('id')->limit(300)->get(['id', 'reference_no', 'title']),
+            'matters' => Matter::visibleTo(request()->user())
+                ->where(function ($query) use ($litigation) {
+                    $query->whereNotIn('status', ['closed', 'archived'])
+                        ->orWhere('id', $litigation->matter_id);
+                })
+                ->orderByDesc('id')
+                ->limit(300)
+                ->get(['id', 'reference_no', 'title']),
             'courts' => Court::where('is_active', true)->orWhere('id', $litigation->court_id)->orderBy('name')->get(['id', 'name']),
             'judicialOfficers' => JudicialOfficer::where('is_active', true)->orWhere('id', $litigation->judicial_officer_id)->with('court')->orderBy('sort_order')->orderBy('name')->get(),
             'officers' => $this->staffOfficers(),
@@ -168,7 +189,7 @@ class LitigationController extends Controller
     {
         $this->ensureEventVisible($litigation, $request->user());
 
-        $data = $this->validateEvent($request);
+        $data = $this->validateEvent($request, allowClosedMatter: true);
 
         $litigation->update($data);
 
@@ -197,7 +218,7 @@ class LitigationController extends Controller
         return back()->with('status', 'Outcome recorded.');
     }
 
-    private function validateEvent(Request $request): array
+    private function validateEvent(Request $request, bool $allowClosedMatter = false): array
     {
         $data = $request->validate([
             'matter_id' => ['required', 'exists:matters,id'],
@@ -224,9 +245,17 @@ class LitigationController extends Controller
         $data['escalation_days_after'] = (int) ($data['escalation_days_after'] ?? 0);
         $data['reminders_enabled'] = $request->has('reminders_enabled') ? $request->boolean('reminders_enabled') : true;
 
-        if (! Matter::visibleTo($request->user())->whereKey($data['matter_id'])->exists()) {
+        $matterQuery = Matter::visibleTo($request->user())->whereKey($data['matter_id']);
+
+        if (! $allowClosedMatter) {
+            $matterQuery->whereNotIn('status', ['closed', 'archived']);
+        }
+
+        if (! $matterQuery->exists()) {
             throw ValidationException::withMessages([
-                'matter_id' => 'Select a matter in your branch.',
+                'matter_id' => $allowClosedMatter
+                    ? 'Select a matter in your branch.'
+                    : 'Select an open matter in your branch. Reopen a closed matter before scheduling further court work.',
             ]);
         }
 
@@ -289,18 +318,18 @@ class LitigationController extends Controller
     {
         return [
             [
-                'stage' => 'Instructions & File Opening',
-                'description' => 'Instructions received, accepted, documents requested, and internal file opened.',
-                'count' => (clone $query)->whereIn('status', ['inquiry', 'consultation', 'conflict_check', 'file_pending'])->count(),
+                'stage' => 'Matter Opening & Planning',
+                'description' => 'Approved matters are opened, assigned, and prepared for legal work.',
+                'count' => (clone $query)->whereIn('status', ['open', 'planning'])->count(),
                 'route' => route('matters.index', ['litigation_stage' => 'opening']),
                 'action' => 'Review Files',
                 'icon' => 'mdi-folder-open-outline',
                 'tone' => 'navy',
             ],
             [
-                'stage' => 'Review, Opinion & Pleadings',
-                'description' => 'Facts reviewed, legal opinion prepared, pleadings drafted, and client approval sought.',
-                'count' => (clone $query)->whereIn('status', ['open', 'planning', 'waiting_for_client'])->count(),
+                'stage' => 'Active Work & Client Follow-up',
+                'description' => 'Advocates progress the instruction and track client or third-party dependencies.',
+                'count' => (clone $query)->whereIn('status', ['active', 'waiting_for_client', 'waiting_for_third_party_or_court'])->count(),
                 'route' => route('matters.index', ['litigation_stage' => 'review']),
                 'action' => 'Review Work',
                 'eventRoute' => route('litigation.create', ['event_type' => 'filing_deadline']),

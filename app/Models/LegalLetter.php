@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Concerns\HasAttachments;
 use App\Support\StorageUrl;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -22,6 +23,8 @@ class LegalLetter extends Model
         'received' => 'Received Copy Uploaded',
         'closed' => 'Closed',
     ];
+
+    public const PRIVATE_WORKFLOW_STATUSES = ['draft', 'pending_review'];
 
     public const SIGNATURE_MODES = [
         'none' => 'Unsigned Draft',
@@ -53,7 +56,7 @@ class LegalLetter extends Model
 
     public function client()
     {
-        return $this->belongsTo(Client::class);
+        return $this->belongsTo(Client::class)->withTrashed();
     }
 
     public function matter()
@@ -94,6 +97,49 @@ class LegalLetter extends Model
     public function sharedUsers()
     {
         return $this->belongsToMany(User::class, 'letter_shares')->withTimestamps();
+    }
+
+    public function scopeVisibleTo(Builder $query, User $user): Builder
+    {
+        return $query->where(function (Builder $query) use ($user) {
+            $query
+                ->whereNotIn('status', self::PRIVATE_WORKFLOW_STATUSES)
+                ->orWhere('created_by', $user->id)
+                ->orWhereHas('shares', fn (Builder $shares) => $shares->where('user_id', $user->id));
+
+            if ($user->department_id) {
+                $query->orWhereHas('creator', function (Builder $creator) use ($user) {
+                    $creator
+                        ->where('manager_id', $user->id)
+                        ->where('department_id', $user->department_id);
+                });
+            }
+        });
+    }
+
+    public function isPrivateWorkflow(): bool
+    {
+        return in_array($this->status, self::PRIVATE_WORKFLOW_STATUSES, true);
+    }
+
+    public function isWorkflowParticipant(User $user): bool
+    {
+        if ((int) $this->created_by === (int) $user->id) {
+            return true;
+        }
+
+        if ($this->shares()->where('user_id', $user->id)->exists()) {
+            return true;
+        }
+
+        if (! $user->department_id) {
+            return false;
+        }
+
+        return $this->creator()
+            ->where('manager_id', $user->id)
+            ->where('department_id', $user->department_id)
+            ->exists();
     }
 
     public function statusLabel(): string

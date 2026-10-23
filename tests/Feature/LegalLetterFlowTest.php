@@ -6,6 +6,7 @@ use App\Mail\LegalLetterMail;
 use App\Models\Client;
 use App\Models\ClientPortalAccount;
 use App\Models\CompanySetting;
+use App\Models\Department;
 use App\Models\LegalLetter;
 use App\Models\Matter;
 use App\Models\StaffProfile;
@@ -71,7 +72,9 @@ class LegalLetterFlowTest extends TestCase
             ->assertSee('Live Preview')
             ->assertSee('Draft')
             ->assertSee('Review')
-            ->assertSee('Received Copy');
+            ->assertSee('Received Copy')
+            ->assertSee('Save Draft')
+            ->assertSee('kfms-letter-steps', false);
 
         $this->actingAs($staff)
             ->post(route('letters.store'), [
@@ -143,6 +146,66 @@ class LegalLetterFlowTest extends TestCase
             ->assertOk()
             ->assertSee('Letters & Opinions', false)
             ->assertSee('RE: Contract Review');
+    }
+
+    public function test_creator_department_supervisor_and_shared_reviewer_can_view_private_drafts(): void
+    {
+        $department = Department::create(['name' => 'Litigation', 'code' => 'LIT']);
+        $otherDepartment = Department::create(['name' => 'Finance', 'code' => 'FIN']);
+        $creator = $this->staffUser();
+        $reviewer = User::factory()->create(['department_id' => $otherDepartment->id]);
+        $outsider = $this->staffUser();
+        $managerRole = Role::findOrCreate('Department Manager');
+
+        foreach (['letters.dashboard', 'letters.index', 'letters.show', 'letters.approve'] as $permission) {
+            $managerRole->givePermissionTo(Permission::findOrCreate($permission));
+        }
+
+        $manager = User::factory()->create(['department_id' => $department->id]);
+        $manager->assignRole($managerRole);
+        StaffProfile::create(['user_id' => $manager->id, 'employment_status' => 'active']);
+        $creator->update(['department_id' => $department->id, 'manager_id' => $manager->id]);
+        $outsider->update(['department_id' => $otherDepartment->id]);
+
+        $letter = LegalLetter::create($this->letterData() + [
+            'reference_no' => 'TEST/PRIVATE',
+            'created_by' => $creator->id,
+            'department_id' => $department->id,
+            'status' => 'draft',
+        ]);
+        $letter->shares()->create(['user_id' => $reviewer->id, 'shared_by' => $creator->id]);
+
+        $this->actingAs($manager)->get(route('letters.index'))
+            ->assertOk()
+            ->assertSee('Correspondence');
+        $this->actingAs($creator)->get(route('letters.show', $letter))->assertOk();
+        $this->actingAs($reviewer)->get(route('letters.show', $letter))->assertOk();
+        $this->actingAs($outsider)->get(route('letters.index'))
+            ->assertOk()
+            ->assertDontSee('TEST/PRIVATE');
+        $this->actingAs($outsider)->get(route('letters.show', $letter))->assertNotFound();
+        $this->actingAs($outsider)->get(route('letters.pdf', $letter))->assertNotFound();
+    }
+
+    public function test_incomplete_draft_can_be_saved_but_cannot_be_submitted_for_review(): void
+    {
+        $staff = $this->staffUser();
+
+        $this->actingAs($staff)->post(route('letters.store'), [
+            'letter_type' => 'general',
+            'signature_mode' => 'none',
+        ])->assertSessionHas('status', 'Letter drafted.');
+
+        $letter = LegalLetter::firstOrFail();
+        $this->assertSame('draft', $letter->status);
+        $this->assertSame('', $letter->recipient_name);
+        $this->assertSame('', $letter->subject);
+        $this->assertSame('', $letter->body);
+
+        $this->actingAs($staff)->patch(route('letters.submit', $letter))
+            ->assertSessionHasErrors(['recipient_name', 'subject', 'body', 'letter_date']);
+
+        $this->assertSame('draft', $letter->fresh()->status);
     }
 
     public function test_letters_dashboard_uses_module_hero_design(): void

@@ -16,7 +16,8 @@ return new class extends Migration
             $table->string('adr_no')->unique();
             $table->string('title');
             $table->string('conflict_party_name');
-            $table->string('conflict_party_contact')->nullable();
+            $table->string('conflict_party_phone', 60)->nullable();
+            $table->string('conflict_party_email')->nullable();
             $table->string('method')->nullable();
             $table->date('resolved_on')->nullable();
             $table->string('response')->default('pending');

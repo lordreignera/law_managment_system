@@ -11,18 +11,19 @@ use Illuminate\Validation\Rule;
 
 class RecoveryReferenceData
 {
-    public static function validate(array $data, RecoveryClient $client): array
+    public static function validate(array $data, RecoveryClient $client, bool $sourceImport = false): array
     {
         $data['currency'] = strtoupper(trim($data['currency'] ?? 'UGX'));
         $rules = [
             'portfolio_type' => ['nullable', Rule::in(array_keys($client->portfolioOptions()))],
             'currency' => ['required', ReferenceData::currencyRule()],
         ];
-        if (str($client->name)->contains('Centenary', true)) {
+        // Imported lender labels are preserved even when master branch data is incomplete.
+        if (! $sourceImport && str($client->name)->contains('Centenary', true)) {
             $regionId = CentenaryRegion::where('name', $data['region'] ?? '')->where('is_active', true)->value('id');
             $rules['region'] = ['nullable', 'required_with:branch_name', Rule::exists('centenary_regions', 'name')->where('is_active', true)];
             $rules['branch_name'] = ['nullable', Rule::exists('centenary_branches', 'name')->where('centenary_region_id', $regionId)->where('is_active', true)];
-        } elseif (! empty($data['branch_name'])) {
+        } elseif (! $sourceImport && ! empty($data['branch_name'])) {
             $bankId = Bank::where('name', $client->name)->where('is_active', true)->value('id');
             $rules['branch_name'] = ['nullable', Rule::exists('bank_branches', 'name')->where('bank_id', $bankId)->where('is_active', true)];
         }

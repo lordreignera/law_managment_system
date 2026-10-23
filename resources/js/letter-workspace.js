@@ -185,7 +185,7 @@ if (workspace) {
         previewStatus.textContent = 'Updating preview...';
         workspace.querySelectorAll('[data-page-summary]').forEach((element) => { element.textContent = 'Updating pages...'; });
         clearTimeout(timer);
-        timer = setTimeout(() => refreshPreview().catch(() => {}), 700);
+        timer = setTimeout(() => refreshPreview().catch(() => {}), 350);
     };
 
     const latestPdf = async () => {

@@ -69,6 +69,28 @@ class ReportingController extends Controller
         $categoryDefinition = ReportNavigation::categories()->get($category);
         $categoryReports = $this->catalogue()->whereIn('group', $categoryDefinition['groups'] ?? [$definition['group']])->values();
         $position = $categoryReports->search(fn (array $item) => $item['slug'] === $report);
+        $period = $request->string('period')->toString() ?: ($report === 'annual-management-pack' ? 'yearly' : 'monthly');
+        $analytics = $analyticsService->build($report, $request->user(), $period);
+
+        if ($analytics) {
+            AuditLog::create([
+                'user_id' => $request->user()->id,
+                'event' => 'report_generated',
+                'auditable_type' => null,
+                'auditable_id' => null,
+                'new_values' => [
+                    'report' => $report,
+                    'period' => $analytics['period'],
+                    'filters' => $request->query(),
+                    'branch_scope' => $analytics['scope'],
+                    'format' => 'screen',
+                    'row_count' => count($analytics['table']['rows'] ?? []),
+                ],
+                'url' => $request->fullUrl(),
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+            ]);
+        }
 
         return view('modules.reports.show', [
             'report' => array_merge($definition, ['slug' => $report]),
@@ -79,11 +101,7 @@ class ReportingController extends Controller
             'nextReport' => $categoryReports->get($position + 1),
             'reportPosition' => $position + 1,
             'reportTotal' => $categoryReports->count(),
-            'analytics' => $analyticsService->build(
-                $report,
-                $request->user(),
-                $request->string('period')->toString() ?: ($report === 'annual-management-pack' ? 'yearly' : 'monthly')
-            ),
+            'analytics' => $analytics,
             'relatedReports' => $categoryReports
                 ->filter(fn (array $item) => $item['slug'] !== $report)
                 ->values(),
@@ -117,6 +135,8 @@ class ReportingController extends Controller
                 'period' => $analytics['period'],
                 'format' => $format,
                 'row_count' => count($rows),
+                'filters' => $request->query(),
+                'branch_scope' => $analytics['scope'],
             ],
             'url' => $request->fullUrl(),
             'ip_address' => $request->ip(),

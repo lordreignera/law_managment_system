@@ -24,7 +24,7 @@
             </a>
         </div>
 
-        <form class="kfms-form" method="POST" action="{{ $editing ? route('matters.update', $matter) : route('matters.store') }}">
+        <form class="kfms-form" method="POST" action="{{ $editing ? route('matters.update', $matter) : route('matters.store') }}" @unless($editing) enctype="multipart/form-data" @endunless>
             @csrf
             @if ($editing) @method('PUT') @endif
 
@@ -138,21 +138,30 @@
                     @error('instruction_date') <small>{{ $message }}</small> @enderror
                 </label>
 
-                <label>
-                    <span>Lifecycle Status</span>
-                    <select name="status" required>
-                        @foreach ($statuses as $value => $label)
-                            <option value="{{ $value }}" @selected(old('status', $matter?->status ?? 'inquiry') === $value)>{{ $label }}</option>
-                        @endforeach
-                    </select>
-                    @error('status') <small>{{ $message }}</small> @enderror
-                </label>
+                @if ($editing)
+                    <label>
+                        <span>Matter Status</span>
+                        <select name="status" required>
+                            @foreach ($statuses as $value => $label)
+                                <option value="{{ $value }}" @selected(old('status', $matter->status) === $value)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                        @error('status') <small>{{ $message }}</small> @enderror
+                    </label>
 
-                <label>
-                    <span>Date Closed</span>
-                    <input type="date" name="closed_on" value="{{ old('closed_on', $matter?->closed_on?->toDateString()) }}">
-                    @error('closed_on') <small>{{ $message }}</small> @enderror
-                </label>
+                    <label>
+                        <span>Closure Date</span>
+                        <input type="date" name="closed_on" value="{{ old('closed_on', $matter?->closed_on?->toDateString()) }}">
+                        <small>Required when closing or archiving the matter. Leave blank while work remains open.</small>
+                        @error('closed_on') <small>{{ $message }}</small> @enderror
+                    </label>
+                @else
+                    <div class="kfms-field-note">
+                        <span>Initial Matter Status</span>
+                        <strong>Open</strong>
+                        <small>A matter is opened after the client intake and instruction are approved.</small>
+                    </div>
+                @endif
 
                 <label>
                     <span>Shelf</span>
@@ -208,8 +217,8 @@
                     'id' => 'matter-file-picker',
                     'name' => 'file_ids[]',
                     'field' => 'file_ids',
-                    'label' => 'Files to Link',
-                    'placeholder' => 'Select files to link',
+                    'label' => 'Existing Client Files to Link',
+                    'placeholder' => 'Select existing files',
                     'wrapperClass' => 'kfms-span-2',
                     'options' => collect($availableFiles ?? [])->map(fn ($file) => [
                         'value' => $file->id,
@@ -217,9 +226,19 @@
                         'detail' => $file->client?->display_name,
                     ])->all(),
                     'selected' => old('file_ids', $editing ? $matter->files->pluck('id')->all() : []),
-                    'hint' => 'Only the files selected here will be linked to this matter.',
+                    'hint' => 'Link existing client file records deliberately. Upload new documents below.',
                     'emptyLabel' => 'No unlinked client files available.',
                 ])
+
+                @unless ($editing)
+                    <label class="kfms-span-2">
+                        <span>Upload Documents</span>
+                        <input type="file" name="documents[]" multiple accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx">
+                        <small>Upload the actual matter documents now. You can add versions and mark documents client-visible from Matter Instructions.</small>
+                        @error('documents') <small>{{ $message }}</small> @enderror
+                        @error('documents.*') <small>{{ $message }}</small> @enderror
+                    </label>
+                @endunless
 
                 <label>
                     <span>Next Action</span>

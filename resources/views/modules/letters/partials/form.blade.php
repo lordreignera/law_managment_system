@@ -20,11 +20,13 @@
 
     <div class="kfms-letter-actionbar">
         <div class="kfms-toolbar-actions">
-            <button class="kfms-btn" type="submit"><i class="mdi mdi-content-save" aria-hidden="true"></i> Save Letter</button>
-            @include('modules.letters.partials.document-actions')
+            <button class="kfms-btn" type="submit"><i class="mdi mdi-content-save" aria-hidden="true"></i> {{ $letter->status === 'draft' ? 'Save Draft' : 'Save Changes' }}</button>
         </div>
         <span data-save-status role="status">{{ $letter->exists ? 'Saved' : 'Unsaved draft' }}</span>
     </div>
+    @if ($letter->status === 'draft')
+        <p class="kfms-letter-draft-hint">Save a draft at any time. Complete the recipient, subject, date, and letter content before submitting it for review.</p>
+    @endif
     <div class="kfms-alert kfms-alert-danger" data-letter-error role="alert" hidden></div>
     @if ($errors->any())
         <div class="kfms-alert kfms-alert-danger">{{ $errors->first() }}</div>
@@ -32,7 +34,7 @@
 
     <div class="kfms-letter-builder">
         <div class="kfms-letter-builder-form">
-            <div class="kfms-form-grid">
+            <div class="kfms-form-grid kfms-letter-fields">
                 <label>
             <span>Template</span>
             <select name="letter_template_id" data-letter-template>
@@ -70,8 +72,8 @@
                 </label>
 
                 <label>
-            <span>Letter Date <b>*</b></span>
-            <input type="date" name="letter_date" value="{{ old('letter_date', optional($letter->letter_date)->format('Y-m-d') ?: now()->toDateString()) }}" required data-letter-date>
+            <span>Letter Date @if ($letter->status !== 'draft')<b>*</b>@endif</span>
+            <input type="date" name="letter_date" value="{{ old('letter_date', optional($letter->letter_date)->format('Y-m-d') ?: now()->toDateString()) }}" @if ($letter->status !== 'draft') required @endif data-letter-date>
             @error('letter_date') <small>{{ $message }}</small> @enderror
                 </label>
 
@@ -115,8 +117,8 @@
                 </label>
 
                 <label>
-            <span>Recipient Name <b>*</b></span>
-            <input type="text" name="recipient_name" value="{{ old('recipient_name', $letter->recipient_name) }}" required data-letter-recipient>
+            <span>Recipient Name @if ($letter->status !== 'draft')<b>*</b>@endif</span>
+            <input type="text" name="recipient_name" value="{{ old('recipient_name', $letter->recipient_name) }}" @if ($letter->status !== 'draft') required @endif data-letter-recipient>
             @error('recipient_name') <small>{{ $message }}</small> @enderror
                 </label>
 
@@ -134,19 +136,19 @@
 
                 <label class="kfms-span-2">
             <span>Recipient Address</span>
-            <textarea name="recipient_address" rows="3" data-letter-address>{{ old('recipient_address', $letter->recipient_address) }}</textarea>
+            <textarea name="recipient_address" rows="2" data-letter-address>{{ old('recipient_address', $letter->recipient_address) }}</textarea>
             @error('recipient_address') <small>{{ $message }}</small> @enderror
                 </label>
 
                 <label class="kfms-span-2">
-            <span>Subject <b>*</b></span>
-            <input type="text" name="subject" value="{{ old('subject', $letter->subject) }}" required data-letter-subject>
+            <span>Subject @if ($letter->status !== 'draft')<b>*</b>@endif</span>
+            <input type="text" name="subject" value="{{ old('subject', $letter->subject) }}" @if ($letter->status !== 'draft') required @endif data-letter-subject>
             @error('subject') <small>{{ $message }}</small> @enderror
                 </label>
 
                 <label class="kfms-span-2">
-            <span>Body <b>*</b></span>
-            <textarea name="body" rows="18" required data-letter-body>{{ old('body', $letter->body) }}</textarea>
+            <span>Body @if ($letter->status !== 'draft')<b>*</b>@endif</span>
+            <textarea name="body" rows="10" @if ($letter->status !== 'draft') required @endif data-letter-body>{{ old('body', $letter->body) }}</textarea>
             @error('body') <small>{{ $message }}</small> @enderror
             <span class="kfms-letter-body-status">
                 <span data-page-summary role="status">A4</span>
@@ -154,6 +156,9 @@
             </span>
                 </label>
 
+                <details class="kfms-letter-optional-fields" @if ($errors->has('signature_upload') || $errors->has('drawn_signature') || $errors->has('documents') || $errors->has('documents.*')) open @endif>
+                    <summary>Signature and supporting documents <span>Optional</span></summary>
+                    <div class="kfms-letter-optional-grid">
                 <label>
             <span>Signature</span>
             <select name="signature_mode" data-signature-mode>
@@ -189,6 +194,9 @@
                 </label>
             </div>
 
+                </details>
+
+            </div>
         </div>
 
         <aside class="kfms-letter-builder-preview">

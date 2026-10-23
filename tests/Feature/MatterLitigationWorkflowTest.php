@@ -126,6 +126,54 @@ class MatterLitigationWorkflowTest extends TestCase
         $this->assertNull($fileA->fresh()->matter_id);
     }
 
+    public function test_new_matter_accepts_uploaded_documents_but_not_closure_details(): void
+    {
+        Storage::fake('local');
+        $user = $this->activeUser(['matters.create', 'matters.store'], 'Matter Creator');
+        $client = $this->client('Document Upload Client');
+        $practiceArea = PracticeArea::create(['name' => 'Document Practice', 'code' => 'DOCS']);
+
+        $this->actingAs($user)
+            ->get(route('matters.create'))
+            ->assertOk()
+            ->assertSee('Upload Documents')
+            ->assertSee('name="documents[]"', false)
+            ->assertDontSee('Date Closed');
+
+        $basePayload = [
+            'title' => 'New document matter',
+            'client_id' => $client->id,
+            'practice_area_id' => $practiceArea->id,
+            'opened_on' => now()->toDateString(),
+            'privacy_status' => 'public',
+            'description' => 'Initial matter instructions.',
+            'partner_ids' => [$user->id],
+        ];
+
+        $this->actingAs($user)
+            ->post(route('matters.store'), $basePayload + [
+                'status' => 'closed',
+                'closed_on' => now()->toDateString(),
+                'documents' => [UploadedFile::fake()->create('instruction.pdf', 10, 'application/pdf')],
+            ])
+            ->assertRedirect(route('matters.index'));
+
+        $matter = Matter::firstOrFail();
+        $attachment = $matter->attachments()->firstOrFail();
+
+        $this->assertNull($matter->closed_on);
+        $this->assertSame('open', $matter->status);
+        $this->assertSame('instruction.pdf', $attachment->original_name);
+        $this->assertSame('matter-document', $attachment->category);
+        $this->assertTrue($attachment->is_current);
+        Storage::disk('local')->assertExists($attachment->path);
+        $this->assertDatabaseHas('audit_logs', [
+            'auditable_type' => $attachment->getMorphClass(),
+            'auditable_id' => $attachment->id,
+            'event' => 'uploaded',
+        ]);
+    }
+
     public function test_client_portal_shows_only_the_client_visible_summary(): void
     {
         Role::findOrCreate('Client', 'web');

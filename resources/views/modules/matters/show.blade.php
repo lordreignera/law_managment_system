@@ -204,8 +204,8 @@
                     @can('litigation.create')
                         <a href="{{ route('litigation.create', ['matter_id' => $matter->id]) }}">
                             <i class="mdi mdi-gavel"></i>
-                            <strong>Add Cause List / Court File</strong>
-                            <span>Capture court, case number, judge, filing, service, or next hearing.</span>
+                            <strong>Schedule Court Event</strong>
+                            <span>Link a court date, filing deadline, hearing, or next step to this matter.</span>
                         </a>
                     @endcan
                     @can('litigation.index')

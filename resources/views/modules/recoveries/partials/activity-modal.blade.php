@@ -45,6 +45,7 @@
                             <span>Client Response</span>
                             <select name="response_outcome" required data-response-outcome>
                                 @foreach ($responseOutcomes as $value => $label)
+                                    @if ($value === 'write_off_requested' && ! auth()->user()->can('recoveries.reviews.index')) @continue @endif
                                     <option value="{{ $value }}" @selected(old('response_outcome', $defaultResponseOutcome) === $value)>{{ $label }}</option>
                                 @endforeach
                             </select>
@@ -64,18 +65,18 @@
                         </label>
 
                         <div class="kfms-recovery-remaining-preview kfms-span-2" data-response-panel="paid" data-remaining-preview>
-                            <span>Remaining After This Payment</span>
+                            <span>Remaining If This Payment Is Approved</span>
                             <strong data-remaining-amount>{{ $currency }} {{ number_format($netOutstanding, 2) }}</strong>
                             <small data-remaining-note></small>
                         </div>
 
                         <div class="kfms-alert kfms-alert-info kfms-span-2" data-response-panel="fully_repaid">
                             <i class="mdi mdi-information-outline"></i>
-                            The client reports that the account was already fully repaid. This will close the account, but it will not be counted as money collected by the recovery officer.
+                            Upload proof of repayment. A manager must approve this report before the account closes; it will not count as money collected by the officer.
                         </div>
 
-                        <label data-response-panel="paid">
-                            <span>Receipt *</span>
+                        <label data-response-panel="paid fully_repaid write_off_requested">
+                            <span>Receipt / Supporting Evidence *</span>
                             <input type="file" name="receipt" accept=".pdf,.jpg,.jpeg,.png,.webp">
                             @error('receipt') <small>{{ $message }}</small> @enderror
                         </label>
@@ -156,7 +157,7 @@
                     const selectedResponse = responseField?.value;
 
                     panels.forEach(function (panel) {
-                        const isVisible = panel.dataset.responsePanel === selectedResponse;
+                        const isVisible = panel.dataset.responsePanel.split(' ').includes(selectedResponse);
                         panel.hidden = ! isVisible;
 
                         panel.querySelectorAll('input, select, textarea').forEach(function (field) {

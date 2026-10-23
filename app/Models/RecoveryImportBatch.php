@@ -14,6 +14,9 @@ class RecoveryImportBatch extends Model
     protected $casts = [
         'total_principal' => 'decimal:2',
         'total_outstanding' => 'decimal:2',
+        'import_options' => 'array',
+        'preview_rows' => 'array',
+        'preview_counts' => 'array',
     ];
 
     public function client()

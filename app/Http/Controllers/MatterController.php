@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Exports\MattersExport;
 use App\Imports\MattersImport;
+use App\Models\AuditLog;
 use App\Models\BusinessIndustry;
 use App\Models\Client;
 use App\Models\File;
@@ -17,6 +18,7 @@ use App\Models\User;
 use App\Support\MonthlyReferenceNumber;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Maatwebsite\Excel\Facades\Excel;
@@ -41,10 +43,10 @@ class MatterController extends Controller
                 'route' => route('matters.index', ['status' => 'open']),
             ],
             [
-                'label' => 'File Pending',
-                'value' => (clone $baseQuery)->where('status', 'file_pending')->count(),
-                'icon' => 'mdi-folder-clock-outline',
-                'route' => route('matters.index', ['status' => 'file_pending']),
+                'label' => 'Planning',
+                'value' => (clone $baseQuery)->where('status', 'planning')->count(),
+                'icon' => 'mdi-clipboard-list-outline',
+                'route' => route('matters.index', ['status' => 'planning']),
             ],
             [
                 'label' => 'Active Work',
@@ -129,8 +131,8 @@ class MatterController extends Controller
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')->toString()))
             ->when(in_array($request->query('litigation_stage'), ['opening', 'review'], true), function ($query) use ($request) {
                 $statuses = $request->query('litigation_stage') === 'opening'
-                    ? ['inquiry', 'consultation', 'conflict_check', 'file_pending']
-                    : ['open', 'planning', 'waiting_for_client'];
+                    ? ['open', 'planning']
+                    : ['active', 'waiting_for_client', 'waiting_for_third_party_or_court'];
 
                 $query->whereIn('status', $statuses)
                     ->where(fn ($query) => $query
@@ -180,7 +182,7 @@ class MatterController extends Controller
     {
         return view('modules.matters.create', [
             'matterNumber' => MonthlyReferenceNumber::make(Matter::class, 'reference_no', 'MT'),
-            'clients' => Client::forBranchOf(request()->user())->orderBy('name')->get(),
+            'clients' => $this->matterEligibleClients(request()->user())->orderBy('name')->get(),
             'practiceAreas' => PracticeArea::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
             'instructionTypes' => InstructionType::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
             'businessIndustries' => BusinessIndustry::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
@@ -193,13 +195,12 @@ class MatterController extends Controller
                 ->with('client')
                 ->orderBy('file_name')
                 ->get(),
-            'statuses' => Matter::STATUSES,
         ]);
     }
 
     public function createForClient(Client $client)
     {
-        abort_unless(Client::forBranchOf(request()->user())->whereKey($client->id)->exists(), 404);
+        abort_unless($this->matterEligibleClients(request()->user())->whereKey($client->id)->exists(), 404);
 
         return view('modules.matters.open', [
             'client' => $client,
@@ -252,7 +253,7 @@ class MatterController extends Controller
             'shelf_id' => ['nullable', 'exists:shelves,id'],
             'opened_on' => ['required', 'date'],
             'instruction_date' => ['nullable', 'date', 'before_or_equal:opened_on'],
-            'closed_on' => ['nullable', 'date', 'after_or_equal:opened_on'],
+            'closed_on' => ['nullable', 'required_if:status,closed,archived', 'date', 'after_or_equal:opened_on', 'before_or_equal:today'],
             'status' => ['required', Rule::in(array_keys(Matter::STATUSES))],
             'privacy_status' => ['required', Rule::in(['public', 'private'])],
             'opposite_counsel' => ['nullable', 'string', 'max:191'],
@@ -268,6 +269,16 @@ class MatterController extends Controller
             'associate_ids' => ['nullable', 'array'],
             'associate_ids.*' => ['distinct', 'exists:users,id'],
         ]);
+
+        if ($data['status'] === 'archived' && ! in_array($matter->status, ['closed', 'archived'], true)) {
+            throw ValidationException::withMessages([
+                'status' => 'Close the matter before archiving it.',
+            ]);
+        }
+
+        if (! in_array($data['status'], ['closed', 'archived'], true)) {
+            $data['closed_on'] = null;
+        }
 
         $this->validateUltimateClient($data, $request->user());
         $this->validateAssignableUsers($data);
@@ -307,7 +318,7 @@ class MatterController extends Controller
 
     public function storeForClient(Request $request, Client $client)
     {
-        abort_unless(Client::forBranchOf($request->user())->whereKey($client->id)->exists(), 404);
+        abort_unless($this->matterEligibleClients($request->user())->whereKey($client->id)->exists(), 404);
 
         $data = $request->validate([
             'title' => ['required', 'string', 'max:191'],
@@ -331,17 +342,19 @@ class MatterController extends Controller
             'partner_ids.*' => ['distinct', 'exists:users,id'],
             'associate_ids' => ['nullable', 'array'],
             'associate_ids.*' => ['distinct', 'exists:users,id'],
+            'documents' => ['nullable', 'array', 'max:10'],
+            'documents.*' => ['file', 'max:20480', 'mimes:pdf,jpg,jpeg,png,doc,docx,xls,xlsx'],
         ]);
 
         $this->validateAssignableUsers($data);
         $this->validateSelectedFiles($data['file_ids'] ?? [], $client->id, null, $request->user());
 
-        $matter = DB::transaction(function () use ($client, $data) {
+        $matter = DB::transaction(function () use ($client, $data, $request) {
             $partnerIds = $data['partner_ids'];
             $associateIds = $data['associate_ids'] ?? [];
 
             $matter = Matter::create(collect($data)
-                ->except(['partner_ids', 'associate_ids', 'file_ids'])
+                ->except(['partner_ids', 'associate_ids', 'file_ids', 'documents'])
                 ->merge([
                     'client_id' => $client->id,
                     'opened_by' => auth()->id(),
@@ -370,13 +383,16 @@ class MatterController extends Controller
             }
 
             $this->linkSelectedFiles($matter, $data['file_ids'] ?? []);
+            $this->storeMatterDocuments($matter, $request);
 
             return $matter;
         });
 
-        return redirect()
-            ->route('matters.show', $matter)
-            ->with('status', 'Matter '.$matter->reference_no.' opened with the selected files.');
+        $redirect = $request->input('_client_profile_modal') === 'matter'
+            ? redirect()->route('clients.show', $client)
+            : redirect()->route('matters.show', $matter);
+
+        return $redirect->with('status', 'Matter '.$matter->reference_no.' opened with the selected files.');
     }
 
     public function store(Request $request)
@@ -395,8 +411,6 @@ class MatterController extends Controller
             'shelf_id' => ['nullable', 'exists:shelves,id'],
             'opened_on' => ['required', 'date'],
             'instruction_date' => ['nullable', 'date', 'before_or_equal:opened_on'],
-            'closed_on' => ['nullable', 'date', 'after_or_equal:opened_on'],
-            'status' => ['required', Rule::in(array_keys(Matter::STATUSES))],
             'privacy_status' => ['required', Rule::in(['public', 'private'])],
             'opposite_counsel' => ['nullable', 'string', 'max:191'],
             'opposing_counsel_id' => ['nullable', 'exists:opposing_counsels,id'],
@@ -410,25 +424,32 @@ class MatterController extends Controller
             'partner_ids.*' => ['distinct', 'exists:users,id'],
             'associate_ids' => ['nullable', 'array'],
             'associate_ids.*' => ['distinct', 'exists:users,id'],
+            'documents' => ['nullable', 'array', 'max:10'],
+            'documents.*' => ['file', 'max:20480', 'mimes:pdf,jpg,jpeg,png,doc,docx,xls,xlsx'],
         ]);
 
-        $client = Client::forBranchOf($request->user())->find($data['client_id']);
-        abort_unless($client, 422);
+        $client = $this->matterEligibleClients($request->user())->find($data['client_id']);
+        if (! $client) {
+            throw ValidationException::withMessages([
+                'client_id' => 'Select an active, approved client. Prospects must complete intake before a matter can be opened.',
+            ]);
+        }
         $this->validateUltimateClient($data, $request->user());
         $this->validateAssignableUsers($data);
         $this->validateSelectedFiles($data['file_ids'] ?? [], $client->id, null, $request->user());
 
-        DB::transaction(function () use ($data, $client) {
+        DB::transaction(function () use ($data, $client, $request) {
             $partnerIds = $data['partner_ids'];
             $associateIds = $data['associate_ids'] ?? [];
 
             $matter = Matter::create(collect($data)
-                ->except(['partner_ids', 'associate_ids', 'file_ids'])
+                ->except(['partner_ids', 'associate_ids', 'file_ids', 'documents'])
                 ->merge([
                     'opened_by' => auth()->id(),
                     'branch_id' => $client->branch_id ?? auth()->user()->branch_id,
                     'department_id' => auth()->user()->department_id,
                     'reference_no' => MonthlyReferenceNumber::make(Matter::class, 'reference_no', 'MT'),
+                    'status' => 'open',
                 ])
                 ->toArray());
 
@@ -450,6 +471,7 @@ class MatterController extends Controller
             }
 
             $this->linkSelectedFiles($matter, $data['file_ids'] ?? []);
+            $this->storeMatterDocuments($matter, $request);
         });
 
         return redirect()
@@ -462,6 +484,13 @@ class MatterController extends Controller
         return User::query()
             ->where(fn ($query) => $query->whereNull('account_type')->orWhere('account_type', 'staff'))
             ->whereHas('staffProfile', fn ($query) => $query->where('employment_status', 'active'));
+    }
+
+    private function matterEligibleClients(User $user)
+    {
+        return Client::forBranchOf($user)
+            ->where('status', 'active')
+            ->where('is_prospect', false);
     }
 
     private function validateAssignableUsers(array $data): void
@@ -514,6 +543,41 @@ class MatterController extends Controller
                 ->where('client_id', $matter->client_id)
                 ->get()
                 ->each(fn (File $file) => $file->update(['matter_id' => $matter->id]));
+        }
+    }
+
+    private function storeMatterDocuments(Matter $matter, Request $request): void
+    {
+        foreach ($request->file('documents', []) as $document) {
+            $documentKey = Str::slug(pathinfo($document->getClientOriginalName(), PATHINFO_FILENAME));
+            $documentKey = $documentKey !== '' ? $documentKey : 'matter-document';
+            $version = ((int) $matter->attachments()->where('document_key', $documentKey)->max('version_number')) + 1;
+            $previousVersions = $matter->attachments()
+                ->where('document_key', $documentKey)
+                ->where('is_current', true)
+                ->get();
+            $previousVersions->each(fn ($attachment) => $attachment->update(['is_current' => false]));
+
+            $attachment = $matter->addAttachment($document, [
+                'category' => 'matter-document',
+                'title' => $document->getClientOriginalName(),
+                'document_key' => $documentKey,
+                'version_number' => $version,
+                'is_current' => true,
+                'is_client_visible' => false,
+            ]);
+
+            AuditLog::recordFor($attachment, 'uploaded', [], [
+                'version_number' => $version,
+                'document_key' => $documentKey,
+                'source' => 'matter_creation',
+            ]);
+            $previousVersions->each(fn ($previous) => AuditLog::recordFor(
+                $previous,
+                'superseded',
+                ['is_current' => true],
+                ['is_current' => false, 'replaced_by' => $attachment->id]
+            ));
         }
     }
 }

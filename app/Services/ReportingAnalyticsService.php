@@ -16,10 +16,12 @@ use App\Models\LandTitleMilestone;
 use App\Models\LeaveRequest;
 use App\Models\LeaveType;
 use App\Models\Matter;
+use App\Models\MatterAssignment;
 use App\Models\PayrollPeriod;
 use App\Models\PayrollRun;
 use App\Models\PettyCashTransaction;
 use App\Models\PublicHoliday;
+use App\Models\PracticeArea;
 use App\Models\RecoveryAccount;
 use App\Models\RecoveryActivity;
 use App\Models\Requisition;
@@ -49,9 +51,12 @@ class ReportingAnalyticsService
         $this->activeBucketCount = count($buckets);
 
         $analytics = match ($slug) {
-            'client-activity', 'client-intake-funnel' => $this->clients($user, $period, $buckets),
-            'matter-workload', 'matter-turnaround' => $this->matters($user, $period, $buckets),
-            'litigation-deadlines', 'court-outcomes' => $this->litigation($user, $period, $buckets),
+            'client-activity' => $this->clients($user, $period, $buckets),
+            'client-intake-funnel' => $this->clientIntakeFunnel($user, $period, $buckets),
+            'matter-workload' => $this->matters($user, $period, $buckets),
+            'matter-turnaround' => $this->matterTurnaround($user, $period, $buckets),
+            'litigation-deadlines' => $this->litigation($user, $period, $buckets),
+            'court-outcomes' => $this->courtOutcomes($user, $period, $buckets),
             'recovery-collections', 'recovery-promises', 'bank-performance', 'recovery-officer-performance' => $this->recoveries($user, $period, $buckets),
             'leave-utilization' => $this->leave($user, $period, $buckets),
             'attendance' => $this->attendance($user, $period, $buckets),
@@ -108,24 +113,107 @@ class ReportingAnalyticsService
         ];
     }
 
+    private function clientIntakeFunnel(User $user, string $period, array $buckets): array
+    {
+        $intakes = $this->intakes($user);
+        $labels = $this->labels($buckets);
+        $created = $this->countSeries($intakes, 'created_at', $buckets);
+        $approvedCohort = $this->countSeries((clone $intakes)->where('status', 'approved'), 'created_at', $buckets);
+        $returnedCohort = $this->countSeries((clone $intakes)->where('status', 'more_information_needed'), 'created_at', $buckets);
+        $rejectedCohort = $this->countSeries((clone $intakes)->where('status', 'rejected'), 'created_at', $buckets);
+        $queueStatuses = $this->statusCounts($intakes, ['pending_review', 'more_information_needed', 'approved', 'rejected']);
+        $createdTotal = (int) $this->sum($created);
+        $approvedTotal = (int) $this->sum($approvedCohort);
+        $conversion = $createdTotal === 0 ? 0 : round(($approvedTotal / $createdTotal) * 100, 1);
+        $approvalRates = array_map(fn (int $total, int $approved) => $total === 0 ? 0 : round(($approved / $total) * 100, 1), $created, $approvedCohort);
+
+        return [
+            'period' => $period,
+            'period_label' => $this->periodLabel($period),
+            'scope' => 'Intake records within the permitted branch scope. Approval conversion follows intake creation cohorts and current review decisions.',
+            'cards' => [
+                $this->card('Intakes received', $createdTotal, 'Created in the selected periods', self::NAVY),
+                $this->card('Approved from cohort', $approvedTotal, 'Selected-period intakes now approved', self::GREEN),
+                $this->card('Approval conversion', number_format($conversion, 1), 'Approved from selected-period intakes', self::BLUE, false, '%'),
+                $this->card('Awaiting review now', $queueStatuses['pending_review'] + $queueStatuses['more_information_needed'], 'Current queue snapshot, including information requests', self::GOLD),
+            ],
+            'charts' => [
+                $this->lineChart('intake-funnel-trend', 'Intake cohort movement', 'Created intakes and their current review decisions by creation period.', $labels, [
+                    $this->dataset('Received', $created, self::NAVY),
+                    $this->dataset('Approved', $approvedCohort, self::GREEN),
+                    $this->dataset('More information needed', $returnedCohort, self::GOLD),
+                    $this->dataset('Rejected', $rejectedCohort, self::RED),
+                ]),
+                $this->doughnutChart('intake-queue-status', 'Current intake status', 'Current status distribution for all visible intake records.', array_keys($queueStatuses), array_values($queueStatuses), [self::BLUE, self::GOLD, self::GREEN, self::RED]),
+                $this->barChart('intake-conversion-rate', 'Approval conversion by cohort', 'Approved share of the intakes created in each period.', $labels, [
+                    $this->dataset('Approval rate (%)', $approvalRates, self::GREEN),
+                ]),
+            ],
+            'insight' => 'Review older cohorts with a low approval rate alongside pending and information-request queues. Approval follows a recorded conflict clearance; returned intakes need updates and a fresh conflict check before approval.',
+        ];
+    }
+
     private function matters(User $user, string $period, array $buckets): array
     {
         $matters = Matter::query()->visibleTo($user);
         $labels = $this->labels($buckets);
+        $windowStart = $buckets[0]['start'];
+        $windowEnd = $buckets[array_key_last($buckets)]['end'];
         $opened = $this->countSeries($matters, 'opened_on', $buckets);
         $closed = $this->countSeries((clone $matters)->whereNotNull('closed_on'), 'closed_on', $buckets);
         $statusCounts = $this->statusCounts($matters, array_keys(Matter::STATUSES));
-        $pendingStatuses = ['inquiry', 'consultation', 'conflict_check', 'file_pending', 'waiting_for_client', 'waiting_for_third_party_or_court', 'billing_pending', 'under_review'];
+        $pendingStatuses = ['planning', 'waiting_for_client', 'waiting_for_third_party_or_court', 'billing_pending', 'under_review'];
+        $openMatters = (clone $matters)->whereNotIn('status', ['closed', 'archived']);
+        $practiceAreaCounts = (clone $openMatters)
+            ->selectRaw('practice_area_id, COUNT(*) as matter_count')
+            ->groupBy('practice_area_id')
+            ->get()
+            ->mapWithKeys(fn (Matter $row) => [$row->practice_area_id ?? 0 => (int) $row->matter_count]);
+        $practiceAreaNames = PracticeArea::query()
+            ->whereIn('id', $practiceAreaCounts->keys()->filter()->all())
+            ->pluck('name', 'id');
+        $practiceAreaRows = $practiceAreaCounts
+            ->map(fn (int $count, int|string $id) => [
+                'label' => $id === 0 ? 'Unassigned practice area' : ($practiceAreaNames[$id] ?? 'Unavailable practice area'),
+                'count' => $count,
+            ])
+            ->sortByDesc('count')
+            ->take(8)
+            ->values();
+        $leadRows = MatterAssignment::query()
+            ->where('is_lead', true)
+            ->whereHas('matter', fn (Builder $query) => $query->visibleTo($user)->whereNotIn('status', ['closed', 'archived']))
+            ->selectRaw('user_id, COUNT(DISTINCT matter_id) as matter_count')
+            ->groupBy('user_id')
+            ->with('user:id,name')
+            ->orderByDesc('matter_count')
+            ->limit(8)
+            ->get()
+            ->map(fn (MatterAssignment $assignment) => [
+                'label' => $assignment->user?->name ?? 'Unavailable staff member',
+                'count' => (int) $assignment->matter_count,
+            ]);
+        $unassignedLeadCount = (clone $openMatters)
+            ->whereDoesntHave('assignments', fn (Builder $query) => $query->where('is_lead', true))
+            ->count();
+        if ($unassignedLeadCount > 0) {
+            $leadRows->push(['label' => 'Unassigned lead advocate', 'count' => $unassignedLeadCount]);
+        }
+        $openedCount = $this->sum($opened);
+        $actionsDue = (clone $matters)
+            ->whereNotNull('next_action_due')
+            ->whereBetween('next_action_due', [$windowStart->toDateString(), $windowEnd->toDateString()])
+            ->count();
 
         return [
             'period' => $period,
             'period_label' => $this->periodLabel($period),
             'scope' => 'Matters visible to the current user, including branch and privacy rules.',
             'cards' => [
-                $this->card('This month opened', (clone $matters)->whereBetween('opened_on', [now()->startOfMonth(), now()->endOfMonth()])->count(), 'New matters opened this month', self::NAVY),
-                $this->card('Active matters', (clone $matters)->whereIn('status', ['open', 'planning', 'active'])->count(), 'Open work in progress', self::BLUE),
-                $this->card('Pending action', (clone $matters)->whereIn('status', $pendingStatuses)->count(), 'Instructions, review or billing follow-up', self::GOLD),
-                $this->card('Next month actions', (clone $matters)->whereBetween('next_action_due', [now()->addMonth()->startOfMonth(), now()->addMonth()->endOfMonth()])->count(), 'Matter actions due next month', self::RED),
+                $this->card('Opened in period', $openedCount, 'New matters opened across the selected periods', self::NAVY),
+                $this->card('Open matters now', (clone $matters)->whereNotIn('status', ['closed', 'archived'])->count(), 'Current visible register snapshot', self::BLUE),
+                $this->card('Needs attention now', (clone $matters)->whereIn('status', $pendingStatuses)->count(), 'Current planning, waiting, billing, or review queue', self::GOLD),
+                $this->card('Actions due in period', $actionsDue, 'Next actions due across the selected periods', self::RED),
             ],
             'charts' => [
                 $this->lineChart('matter-trend', 'Matter movement', 'Opened and closed matters by period.', $labels, [
@@ -133,9 +221,94 @@ class ReportingAnalyticsService
                     $this->dataset('Closed', $closed, self::GREEN),
                 ]),
                 $this->doughnutChart('matter-status', 'Matter status mix', 'Current status distribution for visible matters.', array_keys($statusCounts), array_values($statusCounts), [self::NAVY, self::BLUE, self::GOLD, self::GREEN, self::RED]),
+                $this->barChart('matter-practice-areas', 'Open matters by practice area', 'Current open workload grouped by practice area.', $practiceAreaRows->pluck('label')->all(), [
+                    $this->dataset('Open matters', $practiceAreaRows->pluck('count')->all(), self::BLUE),
+                ], false, 'Practice area'),
+                $this->barChart('matter-lead-workload', 'Open matters by lead advocate', 'Current open workload grouped by assigned lead; unassigned files are shown separately.', $leadRows->pluck('label')->all(), [
+                    $this->dataset('Open matters', $leadRows->pluck('count')->all(), self::GOLD),
+                ], false, 'Lead advocate'),
                 $this->barChart('matter-closed', 'Closed matters', 'Matters completed in each period.', $labels, [$this->dataset('Closed', $closed, self::GREEN)]),
             ],
             'insight' => 'Compare opened, closed and pending-action volumes to see whether the active register is growing faster than the team is completing work.',
+        ];
+    }
+
+    private function matterTurnaround(User $user, string $period, array $buckets): array
+    {
+        $labels = $this->labels($buckets);
+        $first = $buckets[0]['start'];
+        $last = $buckets[array_key_last($buckets)]['end'];
+        $closedMatters = Matter::query()
+            ->visibleTo($user)
+            ->whereIn('status', ['closed', 'archived'])
+            ->whereNotNull('opened_on')
+            ->whereNotNull('closed_on')
+            ->whereBetween('closed_on', [$first->toDateString(), $last->toDateString()])
+            ->get(['id', 'reference_no', 'title', 'opened_on', 'closed_on']);
+
+        $withDurations = $closedMatters->map(function (Matter $matter): array {
+            return [
+                'matter' => $matter,
+                'days' => max(0, (int) $matter->opened_on->diffInDays($matter->closed_on)),
+            ];
+        });
+        $bucketRows = collect($buckets)->map(function (array $bucket) use ($withDurations): array {
+            $durations = $withDurations
+                ->filter(fn (array $row) => $row['matter']->closed_on->greaterThanOrEqualTo($bucket['start'])
+                    && $row['matter']->closed_on->lessThanOrEqualTo($bucket['end']))
+                ->pluck('days')
+                ->sort()
+                ->values();
+
+            return [
+                'period' => $bucket['label'],
+                'count' => $durations->count(),
+                'average' => $durations->isEmpty() ? null : round((float) $durations->avg(), 1),
+                'median' => $durations->isEmpty() ? null : $this->median($durations->all()),
+            ];
+        });
+        $allDurations = $withDurations->pluck('days')->sort()->values()->all();
+        $average = $allDurations === [] ? 0 : round(array_sum($allDurations) / count($allDurations), 1);
+        $median = $this->median($allDurations);
+        $longest = $allDurations === [] ? 0 : max($allDurations);
+        $periodCounts = $bucketRows->pluck('count')->all();
+        $averageSeries = $bucketRows->pluck('average')->all();
+        $medianSeries = $bucketRows->pluck('median')->all();
+
+        return [
+            'period' => $period,
+            'period_label' => $this->periodLabel($period),
+            'scope' => 'Closed matters visible to the current user; duration is measured from opened_on through closed_on in calendar days.',
+            'cards' => [
+                $this->card('Matters closed', count($allDurations), 'Closed in the selected periods with both dates recorded', self::NAVY),
+                $this->card('Average turnaround', number_format($average, 1), 'Mean calendar days from opening to closure', self::BLUE, false, 'days'),
+                $this->card('Median turnaround', number_format($median, 1), 'Middle calendar-day duration for closed matters', self::GREEN, false, 'days'),
+                $this->card('Longest turnaround', number_format($longest, 1), 'Longest recorded duration in this selection', self::GOLD, false, 'days'),
+            ],
+            'charts' => [
+                $this->lineChart('matter-turnaround-trend', 'Matter closure time', 'Average and median calendar days for matters closed by period.', $labels, [
+                    $this->dataset('Average days', $averageSeries, self::NAVY),
+                    $this->dataset('Median days', $medianSeries, self::GOLD),
+                ]),
+                $this->barChart('matter-closures', 'Matter closures', 'Number of matters closed in each period.', $labels, [
+                    $this->dataset('Closed matters', $periodCounts, self::BLUE),
+                ]),
+            ],
+            'table' => [
+                'dimension' => 'Closure period',
+                'columns' => [
+                    ['key' => 'closed_matters', 'label' => 'Matters closed', 'money' => false],
+                    ['key' => 'average_days', 'label' => 'Average days', 'money' => false],
+                    ['key' => 'median_days', 'label' => 'Median days', 'money' => false],
+                ],
+                'rows' => $bucketRows->map(fn (array $row) => [
+                    'period' => $row['period'],
+                    'values' => [$row['count'], $row['average'] ?? '—', $row['median'] ?? '—'],
+                ])->all(),
+            ],
+            'insight' => $allDurations === []
+                ? 'No closed matters with opening and closure dates fall in the selected periods yet.'
+                : 'Compare average and median time together: a much higher average can signal a small number of files taking unusually long to close.',
         ];
     }
 
@@ -155,7 +328,7 @@ class ReportingAnalyticsService
             'cards' => [
                 $this->card('Events in period', $this->sum($scheduled) + $this->sum($completed), 'Court activity scheduled or completed', self::NAVY),
                 $this->card('Upcoming 30 days', (clone $events)->open()->whereBetween('starts_at', [now(), now()->addDays(30)])->count(), 'Scheduled or adjourned events', self::BLUE),
-                $this->card('Overdue', (clone $events)->where('status', 'scheduled')->where('starts_at', '<', now())->count(), 'Scheduled events past their date', self::RED),
+                $this->card('Overdue', (clone $events)->overdue()->count(), 'Missed court dates and adjourned follow-ups past their due date', self::RED),
                 $this->card('Filing deadlines', (clone $events)->where('event_type', 'filing_deadline')->whereIn('status', ['scheduled', 'adjourned'])->count(), 'Open filing deadlines', self::GOLD),
             ],
             'charts' => [
@@ -170,12 +343,89 @@ class ReportingAnalyticsService
         ];
     }
 
+    private function courtOutcomes(User $user, string $period, array $buckets): array
+    {
+        $first = $buckets[0]['start'];
+        $last = $buckets[array_key_last($buckets)]['end'];
+        $events = CourtEvent::query()
+            ->whereHas('matter', fn (Builder $query) => $query->visibleTo($user))
+            ->whereIn('status', ['completed', 'adjourned'])
+            ->whereBetween('starts_at', [$first, $last])
+            ->with(['matter:id,reference_no,title', 'court:id,name']);
+        $decided = (clone $events)->get();
+        $recorded = $decided->filter(fn (CourtEvent $event) => trim((string) $event->outcome) !== '');
+        $labels = $this->labels($buckets);
+        $decidedByPeriod = $this->countSeries(clone $events, 'starts_at', $buckets);
+        $outcomesByPeriod = array_map(function (array $bucket) use ($events): int {
+            return (clone $events)
+                ->whereNotNull('outcome')
+                ->whereRaw("TRIM(outcome) <> ?", [''])
+                ->whereBetween('starts_at', [$bucket['start'], $bucket['end']])
+                ->count();
+        }, $buckets);
+        $eventTypes = $decided->groupBy('event_type')
+            ->map(fn ($rows) => $rows->count())
+            ->sortKeys();
+        $orderedTypes = collect(CourtEvent::EVENT_TYPES)
+            ->filter(fn ($label, $type) => $eventTypes->has($type));
+        $periodEvents = $decided->sortByDesc('starts_at');
+
+        return [
+            'period' => $period,
+            'period_label' => $this->periodLabel($period),
+            'scope' => 'Completed or adjourned court events linked to matters visible to the current user, within the selected event-date periods.',
+            'cards' => [
+                $this->card('Concluded events', $decided->count(), 'Completed or adjourned in the selected periods', self::NAVY),
+                $this->card('Outcomes recorded', $recorded->count(), 'Concluded events with an outcome note', self::GREEN),
+                $this->card('Outcome notes missing', $decided->count() - $recorded->count(), 'Concluded events still needing an outcome note', self::RED),
+                $this->card('Next steps recorded', $decided->filter(fn (CourtEvent $event) => filled($event->next_step))->count(), 'Concluded events with a follow-up action', self::GOLD),
+            ],
+            'charts' => [
+                $this->lineChart('court-outcomes-trend', 'Court outcomes by period', 'Completed or adjourned court events and events with outcome notes by period.', $labels, [
+                    $this->dataset('Concluded events', $decidedByPeriod, self::NAVY),
+                    $this->dataset('Outcomes recorded', $outcomesByPeriod, self::GREEN),
+                ]),
+                $this->doughnutChart('court-outcome-completeness', 'Outcome note coverage', 'Outcome notes recorded on concluded court events in the selected periods.', ['Outcome recorded', 'Outcome missing'], [$recorded->count(), $decided->count() - $recorded->count()], [self::GREEN, self::RED]),
+                $this->barChart('court-outcome-types', 'Concluded events by type', 'Completed or adjourned court events grouped by event type in the selected periods.', $orderedTypes->values()->all(), [
+                    $this->dataset('Concluded events', $orderedTypes->keys()->map(fn ($type) => $eventTypes[$type])->values()->all(), self::BLUE),
+                ], false, 'Event type'),
+            ],
+            'table' => [
+                'dimension' => 'Court event',
+                'columns' => [
+                    ['key' => 'matter', 'label' => 'Matter', 'money' => false],
+                    ['key' => 'court', 'label' => 'Court', 'money' => false],
+                    ['key' => 'event_type', 'label' => 'Event type', 'money' => false],
+                    ['key' => 'status', 'label' => 'Result status', 'money' => false],
+                    ['key' => 'outcome', 'label' => 'Outcome', 'money' => false],
+                    ['key' => 'next_step', 'label' => 'Next step', 'money' => false],
+                    ['key' => 'next_step_due', 'label' => 'Next step due', 'money' => false],
+                ],
+                'rows' => $periodEvents->map(fn (CourtEvent $event) => [
+                    'period' => $event->starts_at->format('d M Y H:i').' · '.($event->case_number ?: 'Event #'.$event->id),
+                    'values' => [
+                        trim(($event->matter?->reference_no ? $event->matter->reference_no.' · ' : '').($event->matter?->title ?? 'Matter unavailable')),
+                        $event->court?->name ?? $event->court_name ?? 'Not recorded',
+                        CourtEvent::EVENT_TYPES[$event->event_type] ?? str($event->event_type)->headline()->toString(),
+                        CourtEvent::STATUSES[$event->status] ?? str($event->status)->headline()->toString(),
+                        filled($event->outcome) ? $event->outcome : 'Not recorded',
+                        $event->next_step ?: 'Not recorded',
+                        $event->next_step_due?->format('d M Y') ?? '—',
+                    ],
+                ])->all(),
+            ],
+            'insight' => $decided->isEmpty()
+                ? 'No completed court events fall in the selected periods. Record each hearing or court event outcome after it occurs so management can review results and next steps.'
+                : 'Review completed events with missing outcomes first, then check that each recorded outcome has a responsible next step and due date.',
+        ];
+    }
+
     private function recoveries(User $user, string $period, array $buckets): array
     {
         $accounts = RecoveryAccount::query()->forBranchOf($user);
         $activities = RecoveryActivity::query()->whereHas('account', fn (Builder $query) => $query->forBranchOf($user));
         $labels = $this->labels($buckets);
-        $collected = $this->sumSeries($activities, 'activity_at', 'amount_paid', $buckets);
+        $collected = $this->sumSeries((clone $activities)->where('review_status', 'approved'), 'activity_at', 'amount_paid', $buckets);
         $contacts = $this->countSeries($activities, 'activity_at', $buckets);
         $pipeline = $this->groupCounts($accounts, 'pipeline_stage', RecoveryAccount::PIPELINE_STAGES);
 
@@ -569,7 +819,7 @@ class ReportingAnalyticsService
         $newClients = $this->countSeries($clients, 'created_at', $buckets);
         $openedMatters = $this->countSeries($matters, 'opened_on', $buckets);
         $courtEvents = $this->countSeries($events, 'starts_at', $buckets);
-        $recovered = $this->sumSeries($activities, 'activity_at', 'amount_paid', $buckets);
+        $recovered = $this->sumSeries((clone $activities)->where('review_status', 'approved'), 'activity_at', 'amount_paid', $buckets);
 
         if ($slug === 'branch-comparison') {
             $branches = Branch::query()
@@ -902,12 +1152,16 @@ class ReportingAnalyticsService
                 $add($this->intakes($user)->min('created_at'));
                 break;
             case 'matter-workload':
-            case 'matter-turnaround':
                 $add(Matter::query()->visibleTo($user)->min('opened_on'));
                 break;
+            case 'matter-turnaround':
+                $add(Matter::query()->visibleTo($user)->whereIn('status', ['closed', 'archived'])->whereNotNull('closed_on')->min('closed_on'));
+                break;
             case 'litigation-deadlines':
-            case 'court-outcomes':
                 $add(CourtEvent::query()->whereHas('matter', fn (Builder $query) => $query->visibleTo($user))->min('starts_at'));
+                break;
+            case 'court-outcomes':
+                $add(CourtEvent::query()->whereHas('matter', fn (Builder $query) => $query->visibleTo($user))->whereIn('status', ['completed', 'adjourned'])->min('starts_at'));
                 break;
             case 'recovery-collections':
             case 'recovery-promises':
@@ -1041,5 +1295,22 @@ class ReportingAnalyticsService
     private function sum(array $values): float
     {
         return round((float) array_sum($values), 2);
+    }
+
+    private function median(array $values): float
+    {
+        $values = array_values(array_map('floatval', $values));
+        sort($values);
+        $count = count($values);
+
+        if ($count === 0) {
+            return 0;
+        }
+
+        $middle = intdiv($count, 2);
+
+        return round($count % 2 === 1
+            ? $values[$middle]
+            : ($values[$middle - 1] + $values[$middle]) / 2, 1);
     }
 }

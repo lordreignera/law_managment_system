@@ -34,10 +34,17 @@
                         </a>
                     @endif
                 @endcan
-                <a class="kfms-link-btn" href="{{ route('letters.index') }}">
-                    <i class="mdi mdi-arrow-left"></i>
-                    Back
-                </a>
+                @can('letters.index')
+                    <a class="kfms-link-btn" href="{{ route('letters.index') }}">
+                        <i class="mdi mdi-arrow-left"></i>
+                        Back to Letters
+                    </a>
+                @else
+                    <a class="kfms-link-btn" href="{{ route('dashboard') }}">
+                        <i class="mdi mdi-arrow-left"></i>
+                        Back to Dashboard
+                    </a>
+                @endcan
             </div>
         </div>
 
@@ -105,7 +112,7 @@
                 @endcan
 
                 @can('letters.mark-sent')
-                    @if (in_array($letter->status, ['approved', 'sent'], true))
+                    @if ($letter->status === 'approved')
                         <form class="kfms-form" method="POST" action="{{ route('letters.mark-sent', $letter) }}">
                             @csrf
                             @method('PATCH')
@@ -129,7 +136,7 @@
                 @endcan
 
                 @can('letters.received-copy')
-                    @if (in_array($letter->status, ['sent', 'received'], true))
+                    @if ($letter->status === 'sent')
                         <form class="kfms-form" method="POST" action="{{ route('letters.received-copy', $letter) }}" enctype="multipart/form-data">
                             @csrf
                             @method('PATCH')

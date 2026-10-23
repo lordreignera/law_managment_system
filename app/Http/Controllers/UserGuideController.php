@@ -334,10 +334,10 @@ class UserGuideController extends Controller
             'title' => 'Client Flow',
             'subtitle' => 'How new clients move into the system.',
             'steps' => [
-                'Create a client intake from Client Management.',
-                'Capture mandatory details, preferred advocate, referral details, and conflict parties.',
-                'Review pending intakes and approve or reject each request with a reason.',
-                'Approved intakes become client records where engagements, files, and matters can be added.',
+                'Create a client intake from Client Management and capture the client details, legal issue, referral source, and related parties for conflict screening.',
+                'A reviewer records the conflict check result and notes. An intake can be approved only after the check is recorded as cleared.',
+                'The intake reviewer can approve, reject with a reason, or return it for more information. Editing and resubmitting a returned intake requires a fresh conflict check before approval.',
+                'Approval creates the client record. Open that client to add files or ADRs and to create more than one matter when the instructions cover separate pieces of work.',
             ],
         ];
     }
@@ -347,12 +347,12 @@ class UserGuideController extends Controller
         return [
             'id' => 'matters',
             'title' => 'Matter Flow',
-            'subtitle' => 'From approved client to active file.',
+            'subtitle' => 'From an approved client to a distinct, managed legal file.',
             'steps' => [
-                'Create a matter from the approved client or Matter Management.',
-                'Add practice area, matter category, responsible advocates, date opened, privacy status, and file summary.',
-                'Use the matter workspace to add instructions, documents, billing, costs, or litigation activity.',
-                'Close or archive matters only after work, billing, and documents are complete.',
+                'Create a matter for an approved client from the client record or Matter Management. One client can have several separate matters.',
+                'The matter starts as Open. Add its practice area, category, responsible advocates, instruction date, privacy, and work summary; do not set a closure date when opening it.',
+                'Select only the existing client files that belong to this matter, or upload its documents. The matter workspace then holds its instructions, document bundles, billing, costs, and any court work.',
+                'Move the matter through planning, active work, waiting, billing, and review as appropriate. Close it only when the legal work is complete, then archive it if required.',
             ],
         ];
     }
@@ -364,10 +364,10 @@ class UserGuideController extends Controller
             'title' => 'Litigation Flow',
             'subtitle' => 'How court work is tracked.',
             'steps' => [
-                'Open or link a matter before recording court work.',
-                'Add the cause list or court file with case number, court, judge, event type, and next date.',
-                'Update filing, service, hearings, rulings, judgment, taxation, and execution steps.',
-                'Use the litigation dashboard to monitor active court work and pending lifecycle stages.',
+                'Start from an open matter and choose Schedule Court Event from the matter workspace or Litigation menu.',
+                'Link the event to that matter, then record the case number, court, judicial officer, event type, date, responsible advocate, and any supporting court document.',
+                'Saving a court event moves an Open or Planning matter to Active. After the event, record its result, next step, and due date so the team can follow through.',
+                'Use the Cause List and Litigation Dashboard to monitor hearings, filing deadlines, overdue events, outcomes, and next steps. Reopen a closed or archived matter before scheduling new court work.',
             ],
         ];
     }
@@ -409,12 +409,15 @@ class UserGuideController extends Controller
         return [
             'id' => 'letters',
             'title' => 'Letters & Opinions',
-            'subtitle' => 'Creating branded correspondence.',
+            'subtitle' => 'Draft, review, approve, send, and file correspondence.',
             'steps' => [
                 'Choose a letter template such as demand notice, legal opinion, engagement letter, or general letter.',
                 'Link the letter to a client, matter, or recovery account where applicable.',
-                'Use the live preview to confirm the logo, reference, recipient, subject, body, and signature.',
-                'Submit drafts for review, approve them, mark them as sent, then upload received copies when returned.',
+                'Save a draft at any time; recipient and content can be completed later. Complete the recipient, subject, date, and body before submitting for review.',
+                'Drafts and letters awaiting review are visible to their creator, the creator’s supervisor in the same department, and staff explicitly shared on the letter. Set staff department and supervisor details correctly for this access to work.',
+                'Use the live preview to check the firm branding, reference, recipient, subject, body, and signature. Supporting documents and signatures can be added from the optional section.',
+                'Submit the completed draft for review. An authorised supervisor or reviewer approves it before it can be marked as sent.',
+                'After sending, choose whether the client should see the letter in the portal. Upload the stamped or acknowledged copy when it returns.',
             ],
         ];
     }
@@ -426,11 +429,15 @@ class UserGuideController extends Controller
             'title' => 'Recoveries Manager Flow',
             'subtitle' => 'Portfolio control and recovery performance.',
             'steps' => [
-                'Add banks or portfolio categories before importing recovery accounts.',
-                'Import portfolios, review batches, and assign accounts to recovery officers.',
+                'Select a seeded lender and portfolio: Stanbic Write Off or NPL, DFCU NPL or Write Off, UDB, or BOA. Add a new client or add a portfolio to an existing client on Import Portfolios.',
+                'For a new lender layout, create a client import template by mapping its debtor name and outstanding amount headings, plus any optional headings. Download the client CSV or use the standard CSV.',
+                'Upload the lender workbook or CSV and inspect the preview before confirming. A multi-sheet workbook reads only the matching portfolio worksheet. Repeated files are blocked; matching account identifiers can be skipped or have non-financial details updated. Correct invalid rows in the source file.',
+                'On the batch page, tick individual accounts or Select page to assign that page. Choose all unassigned or all visible accounts in the batch when work should go to one officer across pages.',
+                'Check the imported opening balance, source branch, and any source follow-up notes. Past recoveries reported by the lender are context; new payments remain pending until you review their receipts against a bank or lender record.',
+                'Open Payment Reviews to approve or reject a payment, full repayment, or write-off request. Record the verification reference or approval basis. Reject incorrect entries so the officer can submit a corrected one; reverse a previously approved entry with a reason if the bank later rejects it.',
                 'Monitor net outstanding balances, recovered totals, officer workload, and the recovery pipeline from the dashboard.',
                 'Use reports to filter, export, and compare daily, weekly, and monthly collections by bank, client, and officer.',
-                'Record promise dates so the scheduled reminder job can send due SMS messages where the debtor has opted in.',
+                'Record promise dates for follow-up. New accounts start with SMS reminders off; enable them only after confirming the instruction to send messages. The scheduled reminder job processes due promises when enabled.',
                 'Review skip-trace results for NIN, NSSF, CRB, and WhatsApp checks on each account.',
             ],
         ];
@@ -445,7 +452,8 @@ class UserGuideController extends Controller
             'steps' => [
                 'Open My Recoveries to see only the accounts assigned to you.',
                 'Use Report Activity after a call, visit, promise, payment, or other follow-up.',
-                'When a client pays, enter the amount paid and upload the receipt so the outstanding balance reduces.',
+                'When a client pays, enter the amount and upload the receipt. The amount remains pending until a manager verifies and approves it; only then does the outstanding balance reduce.',
+                'Report full repayment with supporting evidence when the lender confirms it. A manager must approve the closure. Rejected entries remain in history and can be corrected with a new report.',
                 'Keep the pipeline stage, priority, and next follow-up date current after every contact.',
                 'Use the daily, weekly, and monthly reports to review your collection performance.',
             ],
@@ -542,11 +550,11 @@ class UserGuideController extends Controller
                 'The sidebar combines reports into Clients & Legal Work, Recoveries & Securities, Finance & Payroll, HR & Attendance, and Management. All Reports shows the complete catalogue.',
                 'Use Previous report and Next report to move through a category. The report counter shows your position and the selected time period follows you to the next report.',
                 'Open a report definition before exporting so that the included statuses, date rule, branch rule, permission rule, and draft or void treatment are clear.',
-                'Use the Weekly, Monthly, Quarterly, or Yearly selector on supported report pages to apply the same scope to KPI cards, line trends, bar comparisons, pie charts, and the decision table.',
+                'Use the Weekly, Monthly, Quarterly, or Yearly selector to apply the selected periods to period-based KPIs, charts, and the decision table. Cards labeled now or current are live queue snapshots.',
                 'Download any chart as a PNG, or export the decision table as CSV, Excel, or PDF. Read the management insight below each chart before making a decision, then open the linked operational report when you need to work on the underlying records.',
                 'Use the linked operational report for live module data where one is available. Recovery and payroll reports remain protected by their own module permissions.',
                 'Use branch and department comparison reports only within the scope granted to your role. Firm-wide management packs are restricted to authorized administrators and management users.',
-                'Every generated report or management pack must record the actor, period, filters, branch scope, component versions, export format, and row or checksum details in the audit trail.',
+                'Opening a report records the report, actor, period, permitted data scope, and displayed row count. Exporting records the report, actor, period, format, and exported row count in the audit trail.',
             ],
         ];
     }

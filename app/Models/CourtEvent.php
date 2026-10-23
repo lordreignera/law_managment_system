@@ -85,11 +85,26 @@ class CourtEvent extends Model
 
     public function isOverdue(): bool
     {
-        return $this->status === 'scheduled' && $this->starts_at !== null && $this->starts_at->isPast();
+        if ($this->status === 'scheduled') {
+            return $this->starts_at !== null && $this->starts_at->isPast();
+        }
+
+        return $this->status === 'adjourned'
+            && $this->next_step_due !== null
+            && $this->next_step_due->lt(today());
     }
 
     public function scopeOpen($query)
     {
         return $query->whereIn('status', ['scheduled', 'adjourned']);
+    }
+
+    public function scopeOverdue($query)
+    {
+        return $query->where(function ($query) {
+            $query
+                ->where(fn ($scheduled) => $scheduled->where('status', 'scheduled')->where('starts_at', '<', now()))
+                ->orWhere(fn ($adjourned) => $adjourned->where('status', 'adjourned')->whereNotNull('next_step_due')->whereDate('next_step_due', '<', today()));
+        });
     }
 }

@@ -82,6 +82,49 @@ class LitigationFlowTest extends TestCase
         ]);
     }
 
+    public function test_first_court_event_moves_an_open_matter_into_active_work(): void
+    {
+        $client = Client::create([
+            'client_no' => 'CL-'.uniqid(),
+            'name' => 'New Litigation Client',
+        ]);
+        $matter = Matter::create([
+            'client_id' => $client->id,
+            'reference_no' => 'MT-'.uniqid(),
+            'title' => 'New Court Matter',
+            'status' => 'open',
+        ]);
+        $advocate = $this->activeUser(['litigation.store'], 'Advocate');
+
+        $this->actingAs($advocate)->post(route('litigation.store'), [
+            'matter_id' => $matter->id,
+            'event_type' => 'filing_deadline',
+            'court_name' => 'High Court',
+            'status' => 'scheduled',
+            'starts_at' => now()->addDays(3)->format('Y-m-d\\TH:i'),
+        ])->assertRedirect();
+
+        $this->assertSame('active', $matter->fresh()->status);
+        $this->assertDatabaseHas('court_events', ['matter_id' => $matter->id, 'status' => 'scheduled']);
+    }
+
+    public function test_new_court_events_cannot_be_scheduled_for_closed_matters(): void
+    {
+        $matter = $this->matter();
+        $matter->update(['status' => 'closed']);
+        $advocate = $this->activeUser(['litigation.store'], 'Advocate');
+
+        $this->actingAs($advocate)->post(route('litigation.store'), [
+            'matter_id' => $matter->id,
+            'event_type' => 'hearing',
+            'court_name' => 'High Court',
+            'status' => 'scheduled',
+            'starts_at' => now()->addDays(3)->format('Y-m-d\\TH:i'),
+        ])->assertSessionHasErrors('matter_id');
+
+        $this->assertDatabaseMissing('court_events', ['matter_id' => $matter->id, 'event_type' => 'hearing']);
+    }
+
     public function test_court_event_requires_a_court_selection_or_name(): void
     {
         $matter = $this->matter();
@@ -231,8 +274,12 @@ class LitigationFlowTest extends TestCase
             ->assertOk()
             ->assertSee('Litigation control room')
             ->assertSee('Track court work, deadlines, outcomes, and next steps.')
-            ->assertSee('Schedule Event')
-            ->assertSee('Litigation Lifecycle');
+            ->assertSee('Schedule Court Event')
+            ->assertSee('Litigation Lifecycle')
+            ->assertSee('kfms-litigation-dashboard-grid', false)
+            ->assertSee('kfms-litigation-stage-button', false)
+            ->assertSee('aria-label="Matter Opening &amp; Planning: 0. Approved matters are opened, assigned, and prepared for legal work."', false)
+            ->assertSee('data-tooltip="Approved matters are opened, assigned, and prepared for legal work."', false);
     }
 
     public function test_lifecycle_counts_match_visible_branch_events(): void

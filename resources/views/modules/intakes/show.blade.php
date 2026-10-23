@@ -14,6 +14,11 @@
                 <i class="mdi mdi-arrow-left"></i>
                 Back to Intakes
             </a>
+            @if ($intake->review_decision === 'more_information_needed')
+                @can('intakes.edit')
+                    <a class="kfms-btn" href="{{ route('intakes.edit', $intake) }}">Update Intake</a>
+                @endcan
+            @endif
         </div>
 
         @if (session('status'))
@@ -87,7 +92,8 @@
                     <tr>
                         <th>Name</th>
                         <th>Relationship</th>
-                        <th>Contact</th>
+                        <th>Phone</th>
+                        <th>Email</th>
                         <th>Notes</th>
                     </tr>
                 </thead>
@@ -96,12 +102,13 @@
                         <tr>
                             <td>{{ $party->name }}</td>
                             <td>{{ $party->relationship ?: '-' }}</td>
-                            <td>{{ $party->contact ?: '-' }}</td>
+                            <td>{{ $party->phone ?: '-' }}</td>
+                            <td>{{ $party->email ?: '-' }}</td>
                             <td>{{ $party->notes ?: '-' }}</td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="4" class="kfms-empty">No conflict parties recorded.</td>
+                            <td colspan="5" class="kfms-empty">No conflict parties recorded.</td>
                         </tr>
                     @endforelse
                 </tbody>
@@ -109,8 +116,47 @@
         </div>
 
         <div class="kfms-section-heading">
+            <h3>Conflict Check</h3>
+            <span>Record the screening result before approving this intake.</span>
+        </div>
+        <div class="kfms-detail-grid">
+            <div><span>Result</span><strong>{{ $intake->conflictStatusLabel() }}</strong></div>
+            <div><span>Checked By</span><strong>{{ $intake->conflictChecker?->name ?: '-' }}</strong></div>
+            <div><span>Checked On</span><strong>{{ $intake->conflict_checked_at?->format('d M Y H:i') ?: '-' }}</strong></div>
+            <div class="kfms-span-2"><span>Check Notes</span><strong>{{ $intake->conflict_check_notes ?: 'No check recorded.' }}</strong></div>
+        </div>
+
+        @if (! in_array($intake->review_decision, ['approved', 'rejected'], true))
+            @can('intakes.conflict-check')
+                <form class="kfms-form kfms-intake-conflict-check-form" method="POST" action="{{ route('intakes.conflict-check', $intake) }}">
+                    @csrf
+                    @method('PATCH')
+                    <input type="hidden" name="intake_id" value="{{ $intake->id }}">
+                    <div class="kfms-form-grid">
+                        <label>
+                            <span>Conflict check result <span class="kfms-required">*</span></span>
+                            <select name="conflict_status" required>
+                                <option value="">Select result</option>
+                                @foreach ($conflictStatuses as $value => $label)
+                                    <option value="{{ $value }}" @selected(old('conflict_status', $intake->conflict_status === 'pending' ? '' : $intake->conflict_status) === $value)>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                            @error('conflict_status') <small>{{ $message }}</small> @enderror
+                        </label>
+                        <label class="kfms-span-2">
+                            <span>Check notes <span class="kfms-required">*</span></span>
+                            <textarea name="conflict_check_notes" rows="3" required maxlength="3000" placeholder="Record the search performed and the basis for this result.">{{ old('conflict_check_notes', $intake->conflict_check_notes) }}</textarea>
+                            @error('conflict_check_notes') <small>{{ $message }}</small> @enderror
+                        </label>
+                    </div>
+                    <div class="kfms-form-actions"><button type="submit">Save Conflict Check</button></div>
+                </form>
+            @endcan
+        @endif
+
+        <div class="kfms-section-heading">
             <h3>Review Decision</h3>
-            <span>Approve the client into the Approved Clients register, reject, or request more information.</span>
+            <span>Approve the client into the Approved Clients register only after the conflict check is clear.</span>
         </div>
 
         @if (in_array($intake->review_decision, ['approved', 'rejected'], true))
@@ -152,6 +198,9 @@
                 </div>
             @endif
         @else
+            @if ($intake->conflict_status !== 'cleared' || ! $intake->conflict_checked_at)
+                <div class="kfms-alert" role="status">Client approval is blocked until an authorized reviewer records a cleared conflict check.</div>
+            @endif
             <form class="kfms-form" method="POST" action="{{ route('intakes.review', $intake) }}">
                 @csrf
                 @method('PATCH')
@@ -170,8 +219,9 @@
                     </label>
 
                     <label class="kfms-span-2">
-                        <span>Reason / Review Notes <span class="kfms-required">*</span></span>
-                        <textarea name="review_notes" rows="4" required>{{ old('review_notes', $intake->review_notes) }}</textarea>
+                        <span>Reason / Review Notes</span>
+                        <textarea id="intake-review-notes" name="review_notes" rows="4">{{ old('review_notes', $intake->review_notes) }}</textarea>
+                        <small>Required when rejecting or requesting more information. Optional when approving.</small>
                         @error('review_notes') <small>{{ $message }}</small> @enderror
                     </label>
                 </div>
@@ -183,3 +233,18 @@
         @endif
     </section>
 @endsection
+
+@push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const decision = document.querySelector('[name="review_decision"]');
+            const notes = document.getElementById('intake-review-notes');
+            if (!decision || !notes) return;
+            const syncReasonRequirement = () => {
+                notes.required = ['rejected', 'more_information_needed'].includes(decision.value);
+            };
+            decision.addEventListener('change', syncReasonRequirement);
+            syncReasonRequirement();
+        });
+    </script>
+@endpush

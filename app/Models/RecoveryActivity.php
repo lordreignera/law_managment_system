@@ -28,6 +28,7 @@ class RecoveryActivity extends Model
         'no_response' => 'No response',
         'paid' => 'Client paid',
         'fully_repaid' => 'Fully repaid before follow-up',
+        'write_off_requested' => 'Write-off requested',
         'promised' => 'Promised to pay',
         'refused' => 'Refused to pay',
         'disputed' => 'Disputed debt',
@@ -43,6 +44,8 @@ class RecoveryActivity extends Model
         'promised_amount' => 'decimal:2',
         'amount_paid' => 'decimal:2',
         'outstanding_balance_after' => 'decimal:2',
+        'reviewed_at' => 'datetime',
+        'reversed_at' => 'datetime',
     ];
 
     public function account()
@@ -53,6 +56,11 @@ class RecoveryActivity extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function reviewer()
+    {
+        return $this->belongsTo(User::class, 'reviewed_by');
     }
 
     public function promiseReminderLogs()

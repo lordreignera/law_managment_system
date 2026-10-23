@@ -42,7 +42,9 @@
 .kfms-letter-icon:focus-visible { outline: 2px solid #26806d; outline-offset: 2px; }
 .kfms-letter-icon:disabled { opacity: .4; cursor: default; }
 .kfms-letter-form .kfms-letter-builder { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
-.kfms-letter-form .kfms-letter-builder-preview { top: 145px; min-width: 0; }
+.kfms-letter-form .kfms-letter-builder-form,
+.kfms-letter-form .kfms-letter-builder-preview { min-width: 0; }
+.kfms-letter-form .kfms-letter-builder-preview { top: 145px; }
 .kfms-letter-page-toolbar { background: #f5f7f8; border: 1px solid #dce2e8; padding: 6px 8px; }
 .kfms-letter-paper-size { font-size: 12px; font-weight: 700; color: #53616a; }
 .kfms-letter-page-nav { gap: 5px; flex-wrap: nowrap; }

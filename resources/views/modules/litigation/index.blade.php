@@ -43,7 +43,7 @@
                 @can('litigation.create')
                     <a class="kfms-btn" href="{{ route('litigation.create') }}">
                         <i class="mdi mdi-plus"></i>
-                        Schedule Event
+                        Schedule Court Event
                     </a>
                 @endcan
             </div>
@@ -124,7 +124,7 @@
                             <td>
                                 {{ $event->starts_at?->format('d M Y, H:i') }}
                                 @if ($event->isOverdue())
-                                    <span class="kfms-status kfms-status-rejected">Overdue</span>
+                                    <span class="kfms-status kfms-status-rejected">{{ $event->status === 'adjourned' ? 'Follow-up overdue' : 'Court date missed' }}</span>
                                 @endif
                             </td>
                             <td>

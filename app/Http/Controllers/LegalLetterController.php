@@ -15,14 +15,15 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class LegalLetterController extends Controller
 {
-    public function dashboard()
+    public function dashboard(Request $request)
     {
-        $letters = LegalLetter::query()->with(['client', 'matter', 'creator'])->latest()->get();
+        $letters = LegalLetter::query()->visibleTo($request->user())->with(['client', 'matter', 'creator'])->latest()->get();
 
         return view('modules.letters.dashboard', [
             'summary' => [
@@ -80,7 +81,7 @@ class LegalLetterController extends Controller
 
     public function store(Request $request)
     {
-        $data = $this->validatedData($request);
+        $data = $this->prepareDraftFields($this->validatedData($request, allowIncompleteDraft: true));
         $data['reference_no'] = ($data['reference_no'] ?? null) ?: LegalLetter::nextReference($data['letter_type']);
         $data['created_by'] = $request->user()->id;
         $data['branch_id'] = $request->user()->branch_id;
@@ -99,8 +100,10 @@ class LegalLetterController extends Controller
             ->with('status', 'Letter drafted.');
     }
 
-    public function show(LegalLetter $letter)
+    public function show(Request $request, LegalLetter $letter)
     {
+        $this->ensureVisibleToUser($letter, $request->user());
+
         return view('modules.letters.show', [
             'letter' => $letter->load([
                 'template',
@@ -118,8 +121,9 @@ class LegalLetterController extends Controller
         ]);
     }
 
-    public function edit(LegalLetter $letter)
+    public function edit(Request $request, LegalLetter $letter)
     {
+        $this->ensureVisibleToUser($letter, $request->user());
         abort_if(in_array($letter->status, ['sent', 'received', 'closed'], true), 403);
 
         return view('modules.letters.edit', $this->formData([
@@ -129,9 +133,14 @@ class LegalLetterController extends Controller
 
     public function update(Request $request, LegalLetter $letter)
     {
+        $this->ensureVisibleToUser($letter, $request->user());
         abort_if(in_array($letter->status, ['sent', 'received', 'closed'], true), 403);
 
-        $data = $this->validatedData($request, $letter);
+        $data = $this->prepareDraftFields($this->validatedData(
+            $request,
+            $letter,
+            allowIncompleteDraft: $letter->status === 'draft'
+        ), $letter);
         $data = $this->prepareSignature($request, $data, $letter);
 
         $letter->update($data);
@@ -146,8 +155,23 @@ class LegalLetterController extends Controller
             ->with('status', 'Letter updated.');
     }
 
-    public function submit(LegalLetter $letter)
+    public function submit(Request $request, LegalLetter $letter)
     {
+        $this->ensureVisibleToUser($letter, $request->user());
+        abort_unless($letter->status === 'draft', 422, 'Only a draft letter can be submitted for review.');
+
+        Validator::make([
+            'recipient_name' => $letter->recipient_name,
+            'subject' => $letter->subject,
+            'body' => $letter->body,
+            'letter_date' => $letter->letter_date,
+        ], [
+            'recipient_name' => ['required', 'string', 'max:191'],
+            'subject' => ['required', 'string', 'max:255'],
+            'body' => ['required', 'string', 'max:200000'],
+            'letter_date' => ['required', 'date'],
+        ])->validate();
+
         $letter->update([
             'status' => 'pending_review',
             'submitted_at' => now(),
@@ -158,6 +182,9 @@ class LegalLetterController extends Controller
 
     public function approve(Request $request, LegalLetter $letter)
     {
+        $this->ensureVisibleToUser($letter, $request->user());
+        abort_unless($letter->status === 'pending_review', 422, 'Only a letter pending review can be approved.');
+
         $data = $request->validate([
             'approval_notes' => ['nullable', 'string', 'max:3000'],
         ]);
@@ -174,6 +201,9 @@ class LegalLetterController extends Controller
 
     public function markSent(Request $request, LegalLetter $letter)
     {
+        $this->ensureVisibleToUser($letter, $request->user());
+        abort_unless($letter->status === 'approved', 422, 'A letter must be approved before it can be marked as sent.');
+
         $data = $request->validate([
             'sent_at' => ['nullable', 'date'],
             'sent_notes' => ['nullable', 'string', 'max:3000'],
@@ -193,6 +223,9 @@ class LegalLetterController extends Controller
 
     public function uploadReceivedCopy(Request $request, LegalLetter $letter)
     {
+        $this->ensureVisibleToUser($letter, $request->user());
+        abort_unless($letter->status === 'sent', 422, 'A letter must be sent before a received copy can be recorded.');
+
         $data = $request->validate([
             'received_at' => ['required', 'date'],
             'received_notes' => ['nullable', 'string', 'max:3000'],
@@ -216,6 +249,8 @@ class LegalLetterController extends Controller
 
     public function share(Request $request, LegalLetter $letter)
     {
+        $this->ensureVisibleToUser($letter, $request->user());
+
         $data = $request->validate([
             'user_ids' => ['required', 'array', 'min:1'],
             'user_ids.*' => ['exists:users,id'],
@@ -237,6 +272,7 @@ class LegalLetterController extends Controller
 
     public function toggleClientVisibility(Request $request, LegalLetter $letter)
     {
+        $this->ensureVisibleToUser($letter, $request->user());
         abort_unless($letter->client_id || $letter->matter_id, 422);
 
         $letter->update([
@@ -248,6 +284,7 @@ class LegalLetterController extends Controller
 
     public function pdf(Request $request, LegalLetter $letter, LetterPdf $pdf)
     {
+        $this->ensureVisibleToUser($letter, $request->user());
         $letter->load(['client', 'matter.client', 'recoveryAccount', 'creator', 'signer']);
 
         $document = $pdf->render($letter);
@@ -259,6 +296,10 @@ class LegalLetterController extends Controller
 
     public function preview(Request $request, LetterPdf $pdf, ?LegalLetter $letter = null)
     {
+        if ($letter) {
+            $this->ensureVisibleToUser($letter, $request->user());
+        }
+
         abort_unless($request->user()->can($letter ? 'letters.edit' : 'letters.create'), 403);
         $data = $this->validatedData($request, $letter, preview: true);
         $draft = $letter ? clone $letter : new LegalLetter;
@@ -292,6 +333,8 @@ class LegalLetterController extends Controller
 
     public function email(Request $request, LegalLetter $letter, LetterPdf $pdf)
     {
+        $this->ensureVisibleToUser($letter, $request->user());
+
         $data = $request->validate([
             'to' => ['required', 'email', 'max:191'],
             'subject' => ['required', 'string', 'max:255', 'not_regex:/[\r\n]/'],
@@ -329,8 +372,9 @@ class LegalLetterController extends Controller
         ]);
     }
 
-    public function destroy(LegalLetter $letter)
+    public function destroy(Request $request, LegalLetter $letter)
     {
+        $this->ensureVisibleToUser($letter, $request->user());
         abort_if(in_array($letter->status, ['sent', 'received', 'closed'], true), 403);
 
         $letter->delete();
@@ -343,6 +387,7 @@ class LegalLetterController extends Controller
     private function filteredQuery(Request $request): Builder
     {
         return LegalLetter::query()
+            ->visibleTo($request->user())
             ->with(['client', 'matter', 'creator'])
             ->when($request->filled('search'), function (Builder $query) use ($request) {
                 $search = $request->string('search')->toString();
@@ -360,6 +405,28 @@ class LegalLetterController extends Controller
             ->when($request->filled('letter_type'), fn (Builder $query) => $query->where('letter_type', $request->string('letter_type')->toString()));
     }
 
+    private function ensureVisibleToUser(LegalLetter $letter, User $user): void
+    {
+        $hasGeneralViewPermission = $user->can('letters.show')
+            && LegalLetter::query()->visibleTo($user)->whereKey($letter->getKey())->exists();
+        $isPrivateWorkflowParticipant = $letter->isPrivateWorkflow() && $letter->isWorkflowParticipant($user);
+
+        abort_unless($hasGeneralViewPermission || $isPrivateWorkflowParticipant, 404);
+    }
+
+    private function prepareDraftFields(array $data, ?LegalLetter $letter = null): array
+    {
+        foreach (['recipient_name', 'subject', 'body'] as $field) {
+            if (! array_key_exists($field, $data)) {
+                $data[$field] = (string) ($letter?->{$field} ?? '');
+            } else {
+                $data[$field] = (string) ($data[$field] ?? '');
+            }
+        }
+
+        return $data;
+    }
+
     private function formData(array $overrides = []): array
     {
         return array_merge([
@@ -372,9 +439,14 @@ class LegalLetterController extends Controller
         ], $overrides);
     }
 
-    private function validatedData(Request $request, ?LegalLetter $letter = null, bool $preview = false): array
+    private function validatedData(
+        Request $request,
+        ?LegalLetter $letter = null,
+        bool $preview = false,
+        bool $allowIncompleteDraft = false
+    ): array
     {
-        $required = $preview ? 'nullable' : 'required';
+        $required = $preview || $allowIncompleteDraft ? 'nullable' : 'required';
 
         return $request->validate([
             'reference_no' => array_filter(['nullable', 'string', 'max:80', $preview ? null : Rule::unique('legal_letters', 'reference_no')->ignore($letter?->id)]),

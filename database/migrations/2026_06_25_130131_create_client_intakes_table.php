@@ -15,6 +15,7 @@ return new class extends Migration
             $table->foreignId('preferred_lawyer_id')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('reviewed_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('conflict_checked_by')->nullable()->constrained('users')->nullOnDelete();
             $table->string('intake_no')->unique();
             $table->string('client_type')->default('individual');
             $table->string('client_name');
@@ -32,6 +33,9 @@ return new class extends Migration
             $table->string('review_decision')->default('pending');
             $table->text('review_notes')->nullable();
             $table->timestamp('reviewed_at')->nullable();
+            $table->string('conflict_status')->default('pending');
+            $table->text('conflict_check_notes')->nullable();
+            $table->timestamp('conflict_checked_at')->nullable();
             $table->date('consultation_on')->nullable();
             $table->time('consultation_at')->nullable();
             $table->timestamps();
@@ -43,7 +47,8 @@ return new class extends Migration
             $table->foreignId('client_intake_id')->constrained()->cascadeOnDelete();
             $table->string('name');
             $table->string('relationship')->nullable();
-            $table->string('contact')->nullable();
+            $table->string('phone', 60)->nullable();
+            $table->string('email')->nullable();
             $table->text('notes')->nullable();
             $table->timestamps();
         });

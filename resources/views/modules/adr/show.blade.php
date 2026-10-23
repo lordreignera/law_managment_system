@@ -52,7 +52,8 @@
 
         <div class="kfms-detail-grid">
             <div><span>Conflict Party</span><strong>{{ $adr->conflict_party_name }}</strong></div>
-            <div><span>Contact</span><strong>{{ $adr->conflict_party_contact ?: '-' }}</strong></div>
+            <div><span>Phone</span><strong>{{ $adr->conflict_party_phone ?: '-' }}</strong></div>
+            <div><span>Email</span><strong>{{ $adr->conflict_party_email ?: '-' }}</strong></div>
             <div><span>Source Conflict Party</span><strong>{{ $adr->intakeConflictParty?->name ?: '-' }}</strong></div>
             <div><span>Method</span><strong>{{ $adr->method ? str($adr->method)->headline() : '-' }}</strong></div>
             <div><span>ADR Date</span><strong>{{ $adr->resolved_on?->format('d M Y') ?: '-' }}</strong></div>

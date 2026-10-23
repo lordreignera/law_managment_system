@@ -2,22 +2,13 @@
 
 namespace App\Support\Recoveries;
 
-use Illuminate\Support\Arr;
-
 class RecoveryPortfolioMapper
 {
-    public const DEFAULT_PORTFOLIOS = [
-        'Stanbic Write Off',
-        'Stanbic NPL',
-        'DFCU NPL',
-        'DFCU Write Off',
-        'UDB',
-        'BOA',
-    ];
+    private array $customMap = [];
 
     private const FIELD_ALIASES = [
-        'debtor_name' => ['acct_name', 'account_name', 'customer_name', 'nam', 'name'],
-        'account_number' => ['foracid', 'account_number', 'loan_account_number', 'account_no', 'client'],
+        'debtor_name' => ['debtor_name', 'acct_name', 'account_name', 'customer_name', 'nam', 'name'],
+        'account_number' => ['foracid', 'account_number', 'loan_account_number', 'account_no'],
         'customer_number' => ['cif_id', 'customer_number', 'customer_id', 'cif'],
         'operative_account' => ['operative_accounts', 'operative_account', 'operative_account_number'],
         'phone' => ['contacts', 'contact', 'phone', 'preferred_phone_number', 'telephone'],
@@ -31,11 +22,11 @@ class RecoveryPortfolioMapper
         'branch_name' => ['branch', 'branch_name', 'operative_account_branch_name'],
         'region' => ['region', 'region_name'],
         'collector_name' => ['february_collector', 'collector'],
-        'principal_amount' => ['principal', 'principal_balance_base', 'charge_off_principal_base', 'disbursement_amount_base', 'exposure'],
-        'interest_amount' => ['interest', 'charge_off_interest_base', 'interest_in_suspense_base'],
+        'principal_amount' => ['principal_amount', 'principal', 'principal_balance_base', 'chrge_off_principal_base', 'disbursement_amount_base', 'exposure'],
+        'interest_amount' => ['interest_amount', 'interest', 'chrge_off_interest_base', 'interest_in_suspense_base'],
         'arrears_amount' => ['total_arrears', 'arrears_balance_base', 'arrears_amount'],
-        'outstanding_amount' => ['net_exposure', 'gross_balance_base', 'outstanding_amount_base', 'book_balance_lcy', 'total_as_at_101125', 'charge_off_amnt_base'],
-        'amount_recovered' => ['total_recovery_base', 'principal_recovery', 'amount_recovered_in_october', 'amount_recovered_in_jan'],
+        'outstanding_amount' => ['outstanding_amount', 'net_exposure', 'gross_balance_base', 'outstanding_amount_base', 'book_balance_lcy', 'total_as_at_10_11_25', 'chrge_off_amnt_base'],
+        'source_recovered_amount' => ['source_recovered_amount', 'amount_recovered', 'total_recovery_base', 'principal_recovery', 'amount_recovered_in_october', 'amount_recovered_in_jan'],
         'currency' => ['acct_crncy_code', 'currency_code', 'currency'],
         'bucket' => ['bucket', 'year_category', 'aging', 'product_group_description', 'type_of_advance_description'],
         'days_past_due' => ['dpd_count', 'days_past_due'],
@@ -56,7 +47,6 @@ class RecoveryPortfolioMapper
             'account_number' => ['account_number'],
             'debtor_name' => ['customer_name'],
             'outstanding_amount' => ['book_balance_lcy'],
-            'interest_amount' => ['total_arrears'],
         ],
         'dfcu_npl' => [
             'account_number' => ['account_number'],
@@ -68,29 +58,40 @@ class RecoveryPortfolioMapper
         'dfcu_write_off' => [
             'debtor_name' => ['account_name'],
             'outstanding_amount' => ['outstanding_amount_base'],
-            'principal_amount' => ['charge_off_principal_base', 'principal_balance_base'],
-            'interest_amount' => ['charge_off_interest_base'],
+            'principal_amount' => ['chrge_off_principal_base', 'principal_balance_base'],
+            'interest_amount' => ['chrge_off_interest_base'],
         ],
         'udb' => [
             'debtor_name' => ['account_name'],
             'outstanding_amount' => ['exposure'],
             'principal_amount' => ['exposure'],
-            'amount_recovered' => ['amount_recovered_in_october', 'amount_recovered_in_jan'],
-            'bucket' => ['collateral_held'],
+            'source_recovered_amount' => ['amount_recovered_in_october', 'amount_recovered_in_jan'],
         ],
         'boa' => [
-            'account_number' => ['client'],
+            'customer_number' => ['client'],
             'debtor_name' => ['nam'],
-            'outstanding_amount' => ['total_as_at_101125'],
-            'interest_amount' => ['arrears_amount'],
-            'bucket' => ['cause_of_default'],
+            'outstanding_amount' => ['total_as_at_10_11_25'],
         ],
     ];
 
-    public function map(array $row, string $portfolioType, int $rowNumber): ?array
+    public function map(array $row, string $portfolioType, int $rowNumber, array $columnMap = []): ?array
     {
         $normalized = $this->normalizeRow($row);
         $portfolioKey = $this->key($portfolioType);
+        $customMap = collect($columnMap)
+            ->map(fn ($heading) => $this->key((string) $heading))
+            ->all();
+        $this->customMap = $customMap;
+        $sourceOutstanding = $this->value($normalized, 'outstanding_amount', $portfolioKey);
+        $sourceRecovered = $this->money($this->value($normalized, 'source_recovered_amount', $portfolioKey));
+
+        if (! isset($customMap['source_recovered_amount']) && $portfolioKey === 'dfcu_write_off' && $this->blank($normalized['total_recovery_base'] ?? null)) {
+            $sourceRecovered = $this->money($normalized['principal_recovery'] ?? null)
+                + $this->money($normalized['interest_recovery'] ?? null);
+        } elseif (! isset($customMap['source_recovered_amount']) && $portfolioKey === 'udb') {
+            $sourceRecovered = $this->money($normalized['amount_recovered_in_october'] ?? null)
+                + $this->money($normalized['amount_recovered_in_jan'] ?? null);
+        }
 
         $data = [
             'portfolio_type' => $portfolioType,
@@ -114,8 +115,8 @@ class RecoveryPortfolioMapper
             'principal_amount' => $this->money($this->value($normalized, 'principal_amount', $portfolioKey)),
             'interest_amount' => $this->money($this->value($normalized, 'interest_amount', $portfolioKey)),
             'arrears_amount' => $this->money($this->value($normalized, 'arrears_amount', $portfolioKey)),
-            'outstanding_amount' => $this->money($this->value($normalized, 'outstanding_amount', $portfolioKey)),
-            'amount_recovered' => $this->money($this->value($normalized, 'amount_recovered', $portfolioKey)),
+            'outstanding_amount' => $this->money($sourceOutstanding),
+            'amount_recovered' => 0,
             'currency' => $this->text($this->value($normalized, 'currency', $portfolioKey)) ?: 'UGX',
             'bucket' => $this->text($this->value($normalized, 'bucket', $portfolioKey)),
             'pipeline_stage' => $this->enum($this->value($normalized, 'pipeline_stage', $portfolioKey), ['new', 'contact_pending', 'engaged', 'promise_to_pay', 'field_visit', 'legal_review', 'recovered', 'untraceable', 'closed'], 'new'),
@@ -123,7 +124,7 @@ class RecoveryPortfolioMapper
             'collateral_held' => $this->text($this->value($normalized, 'collateral_held', $portfolioKey)),
             'cause_of_default' => $this->text($this->value($normalized, 'cause_of_default', $portfolioKey)),
             'status' => 'active',
-            'raw_payload' => $normalized,
+            'raw_payload' => array_merge($normalized, ['_source_reported_recovery' => $sourceRecovered]),
         ];
 
         if (! $data['debtor_name'] && ! $data['account_number'] && ! $data['customer_number']) {
@@ -134,13 +135,8 @@ class RecoveryPortfolioMapper
             $data['debtor_name'] = $data['account_number'] ?: $data['customer_number'];
         }
 
-        if (! $data['outstanding_amount']) {
+        if ($sourceOutstanding === null) {
             $data['outstanding_amount'] = $data['principal_amount'] + $data['interest_amount'] + $data['arrears_amount'];
-        }
-
-        if ($portfolioKey === 'udb') {
-            $data['amount_recovered'] = $this->money(Arr::get($normalized, 'amount_recovered_in_october'))
-                + $this->money(Arr::get($normalized, 'amount_recovered_in_jan'));
         }
 
         return $data;
@@ -148,6 +144,10 @@ class RecoveryPortfolioMapper
 
     private function value(array $row, string $field, string $portfolioKey)
     {
+        if (isset($this->customMap[$field])) {
+            return $row[$this->customMap[$field]] ?? null;
+        }
+
         foreach (self::PORTFOLIO_OVERRIDES[$portfolioKey][$field] ?? [] as $alias) {
             if (array_key_exists($alias, $row) && ! $this->blank($row[$alias])) {
                 return $row[$alias];

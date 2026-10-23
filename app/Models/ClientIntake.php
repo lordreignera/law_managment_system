@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Auditable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -9,6 +10,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class ClientIntake extends Model
 {
     use HasFactory;
+    use Auditable;
     use SoftDeletes;
 
     public const STATUSES = [
@@ -23,6 +25,13 @@ class ClientIntake extends Model
         'approved' => 'Approve Client',
         'rejected' => 'Reject Client',
         'more_information_needed' => 'More Information Needed',
+    ];
+
+    public const CONFLICT_STATUSES = [
+        'pending' => 'Not checked',
+        'cleared' => 'Cleared',
+        'potential_conflict' => 'Potential conflict',
+        'conflict_found' => 'Conflict found',
     ];
 
     public const URGENCIES = [
@@ -48,11 +57,12 @@ class ClientIntake extends Model
     protected $casts = [
         'consultation_on' => 'date',
         'reviewed_at' => 'datetime',
+        'conflict_checked_at' => 'datetime',
     ];
 
     public function client()
     {
-        return $this->belongsTo(Client::class);
+        return $this->belongsTo(Client::class)->withTrashed();
     }
 
     public function practiceArea()
@@ -75,6 +85,11 @@ class ClientIntake extends Model
         return $this->belongsTo(User::class, 'reviewed_by');
     }
 
+    public function conflictChecker()
+    {
+        return $this->belongsTo(User::class, 'conflict_checked_by');
+    }
+
     public function conflictParties()
     {
         return $this->hasMany(IntakeConflictParty::class);
@@ -88,6 +103,11 @@ class ClientIntake extends Model
     public function reviewDecisionLabel(): string
     {
         return self::REVIEW_DECISIONS[$this->review_decision] ?? str($this->review_decision)->headline()->toString();
+    }
+
+    public function conflictStatusLabel(): string
+    {
+        return self::CONFLICT_STATUSES[$this->conflict_status] ?? str($this->conflict_status)->headline()->toString();
     }
 
     public function referralSourceLabel(): string

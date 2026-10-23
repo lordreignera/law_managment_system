@@ -52,6 +52,10 @@ class ClientIntakeFlowTest extends TestCase
             ->get(route('intakes.create'))
             ->assertOk()
             ->assertSee('Active Staff Advocate')
+            ->assertSee('kfms-intake-client-details', false)
+            ->assertSee('kfms-conflict-party-card', false)
+            ->assertSeeInOrder(['Client Name', 'Email', 'Phone', 'Address', 'Legal Issue'])
+            ->assertSeeInOrder(['Party Name', 'Relationship', 'Phone', 'Email', 'Notes'])
             ->assertDontSee('Client Portal User');
 
         $this->actingAs($staffUser)
@@ -112,12 +116,83 @@ class ClientIntakeFlowTest extends TestCase
             ->assertDontSee('Approve Client');
     }
 
+    public function test_returned_intake_can_be_corrected_and_resubmitted_with_a_fresh_conflict_check(): void
+    {
+        $role = Role::findOrCreate('Intake Resubmission Clerk');
+        foreach (['intakes.edit', 'intakes.update', 'intakes.review'] as $permissionName) {
+            $role->givePermissionTo(Permission::findOrCreate($permissionName));
+        }
+
+        $user = User::factory()->create();
+        $user->assignRole($role);
+        StaffProfile::create([
+            'user_id' => $user->id,
+            'employment_status' => 'active',
+        ]);
+
+        $intake = ClientIntake::create([
+            'intake_no' => 'CI-RETURNED',
+            'client_type' => 'individual',
+            'client_name' => 'Jane Client',
+            'legal_issue' => 'Employment dispute',
+            'created_by' => $user->id,
+            'reviewed_by' => $user->id,
+            'reviewed_at' => now(),
+            'review_decision' => 'more_information_needed',
+            'review_notes' => 'Please identify the former employer for the conflict search.',
+            'status' => 'more_information_needed',
+            'conflict_status' => 'cleared',
+            'conflict_check_notes' => 'Initial search recorded.',
+            'conflict_checked_by' => $user->id,
+            'conflict_checked_at' => now(),
+        ]);
+        $intake->conflictParties()->create([
+            'name' => 'Former employer',
+            'relationship' => 'Opponent',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('intakes.edit', $intake))
+            ->assertOk()
+            ->assertSee('Update Returned Intake')
+            ->assertSee('Jane Client')
+            ->assertSee('Former employer');
+
+        $this->actingAs($user)
+            ->patch(route('intakes.update', $intake), [
+                'client_type' => 'individual',
+                'client_name' => 'Jane A. Client',
+                'legal_issue' => 'Employment dispute',
+                'urgency' => 'normal',
+                'conflict_parties' => [
+                    ['name' => 'Acme Ltd', 'relationship' => 'Former employer'],
+                ],
+            ])
+            ->assertRedirect(route('intakes.index', absolute: false))
+            ->assertSessionHas('status', 'Intake updated and resubmitted. Conflict screening must be completed again.');
+
+        $intake->refresh();
+        $this->assertSame('Jane A. Client', $intake->client_name);
+        $this->assertSame('pending_review', $intake->status);
+        $this->assertSame('pending', $intake->review_decision);
+        $this->assertSame('pending', $intake->conflict_status);
+        $this->assertNull($intake->conflict_checked_by);
+        $this->assertNull($intake->conflict_checked_at);
+        $this->assertNull($intake->reviewed_by);
+        $this->assertNull($intake->reviewed_at);
+        $this->assertSame('Acme Ltd', $intake->conflictParties()->sole()->name);
+
+        $this->actingAs($user)
+            ->patch(route('intakes.review', $intake), ['review_decision' => 'approved'])
+            ->assertSessionHasErrors('review_decision');
+    }
+
     public function test_intake_can_be_saved_reviewed_and_approved_before_engagement(): void
     {
         $role = Role::findOrCreate('Intake Manager');
         foreach ([
             'intakes.index', 'intakes.create', 'intakes.store', 'intakes.show',
-            'intakes.review',
+            'intakes.review', 'intakes.conflict-check',
             'clients.index', 'clients.show', 'clients.adr.create', 'clients.adr.store',
             'clients.files.create', 'clients.files.store', 'clients.adr.show',
             'clients.matters.create', 'clients.matters.store',
@@ -142,6 +217,7 @@ class ClientIntakeFlowTest extends TestCase
             'client_name' => 'Jane Client',
             'email' => 'jane@example.test',
             'phone' => '+256 700 000000',
+            'address' => 'Kampala, Uganda',
             'legal_issue' => 'Employment dispute',
             'practice_area_id' => $practiceArea->id,
             'urgency' => 'urgent',
@@ -150,7 +226,7 @@ class ClientIntakeFlowTest extends TestCase
             'referral_contact' => 'john.referrer@example.test',
             'summary' => 'Client needs advice on wrongful dismissal.',
             'conflict_parties' => [
-                ['name' => 'Acme Ltd', 'relationship' => 'Opponent', 'contact' => '+256 711 000000'],
+                ['name' => 'Acme Ltd', 'relationship' => 'Opponent', 'phone' => '+256 711 000000', 'email' => 'legal@acme.example', 'notes' => 'Former employer'],
             ],
         ]);
 
@@ -164,22 +240,47 @@ class ClientIntakeFlowTest extends TestCase
         $this->assertNull($intake->client_id);
         $this->assertSame('John Referrer', $intake->referral_name);
         $this->assertSame('john.referrer@example.test', $intake->referral_contact);
+        $this->assertSame('Kampala, Uganda', $intake->address);
         $this->assertCount(1, $intake->conflictParties);
-        $this->assertSame('+256 711 000000', $intake->conflictParties->first()->contact);
+        $this->assertSame('+256 711 000000', $intake->conflictParties->first()->phone);
+        $this->assertSame('legal@acme.example', $intake->conflictParties->first()->email);
+        $this->assertSame('Former employer', $intake->conflictParties->first()->notes);
 
         $this->actingAs($user)
             ->patch(route('intakes.review', $intake), [
                 'review_decision' => 'approved',
-                'review_notes' => 'No existing client or matter conflict found.',
+                'review_notes' => 'Ready to onboard.',
             ])
-            ->assertRedirect(route('clients.index', absolute: false))
+            ->assertSessionHasErrors('review_decision');
+
+        $this->assertNull($intake->fresh()->client_id);
+
+        $this->actingAs($user)
+            ->patch(route('intakes.conflict-check', $intake), [
+                'intake_id' => $intake->id,
+                'conflict_status' => 'cleared',
+                'conflict_check_notes' => 'Searched the client and named parties; no conflicting client or matter found.',
+            ])
+            ->assertRedirect(route('intakes.index', absolute: false));
+
+        $intake->refresh();
+        $this->assertSame('cleared', $intake->conflict_status);
+        $this->assertSame($user->id, $intake->conflict_checked_by);
+        $this->assertNotNull($intake->conflict_checked_at);
+
+        $this->actingAs($user)
+            ->patch(route('intakes.review', $intake), [
+                'review_decision' => 'approved',
+                'review_notes' => 'Approved after conflict clearance; proceed with engagement terms.',
+            ])
+            ->assertRedirect(route('intakes.index', absolute: false))
             ->assertSessionHas('status', 'Client intake approved. The client is now in the approved client register.');
 
         $intake->refresh();
 
         $this->assertSame('approved', $intake->status);
         $this->assertSame('approved', $intake->review_decision);
-        $this->assertSame('No existing client or matter conflict found.', $intake->review_notes);
+        $this->assertSame('Approved after conflict clearance; proceed with engagement terms.', $intake->review_notes);
         $this->assertNotNull($intake->client_id);
         $this->assertMatchesRegularExpression('/^CL\d{8}$/', $intake->client->client_no);
         $this->assertSame('Jane Client', $intake->client->name);
@@ -203,6 +304,8 @@ class ClientIntakeFlowTest extends TestCase
         $this->assertMatchesRegularExpression('/^ADR\d{8}$/', $adr->adr_no);
         $this->assertSame($conflictParty->id, $adr->intake_conflict_party_id);
         $this->assertSame('Acme Ltd', $adr->conflict_party_name);
+        $this->assertSame('+256 711 000000', $adr->conflict_party_phone);
+        $this->assertSame('legal@acme.example', $adr->conflict_party_email);
         $this->assertSame('court_required', $adr->response);
         $this->assertNull(Matter::first());
 

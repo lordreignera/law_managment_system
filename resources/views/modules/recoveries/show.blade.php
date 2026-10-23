@@ -12,6 +12,7 @@
     $netOutstanding = (float) $account->net_outstanding_balance;
     $totalDue = max($originalOutstanding, 1);
     $recoveryRate = min(100, round(($recovered / $totalDue) * 100));
+    $importedNotes = $account->importedNotes();
 @endphp
 
 @section('content')
@@ -44,6 +45,9 @@
                         {{ $account->assigned_to ? 'Change Officer' : 'Assign Officer' }}
                     </a>
                 @endcan
+                @can('recoveries.reviews.index')
+                    <a class="kfms-link-btn" href="{{ route('recoveries.reviews.index') }}">Pending Reviews</a>
+                @endcan
                 @can('recoveries.activities.store')
                     @if ($account->status === 'active' && ! $account->settled_externally_at)
                     <button class="kfms-btn" type="button" data-bs-toggle="modal" data-bs-target="#recovery-activity-modal-{{ $account->id }}">
@@ -58,7 +62,7 @@
                         Demand Notice
                     </a>
                 @endcan
-                <a class="kfms-link-btn" href="{{ route('recoveries.index') }}">
+                <a class="kfms-link-btn" href="{{ auth()->user()->can('recoveries.index') ? route('recoveries.index') : route('recoveries.mine') }}">
                     <i class="mdi mdi-arrow-left"></i>
                     Back
                 </a>
@@ -171,11 +175,25 @@
                     <div><dt>Arrears</dt><dd>{{ $currency }} {{ number_format((float) $account->arrears_amount, 2) }}</dd></div>
                     <div><dt>Collateral Held</dt><dd>{{ $account->collateral_held ?: '-' }}</dd></div>
                     <div><dt>Cause of Default</dt><dd>{{ $account->cause_of_default ?: '-' }}</dd></div>
+                    @if ($account->sourceReportedRecovery() > 0)
+                        <div><dt>Prior recovery in source file</dt><dd>{{ $currency }} {{ number_format($account->sourceReportedRecovery(), 2) }}</dd></div>
+                    @endif
                     <div><dt>Skip-trace Status</dt><dd>{{ $account->skipTraceStatusLabel() }}</dd></div>
                     <div><dt>Skip-trace Checked</dt><dd>{{ $account->skip_trace_checked_at?->format('d M Y, H:i') ?: '-' }}</dd></div>
                     <div><dt>Skip-trace Notes</dt><dd>{{ $account->skip_trace_notes ?: '-' }}</dd></div>
                 </dl>
             </div>
+
+            @if ($importedNotes)
+                <details class="kfms-detail-section kfms-recovery-source-notes">
+                    <summary>Imported follow-up notes ({{ count($importedNotes) }})</summary>
+                    <dl class="kfms-detail-list kfms-detail-list-bordered">
+                        @foreach ($importedNotes as $label => $note)
+                            <div><dt>{{ $label }}</dt><dd>{{ $note }}</dd></div>
+                        @endforeach
+                    </dl>
+                </details>
+            @endif
         </section>
 
     </div>
@@ -227,6 +245,7 @@
                         <th>When</th>
                         <th>Type</th>
                         <th>Response</th>
+                        <th>Review</th>
                         <th>Paid</th>
                         <th>Balance After</th>
                         <th>Receipt</th>
@@ -242,6 +261,22 @@
                             <td>{{ $activity->activity_at?->format('d M Y, H:i') }}</td>
                             <td>{{ $activity->typeLabel() }}</td>
                             <td>{{ $activity->outcomeLabel() }}</td>
+                            <td>
+                                {{ str($activity->review_status)->headline() }}
+                                @if ($activity->reviewed_at) <small>by {{ $activity->reviewer?->name ?: '-' }}</small> @endif
+                                @if ($activity->review_notes) <small>{{ $activity->review_notes }}</small> @endif
+                                @if ($activity->reversal_reason) <small>Reversed: {{ $activity->reversal_reason }}</small> @endif
+                                @can('recoveries.reviews.reverse')
+                                    @if ($activity->review_status === 'approved' && in_array($activity->response_outcome, ['paid', 'fully_repaid', 'write_off_requested'], true))
+                                        <details class="kfms-recovery-reject"><summary>Reverse approval</summary>
+                                            <form method="POST" action="{{ route('recoveries.reviews.reverse', $activity) }}">@csrf
+                                                <textarea name="reason" rows="2" minlength="5" maxlength="2000" placeholder="Reason for reversal" required></textarea>
+                                                <button class="kfms-link-btn" type="submit">Confirm reversal</button>
+                                            </form>
+                                        </details>
+                                    @endif
+                                @endcan
+                            </td>
                             <td>{{ $activity->amount_paid ? $currency.' '.number_format($activity->amount_paid, 2) : '-' }}</td>
                             <td>{{ $activity->outstanding_balance_after !== null ? $currency.' '.number_format($activity->outstanding_balance_after, 2) : '-' }}</td>
                             <td>
@@ -258,7 +293,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="10" class="kfms-empty">No follow-ups logged yet.</td>
+                            <td colspan="11" class="kfms-empty">No follow-ups logged yet.</td>
                         </tr>
                     @endforelse
                 </tbody>

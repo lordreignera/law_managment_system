@@ -1,0 +1,123 @@
+@php($inModal = $inModal ?? false)
+
+<form class="kfms-form" method="POST" action="{{ route('clients.files.store', $client) }}" enctype="multipart/form-data">
+    @csrf
+    @if ($inModal)
+        <input type="hidden" name="_client_profile_modal" value="file">
+    @endif
+    <input type="hidden" name="adr_resolution_id" value="{{ old('adr_resolution_id', $adr?->id) }}" data-client-adr-id>
+
+    <div class="kfms-form-grid">
+        <label>
+            <span>File Number</span>
+            <input type="text" value="{{ $fileNumber }}" readonly disabled>
+        </label>
+
+        <label data-client-adr-display @if (! $adr) hidden @endif>
+            <span>From ADR</span>
+            <input type="text" value="{{ $adr?->adr_no }}" readonly disabled data-client-adr-number>
+        </label>
+
+        <label>
+            <span>File Name</span>
+            <input type="text" name="file_name" value="{{ old('file_name', $adr?->title) }}" required data-client-file-name>
+            @error('file_name') <small>{{ $message }}</small> @enderror
+        </label>
+
+        <label>
+            <span>Link to Matter (optional)</span>
+            <select name="matter_id">
+                <option value="">Keep unlinked</option>
+                @foreach (($matters ?? collect()) as $matter)
+                    <option value="{{ $matter->id }}" @selected((string) old('matter_id') === (string) $matter->id)>{{ $matter->reference_no }} - {{ $matter->title }}</option>
+                @endforeach
+            </select>
+            <small>Choose the matter deliberately. New files are not automatically attached.</small>
+            @error('matter_id') <small>{{ $message }}</small> @enderror
+        </label>
+
+        <label>
+            <span>Billing Type</span>
+            <select name="billing_type_id" required>
+                <option value="">Select billing type</option>
+                @foreach ($billingTypes as $type)
+                    <option value="{{ $type->id }}" @selected((string) old('billing_type_id') === (string) $type->id)>{{ $type->name }}</option>
+                @endforeach
+            </select>
+            @error('billing_type_id') <small>{{ $message }}</small> @enderror
+        </label>
+
+        <label>
+            <span>Agreed Fee Amount</span>
+            <input type="number" step="0.01" min="0" name="agreed_fee_amount" value="{{ old('agreed_fee_amount') }}" required>
+            @error('agreed_fee_amount') <small>{{ $message }}</small> @enderror
+        </label>
+
+        <label>
+            <span>Engagement Letter Sent</span>
+            <input type="date" name="engagement_letter_sent_on" value="{{ old('engagement_letter_sent_on') }}">
+            @error('engagement_letter_sent_on') <small>{{ $message }}</small> @enderror
+        </label>
+
+        <label>
+            <span>Engagement Letter (upload)</span>
+            <input type="file" name="engagement_letter">
+            @error('engagement_letter') <small>{{ $message }}</small> @enderror
+        </label>
+
+        <label>
+            <span>Fee Agreement Sent</span>
+            <input type="date" name="fee_agreement_sent_on" value="{{ old('fee_agreement_sent_on') }}">
+            @error('fee_agreement_sent_on') <small>{{ $message }}</small> @enderror
+        </label>
+
+        <label>
+            <span>Fee Agreement (upload)</span>
+            <input type="file" name="fee_agreement">
+            @error('fee_agreement') <small>{{ $message }}</small> @enderror
+        </label>
+
+        <label>
+            <span>Client Accepted On</span>
+            <input type="date" name="client_accepted_on" value="{{ old('client_accepted_on') }}">
+            @error('client_accepted_on') <small>{{ $message }}</small> @enderror
+        </label>
+
+        <label class="kfms-check-row">
+            <input type="checkbox" name="retainer_required" value="1" @checked(old('retainer_required'))>
+            <span>Retainer Required</span>
+        </label>
+
+        <label>
+            <span>Retainer Amount</span>
+            <input type="number" step="0.01" min="0" name="retainer_amount" value="{{ old('retainer_amount') }}">
+            @error('retainer_amount') <small>{{ $message }}</small> @enderror
+        </label>
+
+        <label>
+            <span>Retainer Payment Mode</span>
+            <select name="retainer_payment_source">
+                <option value="">Select payment mode</option>
+                @foreach ($paymentSources as $value => $label)
+                    <option value="{{ $value }}" @selected(old('retainer_payment_source') === $value)>{{ $label }}</option>
+                @endforeach
+            </select>
+            @error('retainer_payment_source') <small>{{ $message }}</small> @enderror
+        </label>
+
+        <label class="kfms-span-2">
+            <span>File Notes</span>
+            <textarea name="notes" rows="4">{{ old('notes') }}</textarea>
+            @error('notes') <small>{{ $message }}</small> @enderror
+        </label>
+    </div>
+
+    <div class="kfms-form-actions">
+        @if ($inModal)
+            <button type="button" class="kfms-link-btn" data-bs-dismiss="modal">Cancel</button>
+        @else
+            <a class="kfms-link-btn" href="{{ route('clients.show', $client) }}">Cancel</a>
+        @endif
+        <button type="submit">Open File</button>
+    </div>
+</form>

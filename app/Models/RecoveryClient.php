@@ -33,6 +33,11 @@ class RecoveryClient extends Model
         return $this->hasMany(RecoveryImportBatch::class);
     }
 
+    public function importTemplates()
+    {
+        return $this->hasMany(RecoveryImportTemplate::class);
+    }
+
     public function portfolioOptions(): array
     {
         $types = $this->portfolio_types ?: [];

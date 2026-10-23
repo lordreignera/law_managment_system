@@ -58,8 +58,8 @@
                 <span>Litigation Stage</span>
                 <select name="litigation_stage">
                     <option value="">All Stages</option>
-                    <option value="opening" @selected(($filters['litigation_stage'] ?? '') === 'opening')>Instructions &amp; File Opening</option>
-                    <option value="review" @selected(($filters['litigation_stage'] ?? '') === 'review')>Review, Opinion &amp; Pleadings</option>
+                    <option value="opening" @selected(($filters['litigation_stage'] ?? '') === 'opening')>Matter Opening &amp; Planning</option>
+                    <option value="review" @selected(($filters['litigation_stage'] ?? '') === 'review')>Active Work &amp; Client Follow-up</option>
                 </select>
             </label>
             <div class="kfms-toolbar-actions">

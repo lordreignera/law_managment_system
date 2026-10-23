@@ -14,7 +14,7 @@
             @can('litigation.create')
                 <a class="kfms-btn" href="{{ route('litigation.create') }}">
                     <i class="mdi mdi-calendar-plus"></i>
-                    Schedule Event
+                    Schedule Court Event
                 </a>
             @endcan
             @can('litigation.index')
@@ -47,49 +47,54 @@
         <div class="kfms-panel-header">
             <div>
                 <h2>Litigation Lifecycle</h2>
-                <span>From retained-client instructions to judgment, taxation, execution, and closure</span>
+                <span>From opened litigation matters to judgment, taxation, execution, and closure</span>
             </div>
         </div>
 
-        <div class="kfms-litigation-actions">
-            @foreach ($lifecycle as $item)
-                <article class="kfms-litigation-step kfms-litigation-step-{{ $item['tone'] ?? 'navy' }}">
-                    <span class="kfms-litigation-step-icon">
-                        <i class="mdi {{ $item['icon'] ?? 'mdi-briefcase-outline' }}"></i>
-                    </span>
-                    <div class="kfms-litigation-step-main">
-                        <strong>{{ $item['stage'] }}</strong>
-                        <p>{{ $item['description'] }}</p>
-                    </div>
-                    <em>{{ number_format($item['count']) }}</em>
-                    <div class="kfms-litigation-step-actions">
-                        <a href="{{ $item['route'] }}">
-                            <i class="mdi mdi-arrow-right"></i>
-                            {{ $item['action'] ?? 'Open' }}
-                        </a>
-                        @isset($item['eventRoute'])
-                            @can('litigation.create')
-                                <a href="{{ $item['eventRoute'] }}">
-                                    <i class="mdi mdi-plus"></i>
-                                    {{ $item['eventAction'] ?? 'Add Event' }}
-                                </a>
-                            @endcan
-                        @endisset
-                        @isset($item['exportRoute'])
-                            @can('litigation.export')
-                                <a href="{{ $item['exportRoute'] }}">
-                                    <i class="mdi mdi-microsoft-excel"></i>
-                                    Export
-                                </a>
-                            @endcan
-                        @endisset
-                    </div>
-                </article>
+        <div class="kfms-litigation-actions" role="group" aria-label="Litigation lifecycle stages">
+            @foreach ($lifecycle as $index => $item)
+                @php($descriptionId = 'litigation-stage-description-' . $index)
+                <div class="kfms-litigation-stage-group kfms-litigation-step-{{ $item['tone'] ?? 'navy' }}">
+                    <a class="kfms-litigation-stage-button"
+                       href="{{ $item['route'] }}"
+                       title="{{ $item['action'] ?? 'Open' }}. {{ $item['description'] }}"
+                       aria-label="{{ $item['stage'] }}: {{ number_format($item['count']) }}. {{ $item['description'] }}"
+                       aria-describedby="{{ $descriptionId }}"
+                       data-tooltip="{{ $item['description'] }}">
+                        <i class="mdi {{ $item['icon'] ?? 'mdi-briefcase-outline' }}" aria-hidden="true"></i>
+                        <span>{{ $item['stage'] }}</span>
+                        <em>{{ number_format($item['count']) }}</em>
+                    </a>
+                    <span class="kfms-visually-hidden" id="{{ $descriptionId }}">{{ $item['description'] }}</span>
+
+                    @isset($item['eventRoute'])
+                        @can('litigation.create')
+                            <a class="kfms-litigation-stage-quick-action"
+                               href="{{ $item['eventRoute'] }}"
+                               title="{{ $item['eventAction'] ?? 'Add Event' }}"
+                               aria-label="{{ $item['eventAction'] ?? 'Add Event' }}"
+                               data-tooltip="{{ $item['eventAction'] ?? 'Add Event' }}">
+                                <i class="mdi mdi-plus" aria-hidden="true"></i>
+                            </a>
+                        @endcan
+                    @endisset
+                    @isset($item['exportRoute'])
+                        @can('litigation.export')
+                            <a class="kfms-litigation-stage-quick-action"
+                               href="{{ $item['exportRoute'] }}"
+                               title="Export {{ $item['stage'] }}"
+                               aria-label="Export {{ $item['stage'] }}"
+                               data-tooltip="Export {{ $item['stage'] }}">
+                                <i class="mdi mdi-microsoft-excel" aria-hidden="true"></i>
+                            </a>
+                        @endcan
+                    @endisset
+                </div>
             @endforeach
         </div>
     </section>
 
-    <div class="kfms-grid-two">
+    <div class="kfms-grid-two kfms-litigation-dashboard-grid">
         <section class="kfms-panel">
             <div class="kfms-panel-header">
                 <div>

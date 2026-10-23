@@ -10,16 +10,24 @@ use App\Models\RecoveryAccount;
 use App\Models\RecoveryActivity;
 use App\Models\RecoveryClient;
 use App\Models\RecoveryImportBatch;
+use App\Models\RecoveryImportTemplate;
 use App\Models\RecoverySkipTraceCheck;
 use App\Models\User;
 use App\Support\Recoveries\RecoveryPromiseReminderService;
+use App\Support\Recoveries\RecoveryPortfolioProfiles;
+use App\Support\Recoveries\RecoveryAccountIdentity;
 use App\Support\Recoveries\RecoveryReferenceData;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Maatwebsite\Excel\Facades\Excel;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class RecoveryController extends Controller
 {
@@ -201,10 +209,24 @@ class RecoveryController extends Controller
 
     public function importForm()
     {
+        $templates = RecoveryImportTemplate::with('client')->orderBy('recovery_client_id')->orderBy('portfolio_type')->get()
+            ->filter(fn (RecoveryImportTemplate $template) => $template->client?->is_active
+                && array_key_exists($template->portfolio_type, $template->client->portfolioOptions()))
+            ->values();
+
         return view('modules.recoveries.import', [
             'clients' => RecoveryClient::where('is_active', true)->orderBy('name')->get(),
+            'templates' => $templates,
+            'templateOptions' => $templates->map(fn (RecoveryImportTemplate $template) => [
+                'client_id' => $template->recovery_client_id,
+                'portfolio_type' => $template->portfolio_type,
+                'sheet_name' => $template->sheet_name,
+                'column_map' => $template->column_map,
+                'download_url' => route('recoveries.templates.download', $template),
+            ])->all(),
             'officers' => $this->recoveryOfficers(),
             'defaultPortfolioTypes' => [],
+            'templateFields' => RecoveryPortfolioProfiles::TEMPLATE_FIELDS,
         ]);
     }
 
@@ -213,34 +235,145 @@ class RecoveryController extends Controller
         $data = $request->validate([
             'recovery_client_id' => ['required', Rule::exists('recovery_clients', 'id')->where('is_active', true)],
             'portfolio_type' => ['required', 'string', 'max:100', Rule::in(array_keys(RecoveryClient::find($request->integer('recovery_client_id'))?->portfolioOptions() ?? []))],
-            'file' => ['required', 'file', 'mimes:xlsx,xls,csv', 'max:20480'],
-            'assigned_to' => ['nullable', 'exists:users,id'],
+            'file' => ['required', 'file', 'extensions:xlsx,xls,csv', 'max:20480'],
+            'assigned_to' => ['nullable', Rule::in(User::whereHas('roles', fn ($query) => $query->where('name', 'Recovery Officer'))->pluck('id')->all())],
             'match_collector' => ['nullable', 'boolean'],
             'notes' => ['nullable', 'string', 'max:1000'],
+            '_preview' => ['nullable', 'boolean'],
         ]);
 
-        $batch = RecoveryImportBatch::create([
-            'recovery_client_id' => $data['recovery_client_id'],
-            'uploaded_by' => $request->user()->id,
-            'source_file' => $request->file('file')->getClientOriginalName(),
-            'portfolio_type' => $data['portfolio_type'],
-            'status' => 'importing',
-            'notes' => $data['notes'] ?? null,
-        ]);
+        $fingerprint = hash_file('sha256', $request->file('file')->getRealPath());
+        $existingBatch = RecoveryImportBatch::where('recovery_client_id', $data['recovery_client_id'])
+            ->where('portfolio_type', $data['portfolio_type'])
+            ->where('source_sha256', $fingerprint)
+            ->first();
+        if ($existingBatch) {
+            if ($existingBatch->status === 'preview' && $this->batchVisibleTo($existingBatch, $request->user())) {
+                return redirect()->route('recoveries.batches.show', $existingBatch)
+                    ->with('status', 'This file already has a preview. Review it before importing.');
+            }
+            throw ValidationException::withMessages(['file' => 'This exact file has already been imported for the selected client and portfolio.']);
+        }
 
-        $import = new RecoveryAccountsImport(
-            $batch,
-            $request->user(),
-            $data['assigned_to'] ?? null,
-            $request->boolean('match_collector'),
+        $template = RecoveryImportTemplate::where('recovery_client_id', $data['recovery_client_id'])
+            ->where('portfolio_type', $data['portfolio_type'])->first();
+        [$sheetName, $sheetKey] = $this->selectedPortfolioSheet(
+            $request->file('file'), $template?->sheet_name ?: $data['portfolio_type']
         );
 
-        Excel::import($import, $request->file('file'));
+        $storedPath = $request->file('file')->store('recovery-imports', 'local');
+        $previewOnly = $request->boolean('_preview');
+
+        [$batch, $import] = DB::transaction(function () use ($data, $request, $sheetName, $sheetKey, $template, $fingerprint, $storedPath, $previewOnly) {
+            $batch = RecoveryImportBatch::create([
+                'recovery_client_id' => $data['recovery_client_id'],
+                'uploaded_by' => $request->user()->id,
+                'source_file' => $request->file('file')->getClientOriginalName(),
+                'source_path' => $storedPath,
+                'source_sha256' => $fingerprint,
+                'portfolio_type' => $data['portfolio_type'],
+                'sheet_name' => $sheetName,
+                'import_options' => [
+                    'assigned_to' => $data['assigned_to'] ?? null,
+                    'match_collector' => $request->boolean('match_collector'),
+                    'column_map' => $template?->column_map ?? [],
+                ],
+                'status' => $previewOnly ? 'preview' : 'importing',
+                'notes' => $data['notes'] ?? null,
+            ]);
+
+            $import = new RecoveryAccountsImport(
+                $batch,
+                $request->user(),
+                $data['assigned_to'] ?? null,
+                $request->boolean('match_collector'),
+                $sheetKey,
+                $template?->column_map ?? [],
+                $previewOnly,
+            );
+
+            try {
+                Excel::import($import, $request->file('file'));
+            } catch (ValidationException $exception) {
+                throw $exception;
+            } catch (\Throwable) {
+                throw ValidationException::withMessages([
+                    'file' => 'The selected worksheet could not be imported. Check the file format and column headings.',
+                ]);
+            }
+
+            return [$batch, $import];
+        });
 
         return redirect()
             ->route('recoveries.batches.show', $batch)
-            ->with('status', "Imported {$import->imported} recovery account(s); skipped {$import->skipped}.")
+            ->with('status', $previewOnly
+                ? "Preview ready: {$import->imported} new account(s), {$import->duplicates} possible duplicate(s). Confirm how to handle matches."
+                : "Imported {$import->imported} recovery account(s); updated {$import->updated}; skipped {$import->skipped}.")
             ->with('import_errors', $import->errors);
+    }
+
+    public function commitImport(Request $request, RecoveryImportBatch $batch)
+    {
+        abort_unless($this->batchVisibleTo($batch, $request->user()), 403);
+        abort_unless($batch->status === 'preview', 409);
+        $data = $request->validate(['duplicate_action' => ['required', 'in:skip,update']]);
+        abort_unless($batch->source_path && Storage::disk('local')->exists($batch->source_path), 422);
+
+        $options = $batch->import_options ?: [];
+        $sheet = $batch->sheet_name === 'CSV' ? 0 : $batch->sheet_name;
+
+        $import = DB::transaction(function () use ($batch, $request, $options, $sheet, $data) {
+            $locked = RecoveryImportBatch::whereKey($batch->id)->lockForUpdate()->firstOrFail();
+            abort_unless($locked->status === 'preview', 409);
+            $locked->update(['status' => 'importing']);
+
+            $import = new RecoveryAccountsImport(
+                $locked,
+                $request->user(),
+                $options['assigned_to'] ?? null,
+                (bool) ($options['match_collector'] ?? false),
+                $sheet,
+                $options['column_map'] ?? [],
+                false,
+                $data['duplicate_action'],
+            );
+            Excel::import($import, Storage::disk('local')->path($locked->source_path));
+
+            return $import;
+        });
+
+        return redirect()->route('recoveries.batches.show', $batch)
+            ->with('status', "Imported {$import->imported} new account(s); updated {$import->updated}; skipped {$import->skipped}.")
+            ->with('import_errors', $import->errors);
+    }
+
+    private function selectedPortfolioSheet(UploadedFile $file, string $sheetLabel): array
+    {
+        if (strtolower($file->getClientOriginalExtension()) === 'csv') {
+            return ['CSV', 0];
+        }
+
+        try {
+            $path = $file->getRealPath();
+            $sheets = IOFactory::createReaderForFile($path)->listWorksheetNames($path);
+        } catch (\Throwable) {
+            throw ValidationException::withMessages(['file' => 'The workbook could not be read. Upload a valid Excel or CSV file.']);
+        }
+
+        if (count($sheets) === 1) {
+            return [$sheets[0], $sheets[0]];
+        }
+
+        $sheet = RecoveryPortfolioProfiles::matchingSheet($sheetLabel, $sheets);
+
+        if (! $sheet) {
+            throw ValidationException::withMessages([
+                'file' => 'This workbook has multiple sheets but none matches the selected portfolio. Choose the correct portfolio or upload a single-sheet file.',
+            ]);
+        }
+
+        return [$sheet, $sheet];
     }
 
     public function storeClient(Request $request)
@@ -250,36 +383,68 @@ class RecoveryController extends Controller
             'contact_person' => ['nullable', 'string', 'max:191'],
             'email' => ['nullable', 'email', 'max:191'],
             'phone' => ['nullable', 'string', 'max:50'],
-            'portfolio_types' => ['nullable', 'string', 'max:3000'],
+            'portfolio_types' => ['required', 'string', 'max:3000'],
             'description' => ['nullable', 'string', 'max:1000'],
         ]);
 
         $data['portfolio_types'] = collect(preg_split('/\r\n|\r|\n/', (string) ($data['portfolio_types'] ?? '')))
             ->map(fn ($type) => trim($type))
             ->filter()
+            ->unique(fn ($type) => strtolower($type))
             ->values()
             ->all();
+        if (! $data['portfolio_types']) {
+            throw ValidationException::withMessages(['portfolio_types' => 'Enter at least one portfolio type.']);
+        }
+        if (collect($data['portfolio_types'])->contains(fn ($type) => mb_strlen($type) > 100)) {
+            throw ValidationException::withMessages(['portfolio_types' => 'Each portfolio name must be 100 characters or fewer.']);
+        }
         $data['is_active'] = true;
 
-        RecoveryClient::create($data);
+        $client = RecoveryClient::create($data);
+
+        if ($request->input('return_to') === 'import') {
+            return redirect()->route('recoveries.import', ['recovery_client_id' => $client->id])
+                ->with('status', 'Recovery client added. Choose a portfolio and set up its import template.');
+        }
 
         return back()->with('status', 'Recovery client added.');
     }
 
+    public function storeClientPortfolio(Request $request, RecoveryClient $client)
+    {
+        abort_unless($client->is_active, 404);
+        $data = $request->validate(['portfolio_type' => ['required', 'string', 'max:100']]);
+        $portfolio = trim($data['portfolio_type']);
+        if ($portfolio === '') {
+            throw ValidationException::withMessages(['portfolio_type' => 'Enter a portfolio name.']);
+        }
+        $existing = $client->portfolio_types ?: [];
+        if (collect($existing)->contains(fn ($type) => strcasecmp($type, $portfolio) === 0)) {
+            throw ValidationException::withMessages(['portfolio_type' => 'This portfolio is already configured for the client.']);
+        }
+
+        $client->update(['portfolio_types' => [...$existing, $portfolio]]);
+
+        return redirect()->route('recoveries.import', [
+            'recovery_client_id' => $client->id,
+            'portfolio_type' => $portfolio,
+        ])->with('status', 'Portfolio added. You can now create its import template.');
+    }
+
     public function batchShow(RecoveryImportBatch $batch)
     {
-        abort_unless($this->batchVisibleTo($batch, request()->user()), 403);
+        $user = request()->user();
+        abort_unless($this->batchVisibleTo($batch, $user), 403);
 
         $batch->load(['client', 'uploader'])
-            ->loadCount('accounts')
-            ->loadCount(['accounts as assigned_accounts_count' => fn (Builder $query) => $query->whereNotNull('assigned_to')]);
+            ->loadCount(['accounts' => fn (Builder $query) => $query->forBranchOf($user)])
+            ->loadCount(['accounts as assigned_accounts_count' => fn (Builder $query) => $query->forBranchOf($user)->whereNotNull('assigned_to')]);
 
         return view('modules.recoveries.batch', [
             'batch' => $batch,
-            'accounts' => $batch->accounts()->with(['assignee'])->latest()->paginate(15),
+            'accounts' => $batch->accounts()->forBranchOf($user)->with(['assignee'])->latest()->paginate(15),
             'officers' => $this->recoveryOfficers(),
-            'hasAssignments' => $batch->assigned_accounts_count > 0,
-            'isFullyAssigned' => $batch->accounts_count > 0 && $batch->assigned_accounts_count >= $batch->accounts_count,
         ]);
     }
 
@@ -289,27 +454,45 @@ class RecoveryController extends Controller
 
         $data = $request->validate([
             'assigned_to' => ['required', Rule::in(User::whereHas('roles', fn ($query) => $query->where('name', 'Recovery Officer'))->pluck('id')->all())],
-            'scope' => ['required', 'in:unassigned,all'],
+            'scope' => ['required', 'in:selected,unassigned,all'],
+            'account_ids' => ['required_if:scope,selected', 'array', 'min:1'],
+            'account_ids.*' => ['integer', 'distinct'],
         ]);
 
         $officer = User::findOrFail($data['assigned_to']);
-        $query = $batch->accounts();
+        $query = $batch->accounts()->forBranchOf($request->user());
 
         if ($data['scope'] === 'unassigned') {
             $query->whereNull('assigned_to');
+        } elseif ($data['scope'] === 'selected') {
+            $ids = $data['account_ids'];
+            abort_unless((clone $query)->whereIn('id', $ids)->count() === count($ids), 403);
+            $query->whereIn('id', $ids);
         }
 
-        $updated = $query->update([
-            'assigned_to' => $officer->id,
-            'assigned_by' => $request->user()->id,
-            'assigned_at' => now(),
-            'branch_id' => $officer->branch_id,
-        ]);
+        $updated = DB::transaction(function () use ($query, $officer, $request, $batch) {
+            $updated = 0;
 
-        $batch->update([
-            'assigned_count' => $batch->accounts()->whereNotNull('assigned_to')->count(),
-            'status' => 'assigned',
-        ]);
+            $query->chunkById(200, function ($accounts) use ($officer, $request, &$updated) {
+                foreach ($accounts as $account) {
+                    $account->update([
+                        'assigned_to' => $officer->id,
+                        'assigned_by' => $request->user()->id,
+                        'assigned_at' => now(),
+                        'branch_id' => $officer->branch_id,
+                    ]);
+                    $updated++;
+                }
+            });
+
+            $assignedCount = $batch->accounts()->whereNotNull('assigned_to')->count();
+            $batch->update([
+                'assigned_count' => $assignedCount,
+                'status' => $assignedCount > 0 ? 'assigned' : 'imported',
+            ]);
+
+            return $updated;
+        });
 
         return back()->with('status', "{$updated} recovery account(s) assigned to {$officer->name}.");
     }
@@ -325,6 +508,13 @@ class RecoveryController extends Controller
     public function store(Request $request)
     {
         $data = $this->validateAccount($request);
+        $identity = RecoveryAccountIdentity::fromData($data);
+        if (RecoveryAccountIdentity::existing((int) $data['recovery_client_id'], (string) ($data['portfolio_type'] ?? ''), $data)) {
+            throw ValidationException::withMessages(['account_number' => 'This recovery account already exists for the selected client and portfolio.']);
+        }
+        $data['identity_key'] = $identity['key'];
+        $data['identity_source'] = $identity['source'];
+        $data['identity_portfolio'] = (string) ($data['portfolio_type'] ?? '');
 
         $data = $this->applyAssignment($data, $request);
 
@@ -337,10 +527,10 @@ class RecoveryController extends Controller
 
     public function show(Request $request, RecoveryAccount $recovery)
     {
-        abort_unless(RecoveryAccount::forBranchOf($request->user())->whereKey($recovery->id)->exists(), 403);
+        abort_unless($this->accountVisibleTo($recovery, $request->user()), 403);
 
         return view('modules.recoveries.show', [
-            'account' => $recovery->load(['client', 'branch', 'assignee', 'assigner', 'importBatch', 'activities.user', 'activities.attachments', 'activities.promiseReminderLogs', 'promiseReminderLogs', 'skipTraceChecks.checker']),
+            'account' => $recovery->load(['client', 'branch', 'assignee', 'assigner', 'importBatch', 'activities.user', 'activities.reviewer', 'activities.attachments', 'activities.promiseReminderLogs', 'promiseReminderLogs', 'skipTraceChecks.checker']),
             'activityTypes' => RecoveryActivity::TYPES,
             'canManage' => $request->user()->can('recoveries.update'),
         ]);
@@ -375,6 +565,15 @@ class RecoveryController extends Controller
         abort_unless(RecoveryAccount::forBranchOf($request->user())->whereKey($recovery->id)->exists(), 403);
         $data = $this->validateAccount($request, false, $recovery);
 
+        $identity = RecoveryAccountIdentity::fromData($data);
+        $duplicate = RecoveryAccountIdentity::existing((int) $data['recovery_client_id'], (string) ($data['portfolio_type'] ?? ''), $data);
+        if ($duplicate && $duplicate->id !== $recovery->id) {
+            throw ValidationException::withMessages(['account_number' => 'This recovery account already exists for the selected client and portfolio.']);
+        }
+        $data['identity_key'] = $identity['key'];
+        $data['identity_source'] = $identity['source'];
+        $data['identity_portfolio'] = (string) ($data['portfolio_type'] ?? '');
+
         $recovery->update($data);
 
         return redirect()
@@ -403,6 +602,7 @@ class RecoveryController extends Controller
     public function destroy(RecoveryAccount $recovery)
     {
         abort_unless(RecoveryAccount::forBranchOf(request()->user())->whereKey($recovery->id)->exists(), 403);
+        abort_if($recovery->activities()->whereIn('response_outcome', ['paid', 'fully_repaid', 'write_off_requested'])->exists(), 422, 'Accounts with financial or closure records cannot be deleted.');
 
         $recovery->delete();
 
@@ -413,7 +613,7 @@ class RecoveryController extends Controller
 
     public function storeSkipTrace(Request $request, RecoveryAccount $recovery)
     {
-        abort_unless(RecoveryAccount::forBranchOf($request->user())->whereKey($recovery->id)->exists(), 403);
+        abort_unless($this->accountVisibleTo($recovery, $request->user()), 403);
 
         $data = $request->validate([
             'provider' => ['required', 'in:manual,nin,nssf,crb,whatsapp'],
@@ -459,6 +659,17 @@ class RecoveryController extends Controller
             ->get(['id', 'name', 'branch_id']);
     }
 
+    private function accountVisibleTo(RecoveryAccount $account, User $user): bool
+    {
+        $query = RecoveryAccount::forBranchOf($user)->whereKey($account->id);
+
+        if ($user->hasRole('Recovery Officer') && ! $user->can('recoveries.index')) {
+            $query->where('assigned_to', $user->id);
+        }
+
+        return $query->exists();
+    }
+
     private function mineReportFilters(Request $request): array
     {
         $grain = in_array($request->string('report_grain')->toString(), ['daily', 'weekly', 'monthly'], true)
@@ -491,6 +702,7 @@ class RecoveryController extends Controller
 
         return RecoveryActivity::query()
             ->where('user_id', $user->id)
+            ->where('review_status', 'approved')
             ->where('amount_paid', '>', 0)
             ->whereBetween('activity_at', [$dateFrom, $dateTo])
             ->whereHas('account', function (Builder $query) use ($filters) {
@@ -504,6 +716,7 @@ class RecoveryController extends Controller
     {
         $base = RecoveryActivity::query()
             ->where('user_id', $user->id)
+            ->where('review_status', 'approved')
             ->where('amount_paid', '>', 0);
         $now = now();
 
@@ -624,11 +837,16 @@ class RecoveryController extends Controller
 
     private function validateAccount(Request $request, bool $includeAssignment = true, ?RecoveryAccount $existing = null): array
     {
+        $expectedStatus = $existing?->status ?? 'active';
+        if ($request->has('status') && $request->input('status') !== $expectedStatus) {
+            throw ValidationException::withMessages(['status' => 'Use the reviewed payment or closure workflow to change account status.']);
+        }
         $request->merge([
             'pipeline_stage' => $request->input('pipeline_stage', $existing?->pipeline_stage ?: 'new'),
             'priority' => $request->input('priority', $existing?->priority ?: 'normal'),
             'skip_trace_status' => $request->input('skip_trace_status', $existing?->skip_trace_status ?: 'not_started'),
-            'sms_opt_in' => $request->has('sms_opt_in') ? $request->boolean('sms_opt_in') : ($existing?->sms_opt_in ?? true),
+            'sms_opt_in' => $request->has('sms_opt_in') ? $request->boolean('sms_opt_in') : ($existing?->sms_opt_in ?? false),
+            'status' => $expectedStatus,
         ]);
 
         $rules = [
@@ -675,12 +893,23 @@ class RecoveryController extends Controller
 
         $data = $request->validate($rules);
 
+        if (in_array($data['pipeline_stage'], ['closed', 'recovered'], true)
+            && $data['pipeline_stage'] !== $existing?->pipeline_stage) {
+            throw ValidationException::withMessages(['pipeline_stage' => 'Closure and recovery stages are set by an approved decision.']);
+        }
+        if ($existing && $existing->activities()->where('review_status', 'approved')->where('response_outcome', 'paid')->exists()
+            && ((float) ($data['outstanding_amount'] ?? 0) !== (float) $existing->outstanding_amount
+                || ($data['currency'] ?? 'UGX') !== $existing->currency)) {
+            throw ValidationException::withMessages(['outstanding_amount' => 'The opening balance and currency cannot be edited after an approved payment. Use the correction workflow.']);
+        }
+
         return RecoveryReferenceData::validate($data, RecoveryClient::findOrFail($data['recovery_client_id']));
     }
 
     private function batchVisibleTo(RecoveryImportBatch $batch, User $user): bool
     {
         return $user->canSeeAllBranches()
+            || $batch->uploaded_by === $user->id
             || $batch->accounts()->forBranchOf($user)->exists();
     }
 

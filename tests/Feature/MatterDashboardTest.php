@@ -120,6 +120,91 @@ class MatterDashboardTest extends TestCase
         $this->assertDatabaseHas('matter_assignments', ['matter_id' => $matter->id, 'user_id' => $user->id, 'assignment_role' => 'associate', 'is_lead' => false]);
     }
 
+    public function test_matter_must_be_closed_with_a_date_before_it_can_be_archived(): void
+    {
+        $user = $this->activeUser(['matters.update'], 'Matter Closer');
+        $practiceArea = PracticeArea::create(['name' => 'Closure Practice', 'is_active' => true]);
+        $client = Client::create(['client_no' => 'CL-CLOSE', 'name' => 'Closure Client']);
+        $matter = Matter::create([
+            'client_id' => $client->id,
+            'practice_area_id' => $practiceArea->id,
+            'reference_no' => 'MT-CLOSE-001',
+            'title' => 'Matter to close',
+            'status' => 'active',
+            'opened_on' => now()->subDays(30)->toDateString(),
+            'privacy_status' => 'public',
+            'description' => 'Complete the assigned legal work.',
+        ]);
+        $matter->assignments()->create([
+            'user_id' => $user->id,
+            'assignment_role' => 'partner',
+            'assigned_on' => now()->toDateString(),
+            'is_lead' => true,
+        ]);
+        $payload = [
+            'title' => $matter->title,
+            'practice_area_id' => $practiceArea->id,
+            'opened_on' => $matter->opened_on->toDateString(),
+            'privacy_status' => 'public',
+            'description' => $matter->description,
+            'partner_ids' => [$user->id],
+        ];
+
+        $this->actingAs($user)->put(route('matters.update', $matter), $payload + ['status' => 'closed'])
+            ->assertSessionHasErrors('closed_on');
+        $this->put(route('matters.update', $matter), $payload + ['status' => 'archived', 'closed_on' => today()->toDateString()])
+            ->assertSessionHasErrors('status');
+
+        $this->put(route('matters.update', $matter), $payload + ['status' => 'closed', 'closed_on' => today()->toDateString()])
+            ->assertRedirect(route('matters.show', $matter));
+        $this->assertSame('closed', $matter->fresh()->status);
+        $this->assertSame(today()->toDateString(), $matter->fresh()->closed_on->toDateString());
+
+        $this->put(route('matters.update', $matter), $payload + ['status' => 'archived', 'closed_on' => today()->toDateString()])
+            ->assertRedirect(route('matters.show', $matter));
+        $this->assertSame('archived', $matter->fresh()->status);
+        $this->assertSame(today()->toDateString(), $matter->fresh()->closed_on->toDateString());
+    }
+
+    public function test_matter_creation_rejects_prospects_and_inactive_clients(): void
+    {
+        $user = $this->activeUser(['matters.create', 'matters.store'], 'Matter Creator');
+        $practiceArea = PracticeArea::create(['name' => 'Approved Instructions', 'is_active' => true]);
+        $prospect = Client::create([
+            'client_no' => 'CL-PROSPECT-MATTER',
+            'name' => 'Unapproved Prospect',
+            'status' => 'active',
+            'is_prospect' => true,
+        ]);
+        $inactiveClient = Client::create([
+            'client_no' => 'CL-INACTIVE-MATTER',
+            'name' => 'Inactive Client',
+            'status' => 'inactive',
+            'is_prospect' => false,
+        ]);
+
+        $this->actingAs($user)->get(route('matters.create'))
+            ->assertOk()
+            ->assertDontSee($prospect->name)
+            ->assertDontSee($inactiveClient->name);
+
+        $payload = [
+            'title' => 'Attempted new matter',
+            'practice_area_id' => $practiceArea->id,
+            'opened_on' => today()->toDateString(),
+            'privacy_status' => 'public',
+            'description' => 'This should not open before client approval.',
+            'partner_ids' => [$user->id],
+        ];
+
+        $this->post(route('matters.store'), $payload + ['client_id' => $prospect->id])
+            ->assertSessionHasErrors('client_id');
+        $this->post(route('matters.store'), $payload + ['client_id' => $inactiveClient->id])
+            ->assertSessionHasErrors('client_id');
+
+        $this->assertDatabaseCount('matters', 0);
+    }
+
     public function test_matter_register_workspace_instructions_and_billing_screens_render(): void
     {
         $user = $this->activeUser([
@@ -153,8 +238,15 @@ class MatterDashboardTest extends TestCase
             ->assertSee('Select all associates')
             ->assertSee('Search partners')
             ->assertSee('Search associates')
-            ->assertSee('Select files to link')
-            ->assertSee('Search files to link')
+            ->assertSee('Select existing files')
+            ->assertSee('Search existing client files to link')
+            ->assertSee('Upload Documents')
+            ->assertSee('name="documents[]"', false)
+            ->assertSee('Initial Matter Status')
+            ->assertSee('A matter is opened after the client intake and instruction are approved.')
+            ->assertSee('Open')
+            ->assertDontSee('name="status"', false)
+            ->assertDontSee('Date Closed')
             ->assertSee($user->name)
             ->assertSee('Advocate')
             ->assertSee('data-check-dropdown', false);

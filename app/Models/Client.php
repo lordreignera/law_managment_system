@@ -3,13 +3,17 @@
 namespace App\Models;
 
 use App\Models\Concerns\BranchScoped;
+use App\Models\Concerns\Auditable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Client extends Model
 {
     use BranchScoped;
+    use Auditable;
     use HasFactory;
+    use SoftDeletes;
 
     protected $guarded = [];
 

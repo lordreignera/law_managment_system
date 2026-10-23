@@ -27,8 +27,13 @@ return new class extends Migration
             $table->foreignId('recovery_client_id')->constrained()->cascadeOnDelete();
             $table->foreignId('uploaded_by')->nullable()->constrained('users')->nullOnDelete();
             $table->string('source_file')->nullable();
-            $table->string('portfolio_type')->nullable();
+            $table->string('source_path')->nullable();
+            $table->char('source_sha256', 64)->nullable();
+            $table->string('portfolio_type', 100)->nullable();
             $table->string('sheet_name')->nullable();
+            $table->json('import_options')->nullable();
+            $table->json('preview_rows')->nullable();
+            $table->json('preview_counts')->nullable();
             $table->unsignedInteger('total_rows')->default(0);
             $table->unsignedInteger('imported_rows')->default(0);
             $table->unsignedInteger('skipped_rows')->default(0);
@@ -38,6 +43,7 @@ return new class extends Migration
             $table->string('status')->default('imported');
             $table->text('notes')->nullable();
             $table->timestamps();
+            $table->unique(['recovery_client_id', 'portfolio_type', 'source_sha256'], 'recovery_batch_source_unique');
         });
 
         Schema::create('recovery_accounts', function (Blueprint $table) {
@@ -52,6 +58,9 @@ return new class extends Migration
             $table->unsignedInteger('import_row_number')->nullable();
             $table->string('account_number')->nullable()->index();
             $table->string('customer_number')->nullable()->index();
+            $table->char('identity_key', 64)->nullable();
+            $table->string('identity_source', 20)->nullable();
+            $table->string('identity_portfolio', 100)->default('');
             $table->string('debtor_name');
             $table->string('phone')->nullable();
             $table->string('alternate_phone')->nullable();
@@ -81,7 +90,7 @@ return new class extends Migration
             $table->string('skip_trace_status')->default('not_started')->index();
             $table->dateTime('skip_trace_checked_at')->nullable();
             $table->text('skip_trace_notes')->nullable();
-            $table->boolean('sms_opt_in')->default(true);
+            $table->boolean('sms_opt_in')->default(false);
             $table->text('collateral_held')->nullable();
             $table->text('cause_of_default')->nullable();
             $table->string('status')->default('active');
@@ -89,6 +98,7 @@ return new class extends Migration
             $table->timestamp('settled_externally_at')->nullable();
             $table->timestamps();
             $table->softDeletes();
+            $table->unique(['recovery_client_id', 'identity_portfolio', 'identity_key'], 'recovery_account_identity_unique');
         });
 
         Schema::create('recovery_activities', function (Blueprint $table) {
@@ -103,6 +113,13 @@ return new class extends Migration
             $table->dateTime('next_follow_up_at')->nullable()->index();
             $table->decimal('amount_paid', 18, 2)->nullable();
             $table->decimal('outstanding_balance_after', 18, 2)->nullable();
+            $table->string('review_status')->default('approved');
+            $table->foreignId('reviewed_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->timestamp('reviewed_at')->nullable();
+            $table->text('review_notes')->nullable();
+            $table->foreignId('reversed_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->timestamp('reversed_at')->nullable();
+            $table->text('reversal_reason')->nullable();
             $table->text('notes');
             $table->timestamps();
         });

@@ -33,6 +33,7 @@ return new class extends Migration
             $table->text('address')->nullable();
             $table->string('status')->default('active');
             $table->timestamps();
+            $table->softDeletes();
         });
 
         Schema::create('client_contacts', function (Blueprint $table) {
