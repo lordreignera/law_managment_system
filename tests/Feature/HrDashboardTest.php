@@ -178,7 +178,8 @@ class HrDashboardTest extends TestCase
         Notification::assertSentTo($staff, StaffAccountApproved::class, function (StaffAccountApproved $notification) use ($staff) {
             $mail = $notification->toMail($staff)->toArray();
 
-            $this->assertContains('Temporary password: password123', $mail['introLines']);
+            $this->assertNotContains('Temporary password: password123', $mail['introLines']);
+            $this->assertStringContainsString('passwords are never sent by email', implode(' ', $mail['introLines']));
 
             return true;
         });
@@ -256,7 +257,8 @@ class HrDashboardTest extends TestCase
         Notification::assertSentTo($staff, StaffAccountApproved::class, function (StaffAccountApproved $notification) use ($staff) {
             $mail = $notification->toMail($staff)->toArray();
 
-            $this->assertContains('Temporary password: password123', $mail['introLines']);
+            $this->assertNotContains('Temporary password: password123', $mail['introLines']);
+            $this->assertStringContainsString('passwords are never sent by email', implode(' ', $mail['introLines']));
 
             return true;
         });

@@ -22,7 +22,7 @@ class EnsureStaffIsActive
 
         $status = $user->staffProfile()->value('employment_status');
 
-        if ($status === null || $status === 'active') {
+        if ($status === 'active') {
             return $next($request);
         }
 

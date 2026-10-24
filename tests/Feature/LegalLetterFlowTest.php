@@ -154,6 +154,7 @@ class LegalLetterFlowTest extends TestCase
         $otherDepartment = Department::create(['name' => 'Finance', 'code' => 'FIN']);
         $creator = $this->staffUser();
         $reviewer = User::factory()->create(['department_id' => $otherDepartment->id]);
+        StaffProfile::create(['user_id' => $reviewer->id, 'employment_status' => 'active']);
         $outsider = $this->staffUser();
         $managerRole = Role::findOrCreate('Department Manager');
 

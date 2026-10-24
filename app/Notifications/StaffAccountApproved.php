@@ -23,6 +23,12 @@ class StaffAccountApproved extends TemplateNotification
 
     protected function additionalMailLines(): array
     {
-        return $this->temporaryPassword ? ['Temporary password: '.$this->temporaryPassword, 'Please change this password after signing in.'] : [];
+        if ($this->temporaryPassword) {
+            return ['Temporary password: '.$this->temporaryPassword, 'Please change this password after signing in.'];
+        }
+
+        return $this->createdByAdmin
+            ? ['For your security, passwords are never sent by email. Use Forgot password on the sign-in page if you need to set or reset your password.']
+            : [];
     }
 }

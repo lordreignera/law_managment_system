@@ -398,7 +398,14 @@
                     }
 
                     const files = Array.from(fileInput.files || []);
-                    fileList.innerHTML = files.map((file) => `<span><i class="mdi mdi-file-outline"></i>${file.name}</span>`).join('');
+                    fileList.replaceChildren(...files.map((file) => {
+                        const item = document.createElement('span');
+                        const icon = document.createElement('i');
+                        icon.className = 'mdi mdi-file-outline';
+                        item.append(icon, document.createTextNode(file.name));
+
+                        return item;
+                    }));
                 };
 
                 const addRecordedFile = (blob) => {

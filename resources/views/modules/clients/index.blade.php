@@ -314,7 +314,11 @@
                         previewBody.innerHTML = await response.text();
                         previewTitle.textContent = 'Client details';
                     } catch (error) {
-                        previewBody.innerHTML = '<div class="kfms-alert" role="alert">' + error.message + '</div>';
+                        const alert = document.createElement('div');
+                        alert.className = 'kfms-alert';
+                        alert.setAttribute('role', 'alert');
+                        alert.textContent = error instanceof Error ? error.message : 'Could not load this client. Please try again.';
+                        previewBody.replaceChildren(alert);
                         previewTitle.textContent = 'Client details';
                     }
                 });

@@ -68,17 +68,17 @@ class RegistrationTest extends TestCase
 
         $this->assertGuest();
         $response->assertRedirect(route('login', absolute: false));
-        $response->assertSessionHas('status', 'Your access request has been submitted. Please wait for an administrator to review and approve your account.');
+        $response->assertSessionHas('status', 'Your access request has been submitted. Verify your email, then wait for an administrator to approve your account.');
 
         $user = User::where('email', 'new-user@example.com')->firstOrFail()->load(['roles', 'staffProfile']);
 
         $this->assertFalse($user->hasRole($role->name));
-        $this->assertTrue($user->hasVerifiedEmail());
+        $this->assertFalse($user->hasVerifiedEmail());
         $this->assertSame('pending', $user->staffProfile->employment_status);
         $this->assertSame($role->name, $user->staffProfile->requested_role);
         $this->assertMatchesRegularExpression('/^ST-KA-\d{5}$/', $user->staffProfile->staff_no);
 
-        Notification::assertNotSentTo($user, VerifyEmail::class);
+        Notification::assertSentTo($user, VerifyEmail::class);
 
         $this->post('/login', [
             'email' => 'new-user@example.com',

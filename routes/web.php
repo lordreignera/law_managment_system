@@ -81,8 +81,8 @@ Route::post('/email/verification/switch-account', [EmailVerificationController::
 
 Route::middleware('guest')->group(function () {
     Route::get('/client-portal/register', [ClientPortalAuthController::class, 'create'])->name('client.register');
-    Route::get('/client-portal/lookup', [ClientPortalAuthController::class, 'lookup'])->middleware('throttle:60,1')->name('client.lookup');
-    Route::post('/client-portal/register', [ClientPortalAuthController::class, 'store'])->name('client.register.store');
+    Route::get('/client-portal/lookup', [ClientPortalAuthController::class, 'lookup'])->middleware('throttle:client-lookup')->name('client.lookup');
+    Route::post('/client-portal/register', [ClientPortalAuthController::class, 'store'])->middleware('throttle:client-registration')->name('client.register.store');
 });
 
 Route::middleware([

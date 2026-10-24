@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -202,9 +203,6 @@ class AccessControlController extends Controller
                     throw ValidationException::withMessages(['user_ids' => $user->name.' needs review: the department must belong to the selected branch.']);
                 }
                 $user->forceFill(['branch_id' => $data['branch_id'], 'department_id' => $data['department_id']])->save();
-                if (! $user->hasVerifiedEmail()) {
-                    $user->markEmailAsVerified();
-                }
                 $user->syncRoles([$data['requested_role']]);
                 $profile->fill($data + ['employment_status' => 'active'])->save();
                 AuditLog::recordFor($user, 'access_approved', ['employment_status' => 'pending'], $data + ['employment_status' => 'active']);
@@ -232,7 +230,7 @@ class AccessControlController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:191'],
             'email' => ['required', 'email', 'max:191', Rule::unique('users', 'email')->ignore($user->id)],
-            'password' => ['nullable', 'string', 'min:8', 'confirmed'],
+            'password' => ['nullable', 'string', Password::defaults(), 'confirmed'],
             'roles' => ['nullable', 'array'],
             'roles.*' => ['exists:roles,name'],
             'direct_permissions' => ['nullable', 'array'],

@@ -189,7 +189,8 @@ class AccessControlFlowTest extends TestCase
         Notification::assertSentTo($created, StaffAccountApproved::class, function (StaffAccountApproved $notification) use ($created) {
             $mail = $notification->toMail($created)->toArray();
 
-            $this->assertContains('Temporary password: temporary123', $mail['introLines']);
+            $this->assertNotContains('Temporary password: temporary123', $mail['introLines']);
+            $this->assertStringContainsString('passwords are never sent by email', implode(' ', $mail['introLines']));
 
             return true;
         });

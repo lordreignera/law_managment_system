@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\View;
+use Illuminate\Validation\Rules\Password;
 use Livewire\Livewire;
 use Illuminate\Support\ServiceProvider;
 use Spatie\Permission\Models\Role;
@@ -45,6 +46,9 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Schema::defaultStringLength(191);
+        Password::defaults(fn () => app()->environment('production')
+            ? Password::min(12)->mixedCase()->numbers()->symbols()
+            : Password::min(8));
         Livewire::component('profile.update-profile-information-form', UpdateProfileInformationForm::class);
 
         // Super Admin role bypasses every authorization check (including the

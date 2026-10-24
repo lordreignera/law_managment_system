@@ -20,7 +20,7 @@ class RegisterResponse implements RegisterResponseContract
 
         return redirect()
             ->route('login')
-            ->with('status', 'Your access request has been submitted. Please wait for an administrator to review and approve your account.');
+            ->with('status', 'Your access request has been submitted. Verify your email, then wait for an administrator to approve your account.');
     }
 
     private function logoutRegisteredUser(Request $request): void

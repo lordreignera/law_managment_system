@@ -11,6 +11,7 @@ use App\Support\ReferenceData;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 use Spatie\Permission\Models\Role;
 
 class StaffController extends Controller
@@ -90,7 +91,7 @@ class StaffController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:191'],
             'email' => ['required', 'email', 'max:191', 'unique:users,email'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'password' => ['required', 'string', Password::defaults(), 'confirmed'],
             'phone' => ['required', 'string', 'max:60'],
             'job_title' => ['required', 'string', 'max:191', ReferenceData::jobTitleRule()],
             'branch_id' => ['required', 'exists:branches,id'],
@@ -129,7 +130,10 @@ class StaffController extends Controller
             'requested_role' => $data['role'],
         ]);
 
-        $staff->notify(new StaffAccountApproved($data['role'], $data['password'], true));
+        // Never send a password over email. The administrator can provide the
+        // initial credential through the firm's approved onboarding channel;
+        // the user can then rotate it through the normal password flow.
+        $staff->notify(new StaffAccountApproved($data['role'], null, true));
 
         $redirectRoute = $request->routeIs('access.users.store') ? 'access.users.index' : 'staff.show';
 
@@ -182,7 +186,7 @@ class StaffController extends Controller
             'manager_id' => ['nullable', 'exists:users,id'],
             'joined_on' => ['nullable', 'date'],
             'employment_status' => ['required', Rule::in(array_keys($this->statuses()))],
-            'password' => ['nullable', 'string', 'min:8', 'confirmed'],
+            'password' => ['nullable', 'string', Password::defaults(), 'confirmed'],
             'role' => [
                 'nullable',
                 'string',

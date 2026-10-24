@@ -82,7 +82,7 @@ class BulkStaffApprovalTest extends TestCase
             $this->assertTrue($user->hasRole($user->staffProfile->requested_role));
             $this->assertSame($user->staffProfile->branch_id, $user->branch_id);
             $this->assertSame($user->staffProfile->department_id, $user->department_id);
-            $this->assertTrue($user->hasVerifiedEmail());
+            $this->assertFalse($user->hasVerifiedEmail());
             Notification::assertSentToTimes($user, StaffAccountApproved::class, 1);
         }
         $this->assertSame('pending', $other->fresh()->staffProfile->employment_status);

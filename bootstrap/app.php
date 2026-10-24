@@ -5,6 +5,7 @@ use App\Http\Middleware\EnsureClientPortalAccount;
 use App\Http\Middleware\EnsureRoutePermission;
 use App\Http\Middleware\EnsureStaffIsActive;
 use App\Http\Middleware\PreventBrowserCaching;
+use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -24,6 +25,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        $middleware->append(SecurityHeaders::class);
         $middleware->web(prepend: [PreventBrowserCaching::class]);
         $middleware->alias([
             'active.staff' => EnsureStaffIsActive::class,
