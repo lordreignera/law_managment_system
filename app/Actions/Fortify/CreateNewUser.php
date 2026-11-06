@@ -26,9 +26,15 @@ class CreateNewUser implements CreatesNewUsers
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'phone' => ['required', 'string', 'max:60'],
+            'date_of_birth' => ['nullable', 'date', 'before_or_equal:today'],
             'job_title' => ['required', 'string', 'max:191', ReferenceData::jobTitleRule()],
-            'branch_id' => ['required', 'exists:branches,id'],
-            'department_id' => ['required', 'exists:departments,id'],
+            'branch_id' => ['required', Rule::exists('branches', 'id')->where('is_active', true)],
+            'department_id' => [
+                'required',
+                Rule::exists('departments', 'id')->where(fn ($query) => $query
+                    ->where('branch_id', (int) ($input['branch_id'] ?? 0))
+                    ->where('is_active', true)),
+            ],
             'requested_role' => [
                 'required',
                 'string',
@@ -51,6 +57,7 @@ class CreateNewUser implements CreatesNewUsers
             'department_id' => $input['department_id'],
             'job_title' => $input['job_title'],
             'phone' => $input['phone'],
+            'date_of_birth' => $input['date_of_birth'] ?? null,
             'employment_status' => 'pending',
             'requested_role' => $input['requested_role'],
         ]);

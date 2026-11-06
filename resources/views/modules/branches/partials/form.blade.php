@@ -19,9 +19,13 @@
         @error('city') <small>{{ $message }}</small> @enderror
     </label>
 
-    <label class="kfms-checkbox">
-        <input type="checkbox" name="is_active" value="1" @checked(old('is_active', $branch?->is_active ?? true))>
-        <span>Active</span>
+    <label class="kfms-switch-field">
+        <span>Branch status</span>
+        <span class="kfms-switch-control">
+            <input type="checkbox" name="is_active" value="1" @checked(old('is_active', $branch?->is_active ?? true))>
+            <span class="kfms-switch" aria-hidden="true"></span>
+            <strong>Active</strong>
+        </span>
     </label>
 
     <label class="kfms-span-2">

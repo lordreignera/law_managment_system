@@ -96,6 +96,12 @@
                     </label>
 
                     <label>
+                        <span>Date of Birth <small>(Optional)</small></span>
+                        <input type="date" name="date_of_birth" value="{{ old('date_of_birth') }}" max="{{ now()->toDateString() }}">
+                        @error('date_of_birth')<small>{{ $message }}</small>@enderror
+                    </label>
+
+                    <label>
                         <span>Job Title *</span>
                         <x-job-title-select />
                         @error('job_title')<small>{{ $message }}</small>@enderror
@@ -125,7 +131,7 @@
 
                     <label>
                         <span>Branch *</span>
-                        <select name="branch_id" required>
+                        <select name="branch_id" id="staff-create-branch" data-department-filter="staff-create-department" required>
                             <option value="">Select branch</option>
                             @foreach ($branches as $branch)
                                 <option value="{{ $branch->id }}" @selected((string) old('branch_id') === (string) $branch->id)>{{ $branch->name }}</option>
@@ -136,10 +142,10 @@
 
                     <label>
                         <span>Department *</span>
-                        <select name="department_id" required>
+                        <select name="department_id" id="staff-create-department" required>
                             <option value="">Select department</option>
                             @foreach ($departments as $department)
-                                <option value="{{ $department->id }}" @selected((string) old('department_id') === (string) $department->id)>{{ $department->name }}</option>
+                                <option value="{{ $department->id }}" data-branch-id="{{ $department->branch_id }}" @selected((string) old('department_id') === (string) $department->id)>{{ $department->name }}</option>
                             @endforeach
                         </select>
                         @error('department_id')<small>{{ $message }}</small>@enderror

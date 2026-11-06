@@ -72,7 +72,7 @@ Route::post('/client-portal/login', [ClientPortalAuthController::class, 'authent
 // Open tabs can refresh the CSRF token for the session that is currently
 // active. This route does not extend authentication or replay any request.
 Route::get('/session/status', [SessionController::class, 'status'])
-    ->middleware('throttle:120,1')
+    ->middleware(['throttle:120,1', 'session.idle'])
     ->name('session.status');
 
 Route::post('/email/verification/switch-account', [EmailVerificationController::class, 'switchAccount'])
@@ -89,6 +89,7 @@ Route::middleware([
     'auth:sanctum',
     config('jetstream.auth_session'),
     'verified',
+    'session.idle',
 ])->group(function () {
     Route::get('/profile-media/users/{user}/photo', [ProfileMediaController::class, 'photo'])
         ->name('profile-media.photo');
@@ -441,6 +442,14 @@ Route::middleware([
             Route::get('/approvals', [AccessControlController::class, 'approvals'])->name('approvals.index');
             Route::get('/approvals/{profile}', [AccessControlController::class, 'showApproval'])->name('approvals.show');
             Route::get('/roles', [AccessControlController::class, 'roles'])->name('roles.index');
+            Route::get('/roles/{role}/permissions', [AccessControlController::class, 'manageRolePermissions'])
+                ->withoutMiddleware('route.permission')
+                ->middleware('permission:access.roles.update')
+                ->name('roles.permissions.edit');
+            Route::put('/roles/{role}/permissions', [AccessControlController::class, 'updateRolePermissions'])
+                ->withoutMiddleware('route.permission')
+                ->middleware('permission:access.roles.update')
+                ->name('roles.permissions.update');
             Route::post('/roles', [AccessControlController::class, 'storeRole'])->name('roles.store');
             Route::put('/roles/{role}', [AccessControlController::class, 'updateRole'])->name('roles.update');
             Route::delete('/roles/{role}', [AccessControlController::class, 'destroyRole'])->name('roles.destroy');
@@ -470,8 +479,26 @@ Route::middleware([
         Route::get('/settings/branches', [BranchController::class, 'index'])->name('branches.index');
         Route::get('/settings/branches/create', [BranchController::class, 'create'])->name('branches.create');
         Route::post('/settings/branches', [BranchController::class, 'store'])->name('branches.store');
-        Route::get('/settings/branches/{branch}/edit', [BranchController::class, 'edit'])->name('branches.edit');
-        Route::put('/settings/branches/{branch}', [BranchController::class, 'update'])->name('branches.update');
+        Route::get('/settings/branches/{branch}/departments/create', [BranchController::class, 'createDepartment'])
+            ->withoutMiddleware('route.permission')->middleware('permission:branches.update')->name('departments.create');
+        Route::post('/settings/branches/{branch}/departments', [BranchController::class, 'storeDepartment'])
+            ->withoutMiddleware('route.permission')->middleware('permission:branches.update')->name('departments.store');
+        Route::get('/settings/branches/{branch}/departments/{department}', [BranchController::class, 'showDepartment'])
+            ->withoutMiddleware('route.permission')->middleware('permission:branches.index')->name('departments.show');
+        Route::get('/settings/branches/{branch}/departments/{department}/edit', [BranchController::class, 'editDepartment'])
+            ->withoutMiddleware('route.permission')->middleware('permission:branches.update')->name('departments.edit');
+        Route::put('/settings/branches/{branch}/departments/{department}', [BranchController::class, 'updateDepartment'])
+            ->withoutMiddleware('route.permission')->middleware('permission:branches.update')->name('departments.update');
+        Route::delete('/settings/branches/{branch}/departments/{department}', [BranchController::class, 'destroyDepartment'])
+            ->withoutMiddleware('route.permission')->middleware('permission:branches.update')->name('departments.destroy');
+        Route::get('/settings/branches/{branch}', [BranchController::class, 'show'])
+            ->withoutMiddleware('route.permission')->middleware('permission:branches.index')->name('branches.show');
+        Route::get('/settings/branches/{branch}/edit', [BranchController::class, 'edit'])
+            ->withoutMiddleware('route.permission')->middleware('permission:branches.update')->name('branches.edit');
+        Route::put('/settings/branches/{branch}', [BranchController::class, 'update'])
+            ->withoutMiddleware('route.permission')->middleware('permission:branches.update')->name('branches.update');
+        Route::delete('/settings/branches/{branch}', [BranchController::class, 'destroy'])
+            ->withoutMiddleware('route.permission')->middleware('permission:branches.update')->name('branches.destroy');
 
         // Public holidays
         Route::get('/settings/holidays', [PublicHolidayController::class, 'index'])->name('holidays.index');

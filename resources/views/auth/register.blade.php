@@ -116,29 +116,37 @@
                             </div>
                         </label>
 
-                        <label class="kca-field" for="department_id">
-                            <span>Department <b>*</b></span>
-                            <div>
-                                <i class="mdi mdi-domain"></i>
-                                <select id="department_id" name="department_id" required>
-                                    <option value="">Select department</option>
-                                    @foreach ($departments as $department)
-                                        <option value="{{ $department->id }}" @selected((string) old('department_id') === (string) $department->id)>{{ $department->name }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                        </label>
-
                         <label class="kca-field" for="branch_id">
                             <span>Branch / Office <b>*</b></span>
                             <div>
                                 <i class="mdi mdi-map-marker-outline"></i>
-                                <select id="branch_id" name="branch_id" required>
+                                <select id="branch_id" name="branch_id" required data-registration-branch>
                                     <option value="">Select branch or office</option>
                                     @foreach ($branches as $branch)
                                         <option value="{{ $branch->id }}" @selected((string) old('branch_id') === (string) $branch->id)>{{ $branch->name }}</option>
                                     @endforeach
                                 </select>
+                            </div>
+                        </label>
+
+                        <label class="kca-field" for="department_id">
+                            <span>Department <b>*</b></span>
+                            <div>
+                                <i class="mdi mdi-domain"></i>
+                                <select id="department_id" name="department_id" required disabled data-registration-department>
+                                    <option value="">Select department</option>
+                                    @foreach ($departments as $department)
+                                        <option value="{{ $department->id }}" data-branch-id="{{ $department->branch_id }}" @selected((string) old('department_id') === (string) $department->id)>{{ $department->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </label>
+
+                        <label class="kca-field" for="date_of_birth">
+                            <span>Date of Birth <small>(Optional)</small></span>
+                            <div>
+                                <i class="mdi mdi-cake-variant-outline"></i>
+                                <input id="date_of_birth" type="date" name="date_of_birth" value="{{ old('date_of_birth') }}" max="{{ now()->toDateString() }}">
                             </div>
                         </label>
 

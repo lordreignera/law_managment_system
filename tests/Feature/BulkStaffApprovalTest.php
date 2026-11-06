@@ -153,6 +153,72 @@ class BulkStaffApprovalTest extends TestCase
         Notification::assertNothingSent();
     }
 
+    public function test_super_admin_can_approve_a_pending_user_from_another_branch(): void
+    {
+        $superAdminRole = Role::findOrCreate('Super Admin');
+        $superAdmin = User::factory()->create(['branch_id' => $this->branch->id]);
+        $superAdmin->assignRole($superAdminRole);
+        StaffProfile::create([
+            'user_id' => $superAdmin->id,
+            'employment_status' => 'active',
+            'branch_id' => $this->branch->id,
+            'department_id' => $this->department->id,
+        ]);
+
+        $mbale = Branch::create(['name' => 'Mbale']);
+        $mbaleDepartment = Department::create([
+            'name' => 'Mbale Finance',
+            'branch_id' => $mbale->id,
+            'is_active' => true,
+        ]);
+        $pending = $this->pending([
+            'branch_id' => $mbale->id,
+            'department_id' => $mbaleDepartment->id,
+        ]);
+
+        $this->actingAs($superAdmin)
+            ->get(route('access.approvals.index'))
+            ->assertOk()
+            ->assertSee($pending->name)
+            ->assertSee('value="'.$pending->id.'"', false)
+            ->assertDontSee('value="'.$pending->id.'" disabled', false);
+
+        $this->actingAs($superAdmin)
+            ->patch(route('access.users.bulk-approve'), ['user_ids' => [$pending->id]])
+            ->assertRedirect(route('access.approvals.index', absolute: false))
+            ->assertSessionHas('status', '1 user approved.');
+
+        $this->assertSame('active', $pending->fresh()->staffProfile->employment_status);
+        $this->assertSame($mbale->id, $pending->fresh()->branch_id);
+        $this->assertSame($mbaleDepartment->id, $pending->fresh()->department_id);
+    }
+
+    public function test_super_admin_cannot_approve_a_branch_with_another_branch_department(): void
+    {
+        $superAdminRole = Role::findOrCreate('Super Admin');
+        $superAdmin = User::factory()->create(['branch_id' => $this->branch->id]);
+        $superAdmin->assignRole($superAdminRole);
+        StaffProfile::create([
+            'user_id' => $superAdmin->id,
+            'employment_status' => 'active',
+            'branch_id' => $this->branch->id,
+            'department_id' => $this->department->id,
+        ]);
+
+        $mbale = Branch::create(['name' => 'Mbale']);
+        $pending = $this->pending([
+            'branch_id' => $mbale->id,
+            'department_id' => $this->department->id,
+        ]);
+
+        $this->actingAs($superAdmin)
+            ->patch(route('access.users.bulk-approve'), ['user_ids' => [$pending->id]])
+            ->assertSessionHasErrors('user_ids');
+
+        $this->assertSame('pending', $pending->fresh()->staffProfile->employment_status);
+        Notification::assertNothingSent();
+    }
+
     public function test_notification_delivery_failure_does_not_undo_an_approved_account(): void
     {
         $user = $this->pending();

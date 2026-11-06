@@ -2118,6 +2118,48 @@ body.kfms-template {
     border-color: #f0b4b4;
 }
 
+.kfms-role-permission-cell {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.kfms-role-permission-cell button {
+    align-items: center;
+    display: inline-flex;
+    gap: 4px;
+}
+
+.kfms-access-count {
+    background: #fff8ef;
+    border: 1px solid #f1c38c;
+    border-radius: 4px;
+    color: #8a4b00;
+    display: inline-flex;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1;
+    padding: 5px 8px;
+    white-space: nowrap;
+}
+
+.kfms-access-count.is-users {
+    background: #eef6ff;
+    border-color: #c9e2f6;
+    color: #12395c;
+}
+
+.kfms-manage-permissions-action {
+    color: #8a4b00 !important;
+}
+
+.kfms-manage-permissions-action:hover {
+    background: #fff8ef !important;
+    border-color: #f1c38c !important;
+    color: #8a4b00 !important;
+}
+
 .kfms-status {
     border: 1px solid #cfd8e3;
     border-radius: 999px;
@@ -3761,6 +3803,287 @@ body.kfms-template {
     max-width: min(640px, calc(100vw - 32px));
 }
 
+.kfms-role-view-modal-dialog {
+    max-width: min(920px, calc(100vw - 32px));
+}
+
+.kfms-role-view-modal-dialog .modal-body {
+    padding: 20px;
+}
+
+.kfms-access-role-summary {
+    background: #f8fbfe;
+    border: 1px solid #dfe7ef;
+    border-radius: 8px;
+    display: grid;
+    gap: 12px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-bottom: 20px;
+    padding: 14px;
+}
+
+.kfms-access-role-summary > div {
+    border-right: 1px solid #dfe7ef;
+    padding: 2px 14px;
+}
+
+.kfms-access-role-summary > div:last-child {
+    border-right: 0;
+}
+
+.kfms-access-role-summary strong {
+    color: #071426;
+    display: block;
+    font-size: 20px;
+    line-height: 1.2;
+}
+
+.kfms-role-permission-view {
+    max-height: 500px;
+}
+
+.kfms-role-permission-view .kfms-permission-options {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.kfms-readonly-permission {
+    align-items: flex-start;
+    display: flex;
+    gap: 8px;
+    min-width: 0;
+    padding: 3px 0;
+}
+
+.kfms-readonly-permission > i {
+    color: #167348;
+    flex: 0 0 auto;
+    font-size: 16px;
+    line-height: 1.2;
+}
+
+.kfms-readonly-permission span {
+    color: #1f2937;
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    font-size: 12.5px;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+}
+
+.kfms-role-empty-state {
+    border: 1px solid #dfe7ef;
+    border-radius: 8px;
+    padding: 24px;
+}
+
+.kfms-role-permission-manager {
+    max-width: 1180px;
+}
+
+.kfms-role-permission-summary {
+    background: #f8fbfe;
+    border: 1px solid #dfe7ef;
+    border-radius: 8px;
+    display: grid;
+    gap: 12px;
+    grid-template-columns: 1.5fr 1fr 1fr;
+    margin-bottom: 18px;
+    padding: 14px;
+}
+
+.kfms-role-permission-summary > div {
+    border-right: 1px solid #dfe7ef;
+    padding: 2px 14px;
+}
+
+.kfms-role-permission-summary > div:last-child {
+    border-right: 0;
+}
+
+.kfms-role-permission-summary strong {
+    color: #071426;
+    display: block;
+    font-size: 16px;
+    line-height: 1.25;
+}
+
+.kfms-permission-manager-toolbar {
+    align-items: center;
+    background: #fff;
+    border: 1px solid #dfe7ef;
+    border-radius: 8px;
+    display: flex;
+    gap: 14px;
+    justify-content: space-between;
+    margin-bottom: 14px;
+    padding: 12px;
+}
+
+.kfms-permission-manager-toolbar .kfms-search-box {
+    flex: 1 1 360px;
+}
+
+.kfms-role-permission-groups {
+    background: #fbfdff;
+    border: 1px solid #dfe7ef;
+    border-radius: 8px;
+    display: grid;
+    gap: 8px;
+    max-height: 620px;
+    overflow-y: auto;
+    padding: 10px;
+}
+
+.kfms-role-permission-group {
+    background: #fff;
+    border: 1px solid #dfe7ef;
+    border-radius: 7px;
+}
+
+.kfms-role-permission-group > summary {
+    align-items: center;
+    color: #071426;
+    cursor: pointer;
+    display: flex;
+    gap: 12px;
+    justify-content: space-between;
+    list-style: none;
+    padding: 12px 14px;
+    user-select: none;
+}
+
+.kfms-role-permission-group > summary::-webkit-details-marker {
+    display: none;
+}
+
+.kfms-role-permission-group > summary::before {
+    color: #41516a;
+    content: "\F0142";
+    font-family: "Material Design Icons";
+    font-size: 17px;
+    transition: transform 0.15s ease;
+}
+
+.kfms-role-permission-group[open] > summary::before {
+    transform: rotate(90deg);
+}
+
+.kfms-role-permission-group-heading {
+    align-items: baseline;
+    display: flex;
+    flex: 1 1 auto;
+    gap: 8px;
+    min-width: 0;
+}
+
+.kfms-role-permission-group-heading strong {
+    font-size: 13px;
+}
+
+.kfms-role-permission-group-heading small,
+.kfms-role-permission-group-status {
+    color: #6b7280;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.kfms-role-permission-group-status {
+    background: #eef6ff;
+    border: 1px solid #c9e2f6;
+    border-radius: 4px;
+    color: #12395c;
+    padding: 4px 7px;
+    white-space: nowrap;
+}
+
+.kfms-role-permission-group-body {
+    border-top: 1px solid #eef1f5;
+}
+
+.kfms-role-permission-group-toolbar {
+    align-items: center;
+    display: flex;
+    gap: 12px;
+    padding: 10px 14px 6px;
+}
+
+.kfms-role-permission-group-toolbar button {
+    background: transparent;
+    border: 0;
+    color: #41516a;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 0;
+}
+
+.kfms-role-permission-group-toolbar button:hover {
+    color: #071426;
+    text-decoration: underline;
+}
+
+.kfms-role-permission-options {
+    display: grid;
+    gap: 4px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: 6px 14px 14px;
+}
+
+.kfms-role-permission-option {
+    align-items: center;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    gap: 9px;
+    min-width: 0;
+    padding: 7px 8px;
+}
+
+.kfms-role-permission-option:hover {
+    background: #f8fbfe;
+    border-color: #dfe7ef;
+}
+
+.kfms-role-permission-option input {
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+    position: absolute;
+    width: 1px;
+}
+
+.kfms-role-permission-check {
+    align-items: center;
+    background: #fff;
+    border: 1px solid #bfd0df;
+    border-radius: 4px;
+    color: transparent;
+    display: inline-flex;
+    flex: 0 0 20px;
+    height: 20px;
+    justify-content: center;
+    width: 20px;
+}
+
+.kfms-role-permission-option input:checked + .kfms-role-permission-check {
+    background: #071426;
+    border-color: #071426;
+    color: #fff;
+}
+
+.kfms-role-permission-name {
+    color: #1f2937;
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    font-size: 12px;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+}
+
+.kfms-role-permission-no-results {
+    color: #6b7280;
+    font-size: 12px;
+    padding: 6px 14px 14px;
+}
+
 .kfms-modal .kfms-form-grid {
     background: #fff;
     border: 0;
@@ -3913,6 +4236,39 @@ body.kfms-template {
     font-size: .92rem;
     font-weight: 700;
     overflow-wrap: anywhere;
+}
+
+.kfms-branch-summary {
+    align-items: stretch;
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    margin-bottom: 24px;
+    overflow: hidden;
+}
+
+.kfms-branch-summary > div {
+    min-width: 0;
+    padding: 12px 16px;
+}
+
+.kfms-branch-summary > div + div {
+    border-left: 1px solid #e5e7eb;
+}
+
+.kfms-branch-summary .kfms-card-label {
+    margin-bottom: 4px;
+}
+
+.kfms-branch-summary strong {
+    color: #111827;
+    display: block;
+    font-size: .92rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .kfms-dot-separator::before {
@@ -5147,6 +5503,19 @@ body.kfms-template {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
+    .kfms-branch-summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .kfms-branch-summary > div:nth-child(3) {
+        border-left: 0;
+        border-top: 1px solid #e5e7eb;
+    }
+
+    .kfms-branch-summary > div:nth-child(4) {
+        border-top: 1px solid #e5e7eb;
+    }
+
     .kfms-recovery-summary,
     .kfms-recovery-layout {
         grid-template-columns: 1fr;
@@ -5169,6 +5538,17 @@ body.kfms-template {
 
     .kfms-detail-grid {
         grid-template-columns: 1fr;
+    }
+
+    .kfms-branch-summary {
+        grid-template-columns: 1fr;
+    }
+
+    .kfms-branch-summary > div + div,
+    .kfms-branch-summary > div:nth-child(3),
+    .kfms-branch-summary > div:nth-child(4) {
+        border-left: 0;
+        border-top: 1px solid #e5e7eb;
     }
 
     .kfms-detail-list,
@@ -5969,6 +6349,62 @@ body.kfms-no-scroll {
 
     .kfms-panel-header h2 {
         font-size: 15px;
+    }
+
+    .kfms-access-role-summary {
+        grid-template-columns: 1fr;
+    }
+
+    .kfms-access-role-summary > div {
+        border-bottom: 1px solid #dfe7ef;
+        border-right: 0;
+        padding: 4px 0 12px;
+    }
+
+    .kfms-access-role-summary > div:last-child {
+        border-bottom: 0;
+        padding-bottom: 4px;
+    }
+
+    .kfms-role-permission-view .kfms-permission-options {
+        grid-template-columns: 1fr;
+    }
+
+    .kfms-role-permission-summary {
+        grid-template-columns: 1fr;
+    }
+
+    .kfms-role-permission-summary > div {
+        border-bottom: 1px solid #dfe7ef;
+        border-right: 0;
+        padding: 4px 0 12px;
+    }
+
+    .kfms-role-permission-summary > div:last-child {
+        border-bottom: 0;
+        padding-bottom: 4px;
+    }
+
+    .kfms-permission-manager-toolbar {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .kfms-permission-manager-toolbar .kfms-toolbar-actions {
+        justify-content: flex-start;
+    }
+
+    .kfms-role-permission-options {
+        grid-template-columns: 1fr;
+    }
+
+    .kfms-role-permission-group > summary {
+        align-items: flex-start;
+        flex-wrap: wrap;
+    }
+
+    .kfms-role-permission-group-status {
+        margin-left: 29px;
     }
 }
 
@@ -9717,4 +10153,213 @@ a.kfms-bar-row:hover > span {
 
 .kfms-recovery-template-optional .kfms-form-grid {
     margin-top: 1rem;
+}
+
+/* Compact branch and department management controls. */
+.kfms-table-subtext {
+    color: #64748b;
+    display: block;
+    font-size: 11px;
+    margin-top: 3px;
+}
+
+.kfms-count-pill {
+    align-items: center;
+    background: #f1f6fb;
+    border: 1px solid #d5e2ef;
+    border-radius: 999px;
+    color: #244665;
+    display: inline-flex;
+    font-size: 12px;
+    font-weight: 800;
+    justify-content: center;
+    min-width: 30px;
+    padding: 4px 8px;
+}
+
+.kfms-branch-form-modal .modal-dialog,
+.kfms-department-form-modal .modal-dialog {
+    max-width: min(680px, calc(100vw - 32px));
+}
+
+.kfms-branch-view-modal .modal-dialog {
+    max-width: min(1040px, calc(100vw - 32px));
+}
+
+.kfms-branch-summary-modal {
+    margin-bottom: 22px;
+}
+
+.kfms-modal-section-heading {
+    align-items: center;
+    display: flex;
+    gap: 14px;
+    justify-content: space-between;
+    margin: 4px 0 12px;
+}
+
+.kfms-modal-section-heading h3 {
+    color: #111827;
+    font-size: 15px;
+    margin: 0;
+}
+
+.kfms-modal-section-heading span {
+    color: #64748b;
+    display: block;
+    font-size: 12px;
+    margin-top: 3px;
+}
+
+.kfms-branch-modal-details {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 9px;
+    display: grid;
+    gap: 12px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    padding: 14px;
+}
+
+.kfms-branch-modal-details span,
+.kfms-modal-description > span {
+    color: #64748b;
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+}
+
+.kfms-branch-modal-details strong {
+    color: #0f2742;
+    font-size: 14px;
+}
+
+.kfms-modal-description {
+    border-top: 1px solid #e2e8f0;
+    margin-top: 18px;
+    padding-top: 16px;
+}
+
+.kfms-modal-description p,
+.kfms-confirm-message {
+    color: #475569;
+    font-size: 13px;
+    line-height: 1.55;
+    margin: 0;
+}
+
+.kfms-confirm-modal .modal-dialog {
+    max-width: min(470px, calc(100vw - 32px));
+}
+
+.kfms-confirm-icon {
+    align-items: center;
+    background: #fff8e6;
+    border: 1px solid #f4d58d;
+    border-radius: 50%;
+    color: #8a5a00;
+    display: flex;
+    font-size: 24px;
+    height: 48px;
+    justify-content: center;
+    margin: 0 auto 14px;
+    width: 48px;
+}
+
+.kfms-confirm-message {
+    text-align: center;
+}
+
+.kfms-btn-danger {
+    background: #a51d2d;
+    border-color: #a51d2d;
+    color: #fff;
+}
+
+.kfms-btn-danger:hover,
+.kfms-btn-danger:focus-visible {
+    background: #861b28;
+    border-color: #861b28;
+    color: #fff;
+}
+
+.kfms-switch-field {
+    align-content: start;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 10px 12px;
+}
+
+.kfms-switch-control {
+    align-items: center;
+    display: inline-flex;
+    gap: 8px;
+}
+
+.kfms-switch-control input {
+    height: 1px !important;
+    margin: -1px !important;
+    opacity: 0;
+    overflow: hidden;
+    position: absolute;
+    width: 1px !important;
+}
+
+.kfms-switch {
+    background: #cbd5e1;
+    border: 1px solid #b6c3d1;
+    border-radius: 999px;
+    cursor: pointer;
+    display: inline-block;
+    height: 20px;
+    position: relative;
+    transition: background .15s ease, border-color .15s ease;
+    width: 36px;
+}
+
+.kfms-switch::after {
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, .25);
+    content: '';
+    height: 14px;
+    left: 2px;
+    position: absolute;
+    top: 2px;
+    transition: transform .15s ease;
+    width: 14px;
+}
+
+.kfms-switch-control input:checked + .kfms-switch {
+    background: #167c62;
+    border-color: #167c62;
+}
+
+.kfms-switch-control input:checked + .kfms-switch::after {
+    transform: translateX(16px);
+}
+
+.kfms-switch-control input:focus-visible + .kfms-switch {
+    outline: 2px solid rgba(7, 134, 216, .35);
+    outline-offset: 2px;
+}
+
+.kfms-switch-control strong {
+    color: #334155;
+    font-size: 12px;
+}
+
+@media (max-width: 575px) {
+    .kfms-modal-section-heading,
+    .kfms-panel-header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .kfms-branch-modal-details {
+        grid-template-columns: 1fr;
+    }
 }

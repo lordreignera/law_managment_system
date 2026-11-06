@@ -196,6 +196,40 @@ class AccessControlFlowTest extends TestCase
         });
     }
 
+    public function test_staff_creation_rejects_a_department_from_another_branch(): void
+    {
+        $accessRole = Role::findOrCreate('Access Manager');
+        $accessRole->givePermissionTo([
+            Permission::findOrCreate('access.users.index'),
+            Permission::findOrCreate('access.users.create'),
+            Permission::findOrCreate('access.users.store'),
+        ]);
+        $newUserRole = Role::findOrCreate('Accountant');
+        $kampala = Branch::create(['name' => 'Kampala', 'code' => 'KLA']);
+        $mbale = Branch::create(['name' => 'Mbale', 'code' => 'MBL']);
+        $mbaleDepartment = Department::create(['name' => 'Mbale Finance', 'code' => 'MB-FIN', 'branch_id' => $mbale->id]);
+
+        $admin = User::factory()->create();
+        $admin->assignRole($accessRole);
+        StaffProfile::create(['user_id' => $admin->id, 'employment_status' => 'active']);
+
+        $this->actingAs($admin)
+            ->post(route('access.users.store'), [
+                'name' => 'Wrong Branch User',
+                'email' => 'wrong-branch-user@example.com',
+                'password' => 'temporary123',
+                'password_confirmation' => 'temporary123',
+                'phone' => '+256 700 999999',
+                'job_title' => 'Accountant',
+                'branch_id' => $kampala->id,
+                'department_id' => $mbaleDepartment->id,
+                'role' => $newUserRole->name,
+            ])
+            ->assertSessionHasErrors('department_id');
+
+        $this->assertDatabaseMissing('users', ['email' => 'wrong-branch-user@example.com']);
+    }
+
     public function test_access_manager_can_edit_user_identity_password_roles_and_direct_permissions(): void
     {
         $accessRole = Role::findOrCreate('Access Manager');
@@ -261,5 +295,66 @@ class AccessControlFlowTest extends TestCase
         $this->assertTrue($updated->hasDirectPermission($directPermissionA->name));
         $this->assertTrue($updated->hasDirectPermission($directPermissionB->name));
         $this->assertSame('active', $updated->staffProfile?->employment_status);
+    }
+
+    public function test_roles_page_can_view_all_role_permissions_in_a_grouped_modal(): void
+    {
+        $accessRole = Role::findOrCreate('Access Manager');
+        $accessRole->givePermissionTo([
+            Permission::findOrCreate('access.users.index'),
+            Permission::findOrCreate('access.roles.index'),
+            Permission::findOrCreate('access.roles.update'),
+        ]);
+
+        $admin = User::factory()->create();
+        $admin->assignRole($accessRole);
+        StaffProfile::create([
+            'user_id' => $admin->id,
+            'employment_status' => 'active',
+        ]);
+
+        $role = Role::findOrCreate('Full Accountant');
+        $permissionNames = [
+            'attendance.check-in',
+            'attendance.check-out',
+            'calendar.create',
+            'calendar.destroy',
+            'finance.dashboard',
+            'finance.index',
+            'reports.index',
+        ];
+        $role->syncPermissions(collect($permissionNames)->map(fn ($name) => Permission::findOrCreate($name)));
+
+        $this
+            ->actingAs($admin)
+            ->get(route('access.roles.index'))
+            ->assertOk()
+            ->assertSee('View')
+            ->assertSee(route('access.roles.permissions.edit', $role, absolute: false), false)
+            ->assertSee('view-role-'.$role->id, false)
+            ->assertSee('Permissions by module')
+            ->assertSee('reports.index')
+            ->assertSee('finance.index')
+            ->assertSee('<strong>7</strong>', false);
+
+        $this
+            ->actingAs($admin)
+            ->get(route('access.roles.permissions.edit', $role))
+            ->assertOk()
+            ->assertSee('Manage permissions')
+            ->assertSee('Search permissions')
+            ->assertSee('Select all visible')
+            ->assertSee('data-group-select="all"', false)
+            ->assertSee('reports.index');
+
+        $this
+            ->actingAs($admin)
+            ->put(route('access.roles.permissions.update', $role), [
+                'permissions' => ['finance.dashboard'],
+            ])
+            ->assertRedirect(route('access.roles.permissions.edit', $role, absolute: false));
+
+        $this->assertTrue($role->fresh()->hasPermissionTo('finance.dashboard'));
+        $this->assertFalse($role->fresh()->hasPermissionTo('reports.index'));
     }
 }

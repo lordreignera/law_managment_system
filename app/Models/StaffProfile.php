@@ -14,6 +14,7 @@ class StaffProfile extends Model
     protected $guarded = [];
 
     protected $casts = [
+        'date_of_birth' => 'date',
         'joined_on' => 'date',
     ];
 

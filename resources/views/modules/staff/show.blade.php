@@ -46,6 +46,10 @@
                 <strong>{{ $staff->staffProfile?->phone ?: '-' }}</strong>
             </div>
             <div>
+                <span>Date of Birth</span>
+                <strong>{{ $staff->staffProfile?->date_of_birth?->format('d M Y') ?: '-' }}</strong>
+            </div>
+            <div>
                 <span>Job Title</span>
                 <strong>{{ $staff->staffProfile?->job_title ?: '-' }}</strong>
             </div>

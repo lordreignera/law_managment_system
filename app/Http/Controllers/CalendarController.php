@@ -11,6 +11,7 @@ use App\Models\PublicHoliday;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class CalendarController extends Controller
@@ -190,8 +191,8 @@ class CalendarController extends Controller
             'title' => ['required', 'string', 'max:191'],
             'type' => ['required', 'in:'.implode(',', array_keys(CalendarEvent::TYPES))],
             'branch_ids' => ['nullable', 'array'],
-            'branch_ids.*' => ['integer', 'distinct', 'exists:branches,id'],
-            'department_id' => ['nullable', 'exists:departments,id'],
+            'branch_ids.*' => ['integer', 'distinct', Rule::exists('branches', 'id')->where('is_active', true)],
+            'department_id' => ['nullable', Rule::exists('departments', 'id')->where('is_active', true)],
             'matter_id' => ['nullable', 'exists:matters,id'],
             'assigned_to' => ['nullable', 'array'],
             'assigned_to.*' => ['integer', 'distinct', 'exists:users,id'],

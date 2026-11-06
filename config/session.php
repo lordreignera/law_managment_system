@@ -34,6 +34,20 @@ return [
 
     'lifetime' => (int) env('SESSION_LIFETIME', 120),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Idle Session Timeout
+    |--------------------------------------------------------------------------
+    |
+    | This is the maximum period of inactivity for an authenticated user.
+    | It is deliberately separate from Laravel's session lifetime so the
+    | application's security policy can be tightened without changing the
+    | underlying session cookie behaviour.
+    |
+    */
+
+    'idle_timeout' => (int) env('SESSION_IDLE_TIMEOUT', 30),
+
     'expire_on_close' => env('SESSION_EXPIRE_ON_CLOSE', false),
 
     /*

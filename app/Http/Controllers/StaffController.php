@@ -93,9 +93,15 @@ class StaffController extends Controller
             'email' => ['required', 'email', 'max:191', 'unique:users,email'],
             'password' => ['required', 'string', Password::defaults(), 'confirmed'],
             'phone' => ['required', 'string', 'max:60'],
+            'date_of_birth' => ['nullable', 'date', 'before_or_equal:today'],
             'job_title' => ['required', 'string', 'max:191', ReferenceData::jobTitleRule()],
-            'branch_id' => ['required', 'exists:branches,id'],
-            'department_id' => ['required', 'exists:departments,id'],
+            'branch_id' => ['required', Rule::exists('branches', 'id')->where('is_active', true)],
+            'department_id' => [
+                'required',
+                Rule::exists('departments', 'id')->where(fn ($query) => $query
+                    ->where('branch_id', (int) ($request->input('branch_id') ?? 0))
+                    ->where('is_active', true)),
+            ],
             'manager_id' => ['nullable', 'exists:users,id'],
             'joined_on' => ['nullable', 'date'],
             'role' => [
@@ -125,6 +131,7 @@ class StaffController extends Controller
             'job_title' => $data['job_title'],
             'branch_id' => $data['branch_id'],
             'department_id' => $data['department_id'],
+            'date_of_birth' => $data['date_of_birth'] ?? null,
             'joined_on' => $data['joined_on'] ?? null,
             'employment_status' => 'active',
             'requested_role' => $data['role'],
@@ -180,9 +187,15 @@ class StaffController extends Controller
             'name' => ['required', 'string', 'max:191'],
             'email' => ['required', 'email', 'max:191', Rule::unique('users', 'email')->ignore($staff->id)],
             'phone' => ['nullable', 'string', 'max:60'],
+            'date_of_birth' => ['nullable', 'date', 'before_or_equal:today'],
             'job_title' => ['nullable', 'string', 'max:191', ReferenceData::jobTitleRule($profile->job_title)],
-            'branch_id' => ['nullable', 'exists:branches,id'],
-            'department_id' => ['nullable', 'exists:departments,id'],
+            'branch_id' => ['nullable', Rule::exists('branches', 'id')->where('is_active', true)],
+            'department_id' => [
+                'nullable',
+                Rule::exists('departments', 'id')->where(fn ($query) => $query
+                    ->where('branch_id', (int) ($request->input('branch_id') ?? 0))
+                    ->where('is_active', true)),
+            ],
             'manager_id' => ['nullable', 'exists:users,id'],
             'joined_on' => ['nullable', 'date'],
             'employment_status' => ['required', Rule::in(array_keys($this->statuses()))],
@@ -225,6 +238,7 @@ class StaffController extends Controller
             [
                 'staff_no' => $profile->staff_no ?: StaffProfile::nextStaffNumber(),
                 'phone' => $data['phone'] ?? null,
+                'date_of_birth' => $data['date_of_birth'] ?? null,
                 'job_title' => $data['job_title'] ?? null,
                 'branch_id' => $data['branch_id'] ?? null,
                 'department_id' => $data['department_id'] ?? null,

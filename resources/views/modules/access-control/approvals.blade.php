@@ -77,7 +77,8 @@
                             $canSelect = $profile->user && $profile->user->account_type !== 'client'
                                 && filled($profile->phone) && filled($profile->job_title)
                                 && $profile->branch?->is_active && $profile->department?->is_active
-                                && (! $profile->department->branch_id || (int) $profile->department->branch_id === (int) $profile->branch_id)
+                                && $profile->department?->branch_id
+                                && (int) $profile->department->branch_id === (int) $profile->branch_id
                                 && $roles->contains('name', $profile->requested_role)
                                 && ! $profile->user->hasAnyRole(['Super Admin', 'Administrator']);
                         @endphp

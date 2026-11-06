@@ -15,7 +15,7 @@
         @vite(['resources/css/app.css', 'resources/js/app.js'])
         <link rel="stylesheet" href="{{ asset('admin/assets/css/kfms-admin.css') }}?v={{ file_exists(public_path('admin/assets/css/kfms-admin.css')) ? filemtime(public_path('admin/assets/css/kfms-admin.css')) : time() }}">
     </head>
-    <body class="kfms-client-portal" data-kfms-session-user="{{ auth()->id() }}" style="--kfms-primary: {{ $companySetting->primary_color }}; --kfms-secondary: {{ $companySetting->secondary_color }};">
+    <body class="kfms-client-portal" data-kfms-session-user="{{ auth()->id() }}" data-kfms-idle-timeout="{{ (int) config('session.idle_timeout', config('session.lifetime', 120)) * 60 * 1000 }}" style="--kfms-primary: {{ $companySetting->primary_color }}; --kfms-secondary: {{ $companySetting->secondary_color }};">
         @php
             $portalClient = auth()->user()?->clientPortalAccount?->client;
             $portalName = $portalClient?->display_name ?: auth()->user()?->name;

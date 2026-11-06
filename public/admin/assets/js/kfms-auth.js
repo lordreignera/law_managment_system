@@ -60,3 +60,37 @@ document.addEventListener('click', async function (event) {
         urlField.select();
     }
 });
+
+// Registration departments belong to one branch. Keep the choices focused on
+// the selected branch and leave the same relationship enforced server-side.
+document.addEventListener('DOMContentLoaded', function () {
+    var branch = document.querySelector('[data-registration-branch]');
+    var department = document.querySelector('[data-registration-department]');
+
+    if (!branch || !department) return;
+
+    var options = Array.prototype.slice.call(department.querySelectorAll('option[data-branch-id]'));
+
+    function filterDepartments() {
+        var branchId = String(branch.value || '');
+        var selectedIsValid = false;
+
+        options.forEach(function (option) {
+            var visible = branchId !== '' && String(option.dataset.branchId) === branchId;
+            option.hidden = !visible;
+            option.disabled = !visible;
+
+            if (visible && option.selected) {
+                selectedIsValid = true;
+            }
+        });
+
+        department.disabled = branchId === '';
+        if (!selectedIsValid) {
+            department.value = '';
+        }
+    }
+
+    branch.addEventListener('change', filterDepartments);
+    filterDepartments();
+});

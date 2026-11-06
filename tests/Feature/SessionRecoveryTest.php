@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Http\Middleware\EnsureSessionIsFresh;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Session\TokenMismatchException;
 use Illuminate\Support\Facades\Route;
@@ -32,6 +33,42 @@ class SessionRecoveryTest extends TestCase
             ->assertJsonPath('authenticated', true)
             ->assertJsonPath('user_id', $user->id)
             ->assertJsonStructure(['csrf_token']);
+    }
+
+    public function test_idle_session_is_invalidated_and_returns_structured_recovery(): void
+    {
+        config(['session.idle_timeout' => 1]);
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)
+            ->withSession([
+                EnsureSessionIsFresh::LAST_ACTIVITY_KEY => now()->subMinutes(2)->timestamp,
+            ])
+            ->getJson(route('session.status'));
+
+        $response->assertStatus(401)
+            ->assertJsonPath('authenticated', null)
+            ->assertJsonPath('session_expired', true)
+            ->assertJsonPath('reason', 'idle');
+        $this->assertGuest();
+    }
+
+    public function test_active_session_activity_timestamp_is_refreshed(): void
+    {
+        config(['session.idle_timeout' => 30]);
+        $user = User::factory()->create();
+        $oldActivity = now()->subMinute()->timestamp;
+
+        $this->actingAs($user)
+            ->withSession([EnsureSessionIsFresh::LAST_ACTIVITY_KEY => $oldActivity])
+            ->getJson(route('session.status'))
+            ->assertOk();
+
+        $this->assertGreaterThan(
+            $oldActivity,
+            (int) $this->app['session.store']->get(EnsureSessionIsFresh::LAST_ACTIVITY_KEY)
+        );
+        $this->assertAuthenticatedAs($user);
     }
 
     public function test_expired_form_returns_structured_json_recovery_instead_of_html(): void

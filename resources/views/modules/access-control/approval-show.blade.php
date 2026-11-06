@@ -71,13 +71,18 @@
                     @error('phone') <small>{{ $message }}</small> @enderror
                 </label>
                 <label>
+                    <span>Date of Birth <span class="kfms-muted-text">(optional)</span></span>
+                    <input type="date" name="date_of_birth" value="{{ old('date_of_birth', $profile->date_of_birth?->format('Y-m-d')) }}" max="{{ now()->toDateString() }}">
+                    @error('date_of_birth') <small>{{ $message }}</small> @enderror
+                </label>
+                <label>
                     <span>Job Title <span class="kfms-required">*</span></span>
                     <x-job-title-select :value="$profile->job_title" />
                     @error('job_title') <small>{{ $message }}</small> @enderror
                 </label>
                 <label>
                     <span>Branch <span class="kfms-required">*</span></span>
-                    <select name="branch_id" required>
+                    <select name="branch_id" id="approval-branch" data-department-filter="approval-department" required>
                         @foreach ($branches as $branch)
                             <option value="{{ $branch->id }}" @selected((string) old('branch_id', $profile->branch_id) === (string) $branch->id)>{{ $branch->name }}</option>
                         @endforeach
@@ -86,9 +91,9 @@
                 </label>
                 <label>
                     <span>Department <span class="kfms-required">*</span></span>
-                    <select name="department_id" required>
+                    <select name="department_id" id="approval-department" required>
                         @foreach ($departments as $department)
-                            <option value="{{ $department->id }}" @selected((string) old('department_id', $profile->department_id) === (string) $department->id)>{{ $department->name }}</option>
+                            <option value="{{ $department->id }}" data-branch-id="{{ $department->branch_id }}" @selected((string) old('department_id', $profile->department_id) === (string) $department->id)>{{ $department->name }}</option>
                         @endforeach
                     </select>
                     @error('department_id') <small>{{ $message }}</small> @enderror

@@ -21,7 +21,7 @@
         <!-- Styles -->
         @livewireStyles
     </head>
-    <body class="font-sans antialiased" data-kfms-session-user="{{ auth()->id() }}">
+    <body class="font-sans antialiased" data-kfms-session-user="{{ auth()->id() }}" data-kfms-idle-timeout="{{ (int) config('session.idle_timeout', config('session.lifetime', 120)) * 60 * 1000 }}">
         <x-banner />
 
         <div class="min-h-screen bg-gray-100">

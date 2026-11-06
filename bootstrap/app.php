@@ -3,6 +3,7 @@
 use App\Http\Controllers\EmailVerificationController;
 use App\Http\Middleware\EnsureClientPortalAccount;
 use App\Http\Middleware\EnsureRoutePermission;
+use App\Http\Middleware\EnsureSessionIsFresh;
 use App\Http\Middleware\EnsureStaffIsActive;
 use App\Http\Middleware\PreventBrowserCaching;
 use App\Http\Middleware\SecurityHeaders;
@@ -31,6 +32,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'active.staff' => EnsureStaffIsActive::class,
             'client.portal' => EnsureClientPortalAccount::class,
             'route.permission' => EnsureRoutePermission::class,
+            'session.idle' => EnsureSessionIsFresh::class,
             'permission' => PermissionMiddleware::class,
             'role' => RoleMiddleware::class,
             'role_or_permission' => RoleOrPermissionMiddleware::class,

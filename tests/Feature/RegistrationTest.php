@@ -57,6 +57,7 @@ class RegistrationTest extends TestCase
             'name' => 'Test User',
             'email' => 'new-user@example.com',
             'phone' => '+256 700 123456',
+            'date_of_birth' => '1990-05-15',
             'job_title' => 'Associate',
             'branch_id' => $branch->id,
             'department_id' => $department->id,
@@ -75,6 +76,7 @@ class RegistrationTest extends TestCase
         $this->assertFalse($user->hasRole($role->name));
         $this->assertFalse($user->hasVerifiedEmail());
         $this->assertSame('pending', $user->staffProfile->employment_status);
+        $this->assertSame('1990-05-15', $user->staffProfile->date_of_birth?->toDateString());
         $this->assertSame($role->name, $user->staffProfile->requested_role);
         $this->assertMatchesRegularExpression('/^ST-KA-\d{5}$/', $user->staffProfile->staff_no);
 
@@ -93,5 +95,35 @@ class RegistrationTest extends TestCase
             ->assertOk()
             ->assertSee('Access Approval Pending')
             ->assertSee('approval email');
+    }
+
+    public function test_registration_rejects_a_department_from_another_branch(): void
+    {
+        if (! Features::enabled(Features::registration())) {
+            $this->markTestSkipped('Registration support is not enabled.');
+        }
+
+        $kampala = Branch::create(['name' => 'Kampala', 'code' => 'KLA']);
+        $mbale = Branch::create(['name' => 'Mbale', 'code' => 'MBL']);
+        $department = Department::create(['name' => 'Mbale Finance', 'code' => 'MB-FIN', 'branch_id' => $mbale->id, 'is_active' => true]);
+        $role = Role::create(['name' => 'Advocate']);
+        JobTitle::create(['name' => 'Associate']);
+
+        $response = $this->from('/register')->post('/register', [
+            'name' => 'Wrong Branch User',
+            'email' => 'wrong-branch@example.com',
+            'phone' => '+256 700 123456',
+            'job_title' => 'Associate',
+            'branch_id' => $kampala->id,
+            'department_id' => $department->id,
+            'requested_role' => $role->name,
+            'password' => 'password',
+            'password_confirmation' => 'password',
+            'terms' => Jetstream::hasTermsAndPrivacyPolicyFeature(),
+        ]);
+
+        $response->assertRedirect('/register')
+            ->assertSessionHasErrors('department_id');
+        $this->assertDatabaseMissing('users', ['email' => 'wrong-branch@example.com']);
     }
 }

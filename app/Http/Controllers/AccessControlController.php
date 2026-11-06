@@ -125,7 +125,7 @@ class AccessControlController extends Controller
     {
         $this->ensureCanManageAccessControl();
 
-        $data = $request->validate($this->approvalRules($user->staffProfile));
+        $data = $request->validate($this->approvalRules($user->staffProfile, $request->integer('branch_id')));
         $result = $this->approveSelectedUsers([$user->id], [$user->id => $data]);
 
         return redirect()
@@ -155,13 +155,21 @@ class AccessControlController extends Controller
             ->with('approval_notice_failures', $result['notice_failures']);
     }
 
-    private function approvalRules(?StaffProfile $profile): array
+    private function approvalRules(?StaffProfile $profile, ?int $branchId = null): array
     {
+        $branchId = (int) ($branchId ?? 0);
+
         return [
             'phone' => ['required', 'string', 'max:60'],
+            'date_of_birth' => ['nullable', 'date', 'before_or_equal:today'],
             'job_title' => ['required', 'string', 'max:191', ReferenceData::jobTitleRule($profile?->job_title)],
             'branch_id' => ['required', Rule::exists('branches', 'id')->where('is_active', true)],
-            'department_id' => ['required', Rule::exists('departments', 'id')->where('is_active', true)],
+            'department_id' => [
+                'required',
+                Rule::exists('departments', 'id')->where(fn ($query) => $query
+                    ->where('branch_id', $branchId)
+                    ->where('is_active', true)),
+            ],
             'requested_role' => [
                 'required',
                 'string',
@@ -193,14 +201,10 @@ class AccessControlController extends Controller
                 if ($profile->employment_status !== 'pending') {
                     throw ValidationException::withMessages(['user_ids' => $user->name.' is no longer pending approval.']);
                 }
-                $data = $overrides[$user->id] ?? $profile->only(['phone', 'job_title', 'branch_id', 'department_id', 'requested_role']);
-                $validator = Validator::make($data, $this->approvalRules($profile));
+                $data = $overrides[$user->id] ?? $profile->only(['phone', 'date_of_birth', 'job_title', 'branch_id', 'department_id', 'requested_role']);
+                $validator = Validator::make($data, $this->approvalRules($profile, (int) ($data['branch_id'] ?? 0)));
                 if ($validator->fails()) {
                     throw ValidationException::withMessages(['user_ids' => $user->name.' needs review: '.$validator->errors()->first()]);
-                }
-                $department = Department::find($data['department_id']);
-                if ($department->branch_id && (int) $department->branch_id !== (int) $data['branch_id']) {
-                    throw ValidationException::withMessages(['user_ids' => $user->name.' needs review: the department must belong to the selected branch.']);
                 }
                 $user->forceFill(['branch_id' => $data['branch_id'], 'department_id' => $data['department_id']])->save();
                 $user->syncRoles([$data['requested_role']]);
@@ -337,6 +341,32 @@ class AccessControlController extends Controller
             ->syncPermissions($data['permissions'] ?? []);
 
         return back()->with('status', 'Role created.');
+    }
+
+    public function manageRolePermissions(Role $role)
+    {
+        $this->ensureCanManageAccessControl();
+
+        return view('modules.access-control.role-permissions', [
+            'role' => $role->load('permissions'),
+            'permissionGroups' => $this->permissionGroups(),
+        ]);
+    }
+
+    public function updateRolePermissions(Request $request, Role $role)
+    {
+        $this->ensureCanManageAccessControl();
+
+        $data = $request->validate([
+            'permissions' => ['nullable', 'array'],
+            'permissions.*' => ['exists:permissions,name'],
+        ]);
+
+        $role->syncPermissions($data['permissions'] ?? []);
+
+        return redirect()
+            ->route('access.roles.permissions.edit', $role)
+            ->with('status', 'Permissions updated for '.$role->name.'.');
     }
 
     public function updateRole(Request $request, Role $role)

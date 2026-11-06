@@ -97,6 +97,152 @@
         notice.appendChild(link);
     }
 
+    function startIdleProtection() {
+        var body = document.body;
+        var userId = pageUserId();
+        var timeout = Number(body && body.dataset ? body.dataset.kfmsIdleTimeout : 0);
+
+        // Guest pages and test/minimal documents do not have an authenticated
+        // idle session to protect.
+        if (!body || !userId || !timeout || timeout < 1000 || typeof window.setInterval !== 'function') return;
+
+        var warningWindow = Math.min(60000, Math.max(10000, Math.floor(timeout / 10)));
+        var activityKey = 'kfms:last-activity:' + userId;
+        var logoutKey = 'kfms:idle-logout:' + userId;
+        var storage = null;
+        var notice = null;
+        var logoutStarted = false;
+        var lastLocalWrite = 0;
+
+        try {
+            storage = window.localStorage;
+        } catch (error) {
+            storage = null;
+        }
+
+        function readActivity() {
+            if (!storage) return Date.now();
+            try {
+                var value = Number(storage.getItem(activityKey));
+                return value > 0 ? value : Date.now();
+            } catch (error) {
+                return Date.now();
+            }
+        }
+
+        function writeActivity(timestamp) {
+            if (!storage) return;
+            try {
+                storage.setItem(activityKey, String(timestamp));
+            } catch (error) {
+                // Private browsing modes can deny localStorage access.
+            }
+        }
+
+        function createNotice() {
+            if (notice) return notice;
+
+            notice = document.createElement('div');
+            notice.setAttribute('data-kfms-idle-warning', '');
+            notice.setAttribute('role', 'alertdialog');
+            notice.setAttribute('aria-live', 'assertive');
+            notice.style.cssText = 'position:fixed;z-index:2147483646;right:1rem;bottom:1rem;max-width:28rem;padding:1rem 1.15rem;background:#fff;border:1px solid #e3a008;border-radius:.55rem;box-shadow:0 10px 30px rgba(0,0,0,.2);font:500 14px/1.45 system-ui,sans-serif;color:#071d3a;';
+
+            var message = document.createElement('span');
+            message.setAttribute('data-kfms-idle-message', '');
+            notice.appendChild(message);
+            notice.appendChild(document.createTextNode(' '));
+
+            var stay = document.createElement('button');
+            stay.type = 'button';
+            stay.textContent = 'Stay signed in';
+            stay.style.cssText = 'margin-top:.65rem;padding:.45rem .7rem;border:0;border-radius:.35rem;background:#071d3a;color:#fff;font-weight:700;cursor:pointer;';
+            stay.addEventListener('click', function () {
+                touchActivity(true);
+            });
+            notice.appendChild(stay);
+            notice.hidden = true;
+            document.body.appendChild(notice);
+
+            return notice;
+        }
+
+        function touchActivity(force) {
+            var timestamp = Date.now();
+            if (!force && timestamp - lastLocalWrite < 5000) return;
+            lastLocalWrite = timestamp;
+            writeActivity(timestamp);
+            if (notice) notice.hidden = true;
+        }
+
+        function finishIdleLogout(broadcast) {
+            if (logoutStarted) return;
+            logoutStarted = true;
+
+            if (broadcast && storage) {
+                try {
+                    storage.setItem(logoutKey, String(Date.now()));
+                } catch (error) {
+                    // The current tab still logs out if storage is unavailable.
+                }
+            }
+
+            function postLogout() {
+                return fetch('/logout', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {
+                        Accept: 'application/json',
+                        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                        'X-CSRF-TOKEN': currentToken(),
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    body: new URLSearchParams({ _token: currentToken() }),
+                });
+            }
+
+            // Get the token belonging to the session that is still active in
+            // this tab before posting logout. If the server has already
+            // expired it, the recovery redirect below is still correct.
+            refreshSession().catch(function () {}).finally(function () {
+                postLogout().finally(function () {
+                    window.location.replace(destination(document.body.classList.contains('kfms-client-portal')) + '?session=expired');
+                });
+            });
+        }
+
+        function checkIdle() {
+            var remaining = timeout - (Date.now() - readActivity());
+            if (remaining <= 0) {
+                finishIdleLogout(true);
+                return;
+            }
+
+            if (remaining <= warningWindow) {
+                var idleNotice = createNotice();
+                idleNotice.querySelector('[data-kfms-idle-message]').textContent = 'You will be signed out in ' + Math.ceil(remaining / 1000) + ' seconds because of inactivity.';
+                idleNotice.hidden = false;
+            } else if (notice) {
+                notice.hidden = true;
+            }
+        }
+
+        writeActivity(Date.now());
+        ['pointerdown', 'keydown', 'scroll', 'touchstart', 'mousemove'].forEach(function (eventName) {
+            document.addEventListener(eventName, function () {
+                touchActivity(false);
+            }, { passive: true });
+        });
+        document.addEventListener('visibilitychange', checkIdle);
+        if (typeof window.addEventListener === 'function') {
+            window.addEventListener('storage', function (event) {
+                if (event.key === logoutKey && event.newValue) finishIdleLogout(false);
+                if (event.key === activityKey) checkIdle();
+            });
+        }
+        window.setInterval(checkIdle, 1000);
+    }
+
     function submitAfterRefresh(form, submitter) {
         return refreshSession().then(function (payload) {
             var clientContext = isClientContext(form);
@@ -170,6 +316,8 @@
             return token;
         },
     };
+
+    startIdleProtection();
 
     // Livewire reads the meta token for each request. If its request still
     // reaches the server after the session has expired, replace Livewire's

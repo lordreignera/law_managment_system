@@ -46,19 +46,25 @@
                         <tr>
                             <td>{{ $role->name }}</td>
                             <td>
-                                <div class="kfms-chip-list">
-                                    @foreach ($role->permissions->take(6) as $permission)
-                                        <span>{{ $permission->name }}</span>
-                                    @endforeach
-                                    @if ($role->permissions->count() > 6)
-                                        <span>+{{ $role->permissions->count() - 6 }} more</span>
-                                    @endif
+                                <div class="kfms-role-permission-cell">
+                                    <span class="kfms-access-count">{{ $role->permissions->count() }} assigned</span>
+                                    <button type="button" data-bs-toggle="modal" data-bs-target="#view-role-{{ $role->id }}">
+                                        <i class="mdi mdi-eye-outline"></i>
+                                        View
+                                    </button>
                                 </div>
                             </td>
-                            <td>{{ \App\Models\User::role($role->name)->count() }}</td>
+                            <td><span class="kfms-access-count is-users">{{ \App\Models\User::role($role->name)->count() }} users</span></td>
                             <td>
                                 <div class="kfms-table-actions">
-                                    <button type="button" data-bs-toggle="modal" data-bs-target="#edit-role-{{ $role->id }}">Edit</button>
+                                    <a class="kfms-manage-permissions-action" href="{{ route('access.roles.permissions.edit', $role) }}">
+                                        <i class="mdi mdi-shield-key-outline"></i>
+                                        Manage permissions
+                                    </a>
+                                    <button type="button" data-bs-toggle="modal" data-bs-target="#edit-role-{{ $role->id }}">
+                                        <i class="mdi mdi-pencil-outline"></i>
+                                        Edit role
+                                    </button>
                                     @unless (in_array($role->name, ['Super Admin', 'Administrator'], true))
                                         <form method="POST" action="{{ route('access.roles.destroy', $role) }}">
                                             @csrf
@@ -71,6 +77,7 @@
                         </tr>
 
                         @push('modals')
+                            @include('modules.access-control.partials.role-view-modal', ['modalId' => 'view-role-'.$role->id, 'role' => $role, 'permissionGroups' => $permissionGroups])
                             @include('modules.access-control.partials.role-modal', ['modalId' => 'edit-role-'.$role->id, 'role' => $role, 'permissions' => $permissions, 'permissionGroups' => $permissionGroups, 'action' => route('access.roles.update', $role), 'method' => 'PUT'])
                         @endpush
                     @empty

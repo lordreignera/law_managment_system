@@ -13,7 +13,7 @@
         @include('layouts.partials.session-history')
         @livewireStyles
     </head>
-    <body class="kfms-template" data-workspace-user="{{ auth()->id() }}" data-kfms-session-user="{{ auth()->id() }}" style="--kfms-primary: {{ $companySetting->primary_color }}; --kfms-secondary: {{ $companySetting->secondary_color }};">
+    <body class="kfms-template" data-workspace-user="{{ auth()->id() }}" data-kfms-session-user="{{ auth()->id() }}" data-kfms-idle-timeout="{{ (int) config('session.idle_timeout', config('session.lifetime', 120)) * 60 * 1000 }}" style="--kfms-primary: {{ $companySetting->primary_color }}; --kfms-secondary: {{ $companySetting->secondary_color }};">
         <x-banner />
 
         <div class="container-scroller">
