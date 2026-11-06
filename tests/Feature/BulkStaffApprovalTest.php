@@ -37,9 +37,12 @@ class BulkStaffApprovalTest extends TestCase
         $this->department = Department::create(['name' => 'Litigation', 'branch_id' => $this->branch->id]);
     }
 
-    private function actor(bool $canApprove = true): User
+    private function actor(bool $canApprove = true, bool $allBranches = false): User
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['branch_id' => $this->branch->id]);
+        if ($allBranches) {
+            $user->assignRole(Role::findOrCreate('Managing Partner'));
+        }
         StaffProfile::create(['user_id' => $user->id, 'employment_status' => 'active']);
         foreach (['access.users.index', 'access.approvals.index', 'access.approvals.show'] as $permission) {
             $user->givePermissionTo(Permission::findOrCreate($permission));
@@ -65,7 +68,7 @@ class BulkStaffApprovalTest extends TestCase
 
     public function test_five_selected_users_are_approved_with_their_own_roles_and_assignments_and_retries_do_not_repeat(): void
     {
-        $actor = $this->actor();
+        $actor = $this->actor(true, true);
         $users = collect(range(1, 5))->map(fn ($index) => $this->pending(['requested_role' => $index % 2 ? 'Advocate' : 'Accountant']));
         $other = $this->pending();
         $branch = Branch::create(['name' => 'Mbale']);
@@ -147,10 +150,46 @@ class BulkStaffApprovalTest extends TestCase
         $user = $this->pending();
         $otherBranch = Branch::create(['name' => 'Mbarara']);
         $user->staffProfile->update(['branch_id' => $otherBranch->id]);
-        $this->actingAs($this->actor())->patch(route('access.users.bulk-approve'), ['user_ids' => [$user->id]])
+        $this->actingAs($this->actor(true, true))->patch(route('access.users.bulk-approve'), ['user_ids' => [$user->id]])
             ->assertSessionHasErrors('user_ids');
         $this->assertSame('pending', $user->fresh()->staffProfile->employment_status);
         Notification::assertNothingSent();
+    }
+
+    public function test_branch_level_approver_can_only_view_and_approve_own_branch_requests(): void
+    {
+        $actor = $this->actor();
+        $otherBranch = Branch::create(['name' => 'Mbale']);
+        $otherDepartment = Department::create(['name' => 'Mbale Finance', 'branch_id' => $otherBranch->id]);
+        $pending = $this->pending([
+            'branch_id' => $otherBranch->id,
+            'department_id' => $otherDepartment->id,
+        ]);
+
+        $this->actingAs($actor)
+            ->get(route('access.approvals.index'))
+            ->assertOk()
+            ->assertDontSee($pending->name);
+
+        $this->actingAs($actor)
+            ->get(route('access.approvals.show', $pending->staffProfile))
+            ->assertForbidden();
+
+        $this->actingAs($actor)
+            ->patch(route('access.users.approve', $pending), [
+                'phone' => $pending->staffProfile->phone,
+                'job_title' => $pending->staffProfile->job_title,
+                'branch_id' => $otherBranch->id,
+                'department_id' => $otherDepartment->id,
+                'requested_role' => 'Advocate',
+            ])
+            ->assertForbidden();
+
+        $this->actingAs($actor)
+            ->patch(route('access.users.bulk-approve'), ['user_ids' => [$pending->id]])
+            ->assertForbidden();
+
+        $this->assertSame('pending', $pending->fresh()->staffProfile->employment_status);
     }
 
     public function test_super_admin_can_approve_a_pending_user_from_another_branch(): void

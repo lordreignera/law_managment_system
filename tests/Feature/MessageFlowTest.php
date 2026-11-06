@@ -8,6 +8,7 @@ use App\Models\Department;
 use App\Models\Message;
 use App\Models\StaffProfile;
 use App\Models\User;
+use App\Notifications\MessageReceived;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -88,6 +89,14 @@ class MessageFlowTest extends TestCase
         $this->assertFalse($conversation->participants->pluck('user_id')->contains($this->inactiveUser->id));
         $this->assertSame('Please update all hearing notes before close of business.', $conversation->messages->first()->body);
         $this->assertSame(1, $conversation->messages->first()->attachments()->count());
+        $this->assertDatabaseHas('notifications', [
+            'notifiable_id' => $this->litigationUser->id,
+            'type' => MessageReceived::class,
+        ]);
+        $this->assertDatabaseMissing('notifications', [
+            'notifiable_id' => $this->sender->id,
+            'type' => MessageReceived::class,
+        ]);
 
         $this->actingAs($this->litigationUser)
             ->get(route('messages.show', $conversation))
@@ -113,6 +122,10 @@ class MessageFlowTest extends TestCase
         $this->assertSame(2, $conversation->messages()->count());
         $this->assertSame('The litigation team has updated the diary.', Message::where('conversation_id', $conversation->id)->latest('id')->first()->body);
         $this->assertSame(1, Message::where('conversation_id', $conversation->id)->latest('id')->first()->attachments()->count());
+        $this->assertDatabaseHas('notifications', [
+            'notifiable_id' => $this->sender->id,
+            'type' => MessageReceived::class,
+        ]);
     }
 
     public function test_firm_broadcast_requires_broadcast_permission(): void

@@ -27,4 +27,20 @@ class SessionController extends Controller
             ->header('Pragma', 'no-cache')
             ->header('Expires', '0');
     }
+
+    /**
+     * Keep an active browser session observable without treating a background
+     * heartbeat as fresh user activity. The idle middleware performs the
+     * expiry check before this method runs.
+     */
+    public function heartbeat(Request $request): JsonResponse
+    {
+        return response()->json([
+            'authenticated' => (bool) $request->user(),
+            'csrf_token' => $request->session()->token(),
+        ])
+            ->header('Cache-Control', 'private, no-store, no-cache, max-age=0, must-revalidate')
+            ->header('Pragma', 'no-cache')
+            ->header('Expires', '0');
+    }
 }

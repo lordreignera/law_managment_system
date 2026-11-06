@@ -71,6 +71,43 @@ class SessionRecoveryTest extends TestCase
         $this->assertAuthenticatedAs($user);
     }
 
+    public function test_active_heartbeat_uses_browser_activity_time_instead_of_heartbeat_time(): void
+    {
+        config(['session.idle_timeout' => 30]);
+        $user = User::factory()->create();
+        $oldActivity = now()->subMinutes(2)->timestamp;
+
+        $this->actingAs($user)
+            ->withSession([EnsureSessionIsFresh::LAST_ACTIVITY_KEY => $oldActivity])
+            ->postJson(route('session.heartbeat'), ['activity_age_ms' => 20_000])
+            ->assertOk()
+            ->assertJsonPath('authenticated', true)
+            ->assertJsonStructure(['csrf_token']);
+
+        $updatedActivity = (int) $this->app['session.store']->get(EnsureSessionIsFresh::LAST_ACTIVITY_KEY);
+
+        $this->assertGreaterThan($oldActivity, $updatedActivity);
+        $this->assertLessThanOrEqual(now()->subSeconds(15)->timestamp, $updatedActivity);
+        $this->assertAuthenticatedAs($user);
+    }
+
+    public function test_expired_heartbeat_invalidates_the_session(): void
+    {
+        config(['session.idle_timeout' => 1]);
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)
+            ->withSession([
+                EnsureSessionIsFresh::LAST_ACTIVITY_KEY => now()->subMinutes(2)->timestamp,
+            ])
+            ->postJson(route('session.heartbeat'), ['activity_age_ms' => 0]);
+
+        $response->assertStatus(401)
+            ->assertJsonPath('session_expired', true)
+            ->assertJsonPath('reason', 'idle');
+        $this->assertGuest();
+    }
+
     public function test_expired_form_returns_structured_json_recovery_instead_of_html(): void
     {
         Route::middleware('web')->post('/client-portal/test-expired-json', function () {

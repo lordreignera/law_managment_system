@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Branch;
 use App\Models\Department;
 use App\Models\JobTitle;
+use App\Models\StaffProfile;
 use App\Models\User;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -12,6 +13,7 @@ use Illuminate\Support\Facades\Notification;
 use Laravel\Fortify\Features;
 use Laravel\Jetstream\Jetstream;
 use Spatie\Permission\Models\Role;
+use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
 
 class RegistrationTest extends TestCase
@@ -125,5 +127,43 @@ class RegistrationTest extends TestCase
         $response->assertRedirect('/register')
             ->assertSessionHasErrors('department_id');
         $this->assertDatabaseMissing('users', ['email' => 'wrong-branch@example.com']);
+    }
+
+    public function test_registration_notifies_active_approval_reviewers(): void
+    {
+        if (! Features::enabled(Features::registration())) {
+            $this->markTestSkipped('Registration support is not enabled.');
+        }
+
+        $branch = Branch::create(['name' => 'Mbale', 'code' => 'MBL']);
+        $department = Department::create(['name' => 'Finance', 'code' => 'FIN', 'branch_id' => $branch->id]);
+        $role = Role::create(['name' => 'Accountant']);
+        JobTitle::create(['name' => 'Accounts Officer']);
+
+        $reviewer = User::factory()->create(['name' => 'Approval Reviewer']);
+        $reviewer->givePermissionTo(Permission::findOrCreate('access.users.approve', 'web'));
+        StaffProfile::create([
+            'user_id' => $reviewer->id,
+            'branch_id' => $branch->id,
+            'department_id' => $department->id,
+            'employment_status' => 'active',
+        ]);
+
+        Notification::fake();
+
+        $this->post('/register', [
+            'name' => 'Pending Staff Member',
+            'email' => 'pending-staff@example.com',
+            'phone' => '+256 700 123456',
+            'job_title' => 'Accounts Officer',
+            'branch_id' => $branch->id,
+            'department_id' => $department->id,
+            'requested_role' => $role->name,
+            'password' => 'password',
+            'password_confirmation' => 'password',
+            'terms' => Jetstream::hasTermsAndPrivacyPolicyFeature(),
+        ]);
+
+        Notification::assertSentTo($reviewer, \App\Notifications\StaffAccessRequested::class);
     }
 }

@@ -43,6 +43,7 @@ use App\Http\Controllers\PayrollRuleController;
 use App\Http\Controllers\PayrollRunController;
 use App\Http\Controllers\PettyCashController;
 use App\Http\Controllers\ProfileMediaController;
+use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\PublicHolidayController;
 use App\Http\Controllers\RecoveryActivityController;
 use App\Http\Controllers\RecoveryController;
@@ -75,6 +76,10 @@ Route::get('/session/status', [SessionController::class, 'status'])
     ->middleware(['throttle:120,1', 'session.idle'])
     ->name('session.status');
 
+Route::post('/session/heartbeat', [SessionController::class, 'heartbeat'])
+    ->middleware(['throttle:30,1', 'session.idle'])
+    ->name('session.heartbeat');
+
 Route::post('/email/verification/switch-account', [EmailVerificationController::class, 'switchAccount'])
     ->middleware(['auth', 'throttle:6,1'])
     ->name('verification.switch-account');
@@ -95,6 +100,10 @@ Route::middleware([
         ->name('profile-media.photo');
     Route::get('/profile-media/users/{user}/signature', [ProfileMediaController::class, 'signature'])
         ->name('profile-media.signature');
+    Route::post('/push-subscriptions', [PushSubscriptionController::class, 'store'])
+        ->middleware('throttle:10,1')->name('push-subscriptions.store');
+    Route::delete('/push-subscriptions', [PushSubscriptionController::class, 'destroy'])
+        ->middleware('throttle:10,1')->name('push-subscriptions.destroy');
 
     Route::middleware('client.portal')->prefix('client')->name('client.')->group(function () {
         Route::get('/dashboard', [ClientPortalController::class, 'dashboard'])->name('dashboard');

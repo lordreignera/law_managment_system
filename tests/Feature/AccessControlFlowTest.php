@@ -77,7 +77,7 @@ class AccessControlFlowTest extends TestCase
         $branch = Branch::create(['name' => 'Kampala', 'code' => 'KLA']);
         $department = Department::create(['name' => 'Litigation', 'code' => 'LIT', 'branch_id' => $branch->id]);
 
-        $admin = User::factory()->create();
+        $admin = User::factory()->create(['branch_id' => $branch->id]);
         $admin->assignRole($accessRole);
         StaffProfile::create([
             'user_id' => $admin->id,
@@ -89,6 +89,7 @@ class AccessControlFlowTest extends TestCase
             'user_id' => $user->id,
             'employment_status' => 'pending',
             'requested_role' => $requestedRole->name,
+            'branch_id' => $branch->id,
         ]);
 
         $response = $this

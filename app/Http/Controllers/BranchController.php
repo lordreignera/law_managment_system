@@ -61,7 +61,8 @@ class BranchController extends Controller
         $this->ensureCanCreateBranch();
         $data = $this->validateBranch($request);
 
-        Branch::create($data);
+        $branch = Branch::create($data);
+        Department::seedStandardForBranch($branch);
 
         return redirect()
             ->route('branches.index')

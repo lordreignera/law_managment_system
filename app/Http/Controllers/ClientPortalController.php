@@ -12,6 +12,7 @@ use App\Models\Message;
 use App\Models\User;
 use App\Support\LetterPdf;
 use App\Support\MessageBroadcaster;
+use App\Support\MessageNotifier;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -182,6 +183,7 @@ class ClientPortalController extends Controller
         $conversation->update(['last_message_at' => now()]);
         $conversation->participants()->where('user_id', $request->user()->id)->update(['last_read_at' => now()]);
         MessageBroadcaster::dispatch($message);
+        MessageNotifier::notifyParticipants($message);
 
         return redirect()
             ->route('client.matters.show', $matter)

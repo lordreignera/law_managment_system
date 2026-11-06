@@ -100,6 +100,39 @@ class BranchDepartmentCrudTest extends TestCase
         $this->assertDatabaseMissing('departments', ['id' => $department->id]);
     }
 
+    public function test_new_branches_start_with_standard_departments_and_custom_departments_stay_local(): void
+    {
+        $admin = $this->superAdmin();
+
+        $this->actingAs($admin)
+            ->post(route('branches.store'), [
+                'name' => 'Arua',
+                'code' => 'ARU',
+                'city' => 'Arua',
+                'is_active' => '1',
+            ])
+            ->assertRedirect(route('branches.index', absolute: false));
+
+        $arua = Branch::where('name', 'Arua')->firstOrFail();
+        $this->assertSame(
+            Department::standardNames(),
+            $arua->departments()->orderBy('id')->pluck('name')->all()
+        );
+
+        $this->actingAs($admin)
+            ->post(route('departments.store', $arua), [
+                'name' => 'Arua Special Projects',
+                'is_active' => '1',
+            ])
+            ->assertRedirect(route('branches.show', $arua, absolute: false));
+
+        $otherBranch = Branch::create(['name' => 'Hoima', 'code' => 'HMA', 'is_active' => true]);
+        $this->assertDatabaseMissing('departments', [
+            'branch_id' => $otherBranch->id,
+            'name' => 'Arua Special Projects',
+        ]);
+    }
+
     public function test_branch_with_departments_cannot_be_deleted(): void
     {
         $admin = $this->superAdmin();

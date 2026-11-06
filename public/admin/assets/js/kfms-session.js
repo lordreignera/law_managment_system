@@ -4,6 +4,7 @@
     var unsafeMethods = { POST: true, PUT: true, PATCH: true, DELETE: true };
     var refreshPromise = null;
     var statusUrl = (document.querySelector('meta[name="kfms-session-status"]') || {}).content || '/session/status';
+    var heartbeatUrl = (document.querySelector('meta[name="kfms-session-heartbeat"]') || {}).content || '/session/heartbeat';
 
     function csrfMeta() {
         return document.querySelector('meta[name="csrf-token"]');
@@ -113,6 +114,12 @@
         var notice = null;
         var logoutStarted = false;
         var lastLocalWrite = 0;
+        var lastUserActivityAt = Date.now();
+        var lastHeartbeatAttemptAt = 0;
+        var heartbeatInFlight = false;
+        var heartbeatFailed = false;
+        var heartbeatEveryMs = 4 * 60 * 1000;
+        var activeWindowMs = 10 * 60 * 1000;
 
         try {
             storage = window.localStorage;
@@ -121,12 +128,13 @@
         }
 
         function readActivity() {
-            if (!storage) return Date.now();
+            if (!storage) return lastUserActivityAt;
             try {
                 var value = Number(storage.getItem(activityKey));
-                return value > 0 ? value : Date.now();
+                if (value > lastUserActivityAt && value <= Date.now()) lastUserActivityAt = value;
+                return lastUserActivityAt;
             } catch (error) {
-                return Date.now();
+                return lastUserActivityAt;
             }
         }
 
@@ -170,9 +178,57 @@
         function touchActivity(force) {
             var timestamp = Date.now();
             if (!force && timestamp - lastLocalWrite < 5000) return;
+            lastUserActivityAt = timestamp;
             lastLocalWrite = timestamp;
             writeActivity(timestamp);
             if (notice) notice.hidden = true;
+            refreshHeartbeat(force);
+        }
+
+        function refreshHeartbeat(force) {
+            if (heartbeatFailed || heartbeatInFlight || document.hidden
+                || timestampSinceActivity() > activeWindowMs
+                || (!force && Date.now() - lastHeartbeatAttemptAt < heartbeatEveryMs)) {
+                return;
+            }
+
+            var token = currentToken();
+            if (!token) return;
+
+            heartbeatInFlight = true;
+            lastHeartbeatAttemptAt = Date.now();
+
+            fetch(heartbeatUrl, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': token,
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: JSON.stringify({ activity_age_ms: Math.max(0, timestampSinceActivity()) }),
+            }).then(function (response) {
+                if (response.status === 401 || response.status === 419) {
+                    heartbeatFailed = true;
+                    showRecovery(document.body.classList.contains('kfms-client-portal'), 'Your secure session expired. Please sign in again.');
+                    return null;
+                }
+                if (!response.ok) throw new Error('Session heartbeat was not available.');
+                return response.json();
+            }).then(function (payload) {
+                if (payload && payload.csrf_token) setToken(payload.csrf_token);
+            }).catch(function () {
+                // A temporary network interruption should not sign the user out;
+                // the next visible heartbeat will retry while the session is valid.
+            }).finally(function () {
+                heartbeatInFlight = false;
+            });
+        }
+
+        function timestampSinceActivity() {
+            readActivity();
+            return Math.max(0, Date.now() - lastUserActivityAt);
         }
 
         function finishIdleLogout(broadcast) {
@@ -227,13 +283,17 @@
             }
         }
 
-        writeActivity(Date.now());
+        lastUserActivityAt = Date.now();
+        writeActivity(lastUserActivityAt);
         ['pointerdown', 'keydown', 'scroll', 'touchstart', 'mousemove'].forEach(function (eventName) {
             document.addEventListener(eventName, function () {
                 touchActivity(false);
             }, { passive: true });
         });
-        document.addEventListener('visibilitychange', checkIdle);
+        document.addEventListener('visibilitychange', function () {
+            checkIdle();
+            if (!document.hidden) refreshHeartbeat(true);
+        });
         if (typeof window.addEventListener === 'function') {
             window.addEventListener('storage', function (event) {
                 if (event.key === logoutKey && event.newValue) finishIdleLogout(false);
@@ -241,6 +301,9 @@
             });
         }
         window.setInterval(checkIdle, 1000);
+        window.setInterval(function () {
+            refreshHeartbeat(false);
+        }, heartbeatEveryMs);
     }
 
     function submitAfterRefresh(form, submitter) {

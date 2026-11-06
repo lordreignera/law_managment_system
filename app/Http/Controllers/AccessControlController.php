@@ -81,9 +81,11 @@ class AccessControlController extends Controller
     public function approvals(Request $request)
     {
         $this->ensureCanManageAccessControl();
+        $actor = $request->user();
 
         $profiles = StaffProfile::with(['user.roles', 'branch', 'department'])
             ->where('employment_status', 'pending')
+            ->when(! $actor->canSeeAllBranches(), fn ($query) => $query->where('branch_id', $actor->branch_id ?? 0))
             ->when($request->filled('search'), function ($query) use ($request) {
                 $search = $request->string('search')->toString();
 
@@ -100,8 +102,8 @@ class AccessControlController extends Controller
 
         return view('modules.access-control.approvals', [
             'profiles' => $profiles,
-            'branches' => Branch::where('is_active', true)->orderBy('name')->get(),
-            'departments' => Department::where('is_active', true)->orderBy('name')->get(),
+            'branches' => $this->approvalBranches($actor),
+            'departments' => $this->approvalDepartments($actor),
             'roles' => Role::whereNotIn('name', ['Super Admin', 'Administrator'])->orderBy('name')->get(),
             'filters' => $request->only(['search']),
         ]);
@@ -112,11 +114,13 @@ class AccessControlController extends Controller
         $this->ensureCanManageAccessControl();
 
         abort_unless($profile->employment_status === 'pending', 404);
+        $this->ensureApprovalScope($profile);
+        $actor = request()->user();
 
         return view('modules.access-control.approval-show', [
             'profile' => $profile->load(['user.roles', 'branch', 'department']),
-            'branches' => Branch::where('is_active', true)->orderBy('name')->get(),
-            'departments' => Department::where('is_active', true)->orderBy('name')->get(),
+            'branches' => $this->approvalBranches($actor),
+            'departments' => $this->approvalDepartments($actor),
             'roles' => Role::whereNotIn('name', ['Super Admin', 'Administrator'])->orderBy('name')->get(),
         ]);
     }
@@ -124,9 +128,10 @@ class AccessControlController extends Controller
     public function approveUser(Request $request, User $user)
     {
         $this->ensureCanManageAccessControl();
+        $this->ensureApprovalScope($user->staffProfile);
 
-        $data = $request->validate($this->approvalRules($user->staffProfile, $request->integer('branch_id')));
-        $result = $this->approveSelectedUsers([$user->id], [$user->id => $data]);
+        $data = $request->validate($this->approvalRules($user->staffProfile, $request->integer('branch_id'), $request->user()));
+        $result = $this->approveSelectedUsers([$user->id], [$user->id => $data], $request->user());
 
         return redirect()
             ->route('access.approvals.index')
@@ -143,7 +148,7 @@ class AccessControlController extends Controller
             'user_ids.*' => ['required', 'integer', 'distinct', 'exists:users,id'],
             'search' => ['nullable', 'string', 'max:191'],
         ]);
-        $result = $this->approveSelectedUsers($data['user_ids']);
+        $result = $this->approveSelectedUsers($data['user_ids'], [], $request->user());
         $count = $result['approved'];
         $status = $count.' '.($count === 1 ? 'user' : 'users').' approved.';
         if ($result['skipped'] > 0) {
@@ -155,15 +160,24 @@ class AccessControlController extends Controller
             ->with('approval_notice_failures', $result['notice_failures']);
     }
 
-    private function approvalRules(?StaffProfile $profile, ?int $branchId = null): array
+    private function approvalRules(?StaffProfile $profile, ?int $branchId = null, ?User $actor = null): array
     {
         $branchId = (int) ($branchId ?? 0);
+        $actor ??= request()->user();
+
+        $branchRule = Rule::exists('branches', 'id')->where('is_active', true);
+        if ($actor && ! $actor->canSeeAllBranches()) {
+            $branchRule = Rule::exists('branches', 'id')
+                ->where(fn ($query) => $query
+                    ->where('id', (int) ($actor->branch_id ?? 0))
+                    ->where('is_active', true));
+        }
 
         return [
             'phone' => ['required', 'string', 'max:60'],
             'date_of_birth' => ['nullable', 'date', 'before_or_equal:today'],
             'job_title' => ['required', 'string', 'max:191', ReferenceData::jobTitleRule($profile?->job_title)],
-            'branch_id' => ['required', Rule::exists('branches', 'id')->where('is_active', true)],
+            'branch_id' => ['required', $branchRule],
             'department_id' => [
                 'required',
                 Rule::exists('departments', 'id')->where(fn ($query) => $query
@@ -178,11 +192,12 @@ class AccessControlController extends Controller
         ];
     }
 
-    private function approveSelectedUsers(array $userIds, array $overrides = []): array
+    private function approveSelectedUsers(array $userIds, array $overrides = [], ?User $actor = null): array
     {
+        $actor ??= request()->user();
         $approved = [];
         $skipped = 0;
-        DB::transaction(function () use ($userIds, $overrides, &$approved, &$skipped) {
+        DB::transaction(function () use ($userIds, $overrides, $actor, &$approved, &$skipped) {
             $users = User::whereIn('id', $userIds)->orderBy('id')->lockForUpdate()->get();
             $profiles = StaffProfile::whereIn('user_id', $userIds)->orderBy('user_id')->lockForUpdate()->get()->keyBy('user_id');
             if ($users->count() !== count($userIds)) {
@@ -193,6 +208,7 @@ class AccessControlController extends Controller
                 if (! $profile || $user->account_type === 'client' || $user->hasAnyRole(['Super Admin', 'Administrator'])) {
                     throw ValidationException::withMessages(['user_ids' => $user->name.' is not a pending staff access request.']);
                 }
+                $this->ensureApprovalScope($profile, $actor);
                 if ($profile->employment_status === 'active') {
                     $skipped++;
 
@@ -202,7 +218,7 @@ class AccessControlController extends Controller
                     throw ValidationException::withMessages(['user_ids' => $user->name.' is no longer pending approval.']);
                 }
                 $data = $overrides[$user->id] ?? $profile->only(['phone', 'date_of_birth', 'job_title', 'branch_id', 'department_id', 'requested_role']);
-                $validator = Validator::make($data, $this->approvalRules($profile, (int) ($data['branch_id'] ?? 0)));
+                $validator = Validator::make($data, $this->approvalRules($profile, (int) ($data['branch_id'] ?? 0), $actor));
                 if ($validator->fails()) {
                     throw ValidationException::withMessages(['user_ids' => $user->name.' needs review: '.$validator->errors()->first()]);
                 }
@@ -471,6 +487,29 @@ class AccessControlController extends Controller
     private function ensureCanManageAccessControl(): void
     {
         abort_unless(auth()->user()?->can('access.users.index'), 403);
+    }
+
+    private function ensureApprovalScope(?StaffProfile $profile, ?User $actor = null): void
+    {
+        $actor ??= request()->user();
+
+        abort_unless($profile && ($actor?->canSeeAllBranches() || (int) $profile->branch_id === (int) ($actor?->branch_id ?? 0)), 403, 'You can only approve users from your branch.');
+    }
+
+    private function approvalBranches(User $actor)
+    {
+        return Branch::where('is_active', true)
+            ->when(! $actor->canSeeAllBranches(), fn ($query) => $query->whereKey($actor->branch_id ?? 0))
+            ->orderBy('name')
+            ->get();
+    }
+
+    private function approvalDepartments(User $actor)
+    {
+        return Department::where('is_active', true)
+            ->when(! $actor->canSeeAllBranches(), fn ($query) => $query->where('branch_id', $actor->branch_id ?? 0))
+            ->orderBy('name')
+            ->get();
     }
 
     /**

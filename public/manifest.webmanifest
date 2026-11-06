@@ -1,0 +1,20 @@
+{
+    "name": "Kalikumutima Financial Management System",
+    "short_name": "KFMS",
+    "id": "/",
+    "start_url": "/",
+    "scope": "/",
+    "display": "standalone",
+    "background_color": "#f8fafc",
+    "theme_color": "#071d4f",
+    "orientation": "portrait-primary",
+    "categories": ["business", "productivity"],
+    "icons": [
+        {
+            "src": "/admin/assets/images/Kali Logo 2.png",
+            "sizes": "192x192 512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ]
+}

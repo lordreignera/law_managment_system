@@ -18,6 +18,33 @@ class Department extends Model
         return 'DP';
     }
 
+    /**
+     * Departments that every branch starts with. New departments added later
+     * remain local to the branch where they are created.
+     *
+     * @return list<string>
+     */
+    public static function standardNames(): array
+    {
+        return [
+            'Litigation',
+            'Recoveries',
+            'Securities',
+            'Finance and Administration',
+            'Human Resources',
+        ];
+    }
+
+    public static function seedStandardForBranch(Branch $branch): void
+    {
+        foreach (static::standardNames() as $name) {
+            static::firstOrCreate(
+                ['branch_id' => $branch->id, 'name' => $name],
+                ['is_active' => true]
+            );
+        }
+    }
+
     public function branch()
     {
         return $this->belongsTo(Branch::class);

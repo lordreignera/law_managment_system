@@ -8,6 +8,7 @@ use App\Models\Department;
 use App\Models\Message;
 use App\Models\User;
 use App\Support\MessageBroadcaster;
+use App\Support\MessageNotifier;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -87,6 +88,7 @@ class MessageController extends Controller
         });
 
         MessageBroadcaster::dispatch($message);
+        MessageNotifier::notifyParticipants($message);
 
         return redirect()
             ->route('messages.show', $conversation)
@@ -121,6 +123,7 @@ class MessageController extends Controller
         });
 
         MessageBroadcaster::dispatch($message);
+        MessageNotifier::notifyParticipants($message);
 
         return redirect()
             ->route('messages.show', $conversation)

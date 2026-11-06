@@ -6,10 +6,12 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
         <meta name="kfms-session-status" content="{{ route('session.status', absolute: false) }}">
+        <meta name="kfms-session-heartbeat" content="{{ route('session.heartbeat', absolute: false) }}">
 
         <title>@yield('title', 'Client Portal') - {{ $companySetting->company_name ?: config('app.name', 'KFMS') }}</title>
 
         @include('layouts.partials.favicon')
+        @include('layouts.partials.pwa-meta')
         <link rel="stylesheet" href="{{ asset('admin/assets/vendors/mdi/css/materialdesignicons.min.css') }}">
         <link rel="stylesheet" href="{{ asset('admin/assets/vendors/css/vendor.bundle.base.css') }}">
         @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -75,6 +77,7 @@
                             <i class="mdi mdi-message-text-outline" aria-hidden="true"></i>
                             <span>Messages</span>
                         </a>
+                        @include('layouts.partials.push-notification-control')
                         <form method="POST" action="{{ route('logout') }}" class="kfms-client-header-logout">
                             @csrf
                             <input type="hidden" name="client_portal_logout" value="1">
@@ -92,7 +95,9 @@
                 </main>
             </div>
         </div>
+        @include('layouts.partials.pwa-install-prompt')
         <script src="{{ asset('admin/assets/js/kfms-session.js') }}?v={{ file_exists(public_path('admin/assets/js/kfms-session.js')) ? filemtime(public_path('admin/assets/js/kfms-session.js')) : time() }}"></script>
         <script src="{{ asset('admin/assets/js/kfms-client-layout.js') }}?v={{ filemtime(public_path('admin/assets/js/kfms-client-layout.js')) }}"></script>
+        <script src="{{ asset('admin/assets/js/kfms-pwa.js') }}?v={{ file_exists(public_path('admin/assets/js/kfms-pwa.js')) ? filemtime(public_path('admin/assets/js/kfms-pwa.js')) : time() }}"></script>
     </body>
 </html>

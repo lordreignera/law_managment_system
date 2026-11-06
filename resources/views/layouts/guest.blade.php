@@ -6,10 +6,12 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
         <meta name="kfms-session-status" content="{{ route('session.status', absolute: false) }}">
+        <meta name="kfms-session-heartbeat" content="{{ route('session.heartbeat', absolute: false) }}">
 
         <title>{{ $companySetting->company_name ?: config('app.name', 'KFMS') }}</title>
 
         @include('layouts.partials.favicon')
+        @include('layouts.partials.pwa-meta')
 
         @php
             $guestAssetVersion = static function (string $path): int {
@@ -30,8 +32,10 @@
             {{ $slot }}
         </div>
 
+        @include('layouts.partials.pwa-install-prompt')
         @livewireScripts
         <script src="{{ asset('admin/assets/js/kfms-session.js') }}?v={{ $guestAssetVersion('admin/assets/js/kfms-session.js') }}"></script>
         <script src="{{ asset('admin/assets/js/kfms-auth.js') }}?v={{ $guestAssetVersion('admin/assets/js/kfms-auth.js') }}"></script>
+        <script src="{{ asset('admin/assets/js/kfms-pwa.js') }}?v={{ $guestAssetVersion('admin/assets/js/kfms-pwa.js') }}"></script>
     </body>
 </html>

@@ -5,10 +5,12 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
         <meta name="kfms-session-status" content="{{ route('session.status', absolute: false) }}">
+        <meta name="kfms-session-heartbeat" content="{{ route('session.heartbeat', absolute: false) }}">
 
         <title>@yield('title', 'Dashboard') - {{ $companySetting->company_name ?: config('app.name', 'KFMS') }}</title>
 
         @include('layouts.partials.favicon')
+        @include('layouts.partials.pwa-meta')
         @include('layouts.partials.css')
         @include('layouts.partials.session-history')
         @livewireStyles
@@ -36,6 +38,7 @@
         </div>
 
         @stack('modals')
+        @include('layouts.partials.pwa-install-prompt')
         @livewireScripts
         <script src="{{ asset('admin/assets/vendors/js/vendor.bundle.base.js') }}"></script>
         <script src="{{ asset('admin/assets/js/off-canvas.js') }}"></script>
@@ -43,6 +46,7 @@
         <script src="{{ asset('admin/assets/js/kfms-sidebar.js') }}?v={{ file_exists(public_path('admin/assets/js/kfms-sidebar.js')) ? filemtime(public_path('admin/assets/js/kfms-sidebar.js')) : time() }}"></script>
         <script src="{{ asset('admin/assets/js/kfms-forms.js') }}?v={{ file_exists(public_path('admin/assets/js/kfms-forms.js')) ? filemtime(public_path('admin/assets/js/kfms-forms.js')) : time() }}"></script>
         <script src="{{ asset('admin/assets/js/kfms-workspace.js') }}?v={{ file_exists(public_path('admin/assets/js/kfms-workspace.js')) ? filemtime(public_path('admin/assets/js/kfms-workspace.js')) : time() }}"></script>
+        <script src="{{ asset('admin/assets/js/kfms-pwa.js') }}?v={{ file_exists(public_path('admin/assets/js/kfms-pwa.js')) ? filemtime(public_path('admin/assets/js/kfms-pwa.js')) : time() }}"></script>
         @stack('scripts')
     </body>
 </html>

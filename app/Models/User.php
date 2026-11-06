@@ -189,6 +189,11 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(Message::class, 'sender_id');
     }
 
+    public function pushSubscriptions()
+    {
+        return $this->hasMany(PushSubscription::class);
+    }
+
     public function sendPasswordResetNotification($token): void
     {
         $this->notify(new BrandedResetPassword($token));

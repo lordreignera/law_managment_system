@@ -90,6 +90,10 @@
                 </div>
             </li>
 
+            <li class="nav-item kfms-push-nav-item">
+                @include('layouts.partials.push-notification-control')
+            </li>
+
             <li class="nav-item dropdown">
                 <a class="nav-link" id="profileDropdown" href="#" data-bs-toggle="dropdown" aria-label="Account menu" aria-expanded="false">
                     <div class="navbar-profile">

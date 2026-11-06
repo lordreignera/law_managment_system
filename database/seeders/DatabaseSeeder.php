@@ -211,6 +211,10 @@ class DatabaseSeeder extends Seeder
 
         $kampala = Branch::where('name', 'Kampala')->firstOrFail();
 
+        // Every branch starts with the same core departments. Departments
+        // added later through branch settings remain branch-specific.
+        Branch::query()->each(fn (Branch $branch) => Department::seedStandardForBranch($branch));
+
         // Uganda fixed-date public holidays (recur every year). Movable feasts
         // such as Easter and the two Eids are added manually by an administrator.
         foreach ([
@@ -231,19 +235,6 @@ class DatabaseSeeder extends Seeder
                     'date' => now()->setMonth($holiday['month'])->setDay($holiday['day'])->startOfDay(),
                     'is_recurring' => true,
                 ]
-            );
-        }
-
-        foreach ([
-            'Litigation',
-            'Recoveries',
-            'Securities',
-            'Finance and Administration',
-            'Human Resources',
-        ] as $department) {
-            Department::firstOrCreate(
-                ['name' => $department],
-                ['branch_id' => $kampala->id]
             );
         }
 

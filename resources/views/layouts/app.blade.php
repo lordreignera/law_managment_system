@@ -5,11 +5,13 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
         <meta name="kfms-session-status" content="{{ route('session.status', absolute: false) }}">
+        <meta name="kfms-session-heartbeat" content="{{ route('session.heartbeat', absolute: false) }}">
         @include('layouts.partials.session-history')
 
         <title>{{ $companySetting->company_name ?: config('app.name', 'KFMS') }}</title>
 
         @include('layouts.partials.favicon')
+        @include('layouts.partials.pwa-meta')
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
@@ -43,8 +45,10 @@
         </div>
 
         @stack('modals')
+        @include('layouts.partials.pwa-install-prompt')
 
         @livewireScripts
         <script src="{{ asset('admin/assets/js/kfms-session.js') }}?v={{ file_exists(public_path('admin/assets/js/kfms-session.js')) ? filemtime(public_path('admin/assets/js/kfms-session.js')) : time() }}"></script>
+        <script src="{{ asset('admin/assets/js/kfms-pwa.js') }}?v={{ file_exists(public_path('admin/assets/js/kfms-pwa.js')) ? filemtime(public_path('admin/assets/js/kfms-pwa.js')) : time() }}"></script>
     </body>
 </html>
