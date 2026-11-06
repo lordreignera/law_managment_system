@@ -166,4 +166,60 @@ class RegistrationTest extends TestCase
 
         Notification::assertSentTo($reviewer, \App\Notifications\StaffAccessRequested::class);
     }
+
+    public function test_registration_only_notifies_branch_approval_reviewers(): void
+    {
+        if (! Features::enabled(Features::registration())) {
+            $this->markTestSkipped('Registration support is not enabled.');
+        }
+
+        $mbale = Branch::create(['name' => 'Mbale', 'code' => 'MBL']);
+        $kampala = Branch::create(['name' => 'Kampala', 'code' => 'KLA']);
+        $mbaleDepartment = Department::create(['name' => 'Mbale Finance', 'code' => 'MB-FIN', 'branch_id' => $mbale->id]);
+        $kampalaDepartment = Department::create(['name' => 'Kampala Finance', 'code' => 'K-FIN', 'branch_id' => $kampala->id]);
+        $role = Role::create(['name' => 'Accountant']);
+        JobTitle::create(['name' => 'Accounts Officer']);
+
+        $sameBranchReviewer = User::factory()->create([
+            'name' => 'Mbale Approval Reviewer',
+            'branch_id' => $mbale->id,
+        ]);
+        $sameBranchReviewer->givePermissionTo(Permission::findOrCreate('access.users.approve', 'web'));
+        StaffProfile::create([
+            'user_id' => $sameBranchReviewer->id,
+            'branch_id' => $mbale->id,
+            'department_id' => $mbaleDepartment->id,
+            'employment_status' => 'active',
+        ]);
+
+        $otherBranchReviewer = User::factory()->create([
+            'name' => 'Kampala Approval Reviewer',
+            'branch_id' => $kampala->id,
+        ]);
+        $otherBranchReviewer->givePermissionTo(Permission::findOrCreate('access.users.approve', 'web'));
+        StaffProfile::create([
+            'user_id' => $otherBranchReviewer->id,
+            'branch_id' => $kampala->id,
+            'department_id' => $kampalaDepartment->id,
+            'employment_status' => 'active',
+        ]);
+
+        Notification::fake();
+
+        $this->post('/register', [
+            'name' => 'Mbale Pending Staff Member',
+            'email' => 'mbale-pending-staff@example.com',
+            'phone' => '+256 700 123456',
+            'job_title' => 'Accounts Officer',
+            'branch_id' => $mbale->id,
+            'department_id' => $mbaleDepartment->id,
+            'requested_role' => $role->name,
+            'password' => 'password',
+            'password_confirmation' => 'password',
+            'terms' => Jetstream::hasTermsAndPrivacyPolicyFeature(),
+        ]);
+
+        Notification::assertSentTo($sameBranchReviewer, \App\Notifications\StaffAccessRequested::class);
+        Notification::assertNotSentTo($otherBranchReviewer, \App\Notifications\StaffAccessRequested::class);
+    }
 }

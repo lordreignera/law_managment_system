@@ -175,10 +175,13 @@
                                 </div>
                                 <div class="kfms-permission-options">
                                     @foreach ($groupPermissions as $permission)
-                                        <label class="kfms-tick-option kfms-permission-tick">
+                                        <label class="kfms-tick-option kfms-permission-tick" title="{{ $registry->permissionDescription($permission->name) }}">
                                             <input type="checkbox" name="direct_permissions[]" value="{{ $permission->name }}" @checked(in_array($permission->name, $selectedPermissions, true))>
                                             <span class="kfms-tick-mark"><i class="mdi mdi-check"></i></span>
-                                            <span class="kfms-tick-text">{{ $permission->name }}</span>
+                                            <span class="kfms-permission-copy">
+                                                <strong class="kfms-permission-label">{{ $registry->permissionLabel($permission->name) }}</strong>
+                                                <small class="kfms-permission-key">{{ $permission->name }}</small>
+                                            </span>
                                         </label>
                                     @endforeach
                                 </div>

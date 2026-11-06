@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AccessControlController;
 use App\Http\Controllers\AttachmentController;
+use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\BranchController;
 use App\Http\Controllers\CalendarController;
@@ -121,6 +122,9 @@ Route::middleware([
     // Pending users must always reach the pending screen, even without an
     // active staff profile and without any module permission.
     Route::view('/access-pending', 'auth.access-pending')->name('access.pending');
+    Route::get('/notifications/unread', [NotificationController::class, 'unread'])
+        ->middleware('active.staff')
+        ->name('notifications.unread');
     Route::get('/notifications', [NotificationController::class, 'index'])->middleware('active.staff')->name('notifications.index');
     Route::post('/notifications/{notification}/read', [NotificationController::class, 'read'])->middleware('active.staff')->name('notifications.read');
 
@@ -143,6 +147,10 @@ Route::middleware([
     // permission record.
     Route::middleware(['active.staff', 'route.permission'])->group(function () {
         Route::get('/dashboard', DashboardController::class)->name('dashboard');
+
+        // Read-only maintenance trail for authorized staff administrators.
+        Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit.index');
+        Route::get('/audit-logs/{auditLog}', [AuditLogController::class, 'show'])->name('audit.show');
 
         // Reporting catalogue and controlled report definitions.
         Route::get('/reports', [ReportingController::class, 'index'])->name('reports.index');

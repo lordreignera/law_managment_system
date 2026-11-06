@@ -73,7 +73,11 @@ class CreateNewUser implements CreatesNewUsers
                     ->orWhereHas('roles.permissions', fn ($permission) => $permission->where('name', 'access.users.approve'))
                     ->orWhereHas('permissions', fn ($permission) => $permission->where('name', 'access.users.approve'));
             })
-            ->get();
+            ->get()
+            ->filter(fn (User $reviewer) => $reviewer->canSeeAllBranches()
+                || (int) $reviewer->branch_id === (int) $user->branch_id
+                || (int) $reviewer->staffProfile?->branch_id === (int) $user->branch_id)
+            ->values();
 
         try {
             Notification::send($reviewers, new StaffAccessRequested($user));

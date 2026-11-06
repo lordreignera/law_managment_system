@@ -36,9 +36,12 @@
                                 <summary>{{ $label }} <span>({{ count($groupPermissions) }})</span></summary>
                                 <div class="kfms-permission-options">
                                     @foreach ($groupPermissions as $permission)
-                                        <label>
+                                        <label title="{{ $registry->permissionDescription($permission->name) }}">
                                             <input type="checkbox" name="permissions[]" value="{{ $permission->name }}" @checked(in_array($permission->name, $assignedPermissionNames, true))>
-                                            <span>{{ $permission->name }}</span>
+                                            <span class="kfms-permission-copy">
+                                                <strong class="kfms-permission-label">{{ $registry->permissionLabel($permission->name) }}</strong>
+                                                <small class="kfms-permission-key">{{ $permission->name }}</small>
+                                            </span>
                                         </label>
                                     @endforeach
                                 </div>

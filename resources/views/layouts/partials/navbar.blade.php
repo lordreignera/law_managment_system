@@ -73,21 +73,8 @@
                 </div>
             </li>
 
-            <li class="nav-item dropdown">
-                <button class="kfms-nav-icon" type="button" id="notificationDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Notifications">
-                    <i class="mdi mdi-bell-outline"></i>
-                    @php
-                        $unreadCount = auth()->user()->unreadNotifications()->count();
-                    @endphp
-                    @if ($unreadCount)<span class="kfms-nav-badge">{{ $unreadCount }}</span>@endif
-                </button>
-                <div class="dropdown-menu dropdown-menu-end navbar-dropdown kfms-notice-dropdown" aria-labelledby="notificationDropdown">
-                    <h6>Notifications</h6>
-                    @forelse (auth()->user()->unreadNotifications()->limit(5)->get() as $notification)
-                        <a class="dropdown-item" href="{{ route('notifications.index') }}">{{ $notification->data['subject'] ?? 'Notification' }}</a>
-                    @empty <span class="dropdown-item-text">No unread notifications</span> @endforelse
-                    <a class="dropdown-item" href="{{ route('notifications.index') }}">View all notifications</a>
-                </div>
+            <li class="nav-item">
+                @include('layouts.partials.notification-control')
             </li>
 
             <li class="nav-item kfms-push-nav-item">
@@ -117,29 +104,16 @@
                         <i class="mdi mdi-menu-down d-none d-sm-block"></i>
                     </div>
                 </a>
-                <div class="dropdown-menu dropdown-menu-right navbar-dropdown preview-list" aria-labelledby="profileDropdown">
-                    <a class="dropdown-item preview-item" href="{{ route('profile.show') }}">
-                        <div class="preview-thumbnail">
-                            <div class="preview-icon">
-                                <i class="mdi mdi-account-outline"></i>
-                            </div>
-                        </div>
-                        <div class="preview-item-content">
-                            <p class="preview-subject mb-1">Profile</p>
-                        </div>
+                <div class="dropdown-menu dropdown-menu-end navbar-dropdown kfms-profile-menu" aria-labelledby="profileDropdown">
+                    <a class="kfms-profile-menu-item" href="{{ route('profile.show') }}">
+                        <i class="mdi mdi-account-cog-outline" aria-hidden="true"></i>
+                        <span>Profile settings</span>
                     </a>
-                    <div class="dropdown-divider"></div>
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
-                        <button type="submit" class="dropdown-item preview-item">
-                            <div class="preview-thumbnail">
-                                <div class="preview-icon">
-                                    <i class="mdi mdi-logout"></i>
-                                </div>
-                            </div>
-                            <div class="preview-item-content">
-                                <p class="preview-subject mb-1">Logout</p>
-                            </div>
+                        <button type="submit" class="kfms-profile-menu-item kfms-profile-logout">
+                            <i class="mdi mdi-logout" aria-hidden="true"></i>
+                            <span>Sign out</span>
                         </button>
                     </form>
                 </div>

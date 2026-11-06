@@ -35,7 +35,7 @@
             <table class="kfms-table">
                 <thead>
                     <tr>
-                        <th>Permission</th>
+                        <th>Permission meaning</th>
                         <th>Module</th>
                         <th>Source</th>
                         <th>Guard</th>
@@ -49,7 +49,12 @@
                             $moduleLabel = $registry->moduleLabel($registry->moduleSlug($permission->name));
                         @endphp
                         <tr>
-                            <td>{{ $permission->name }}</td>
+                            <td>
+                                <span class="kfms-permission-copy" title="{{ $registry->permissionDescription($permission->name) }}">
+                                    <strong class="kfms-permission-label">{{ $registry->permissionLabel($permission->name) }}</strong>
+                                    <small class="kfms-permission-key">{{ $permission->name }}</small>
+                                </span>
+                            </td>
                             <td>{{ $moduleLabel }}</td>
                             <td>
                                 @if ($isRouteBound)

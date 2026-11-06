@@ -46,6 +46,7 @@
         <script src="{{ asset('admin/assets/js/kfms-sidebar.js') }}?v={{ file_exists(public_path('admin/assets/js/kfms-sidebar.js')) ? filemtime(public_path('admin/assets/js/kfms-sidebar.js')) : time() }}"></script>
         <script src="{{ asset('admin/assets/js/kfms-forms.js') }}?v={{ file_exists(public_path('admin/assets/js/kfms-forms.js')) ? filemtime(public_path('admin/assets/js/kfms-forms.js')) : time() }}"></script>
         <script src="{{ asset('admin/assets/js/kfms-workspace.js') }}?v={{ file_exists(public_path('admin/assets/js/kfms-workspace.js')) ? filemtime(public_path('admin/assets/js/kfms-workspace.js')) : time() }}"></script>
+        <script src="{{ asset('admin/assets/js/kfms-notifications.js') }}?v={{ file_exists(public_path('admin/assets/js/kfms-notifications.js')) ? filemtime(public_path('admin/assets/js/kfms-notifications.js')) : time() }}"></script>
         <script src="{{ asset('admin/assets/js/kfms-pwa.js') }}?v={{ file_exists(public_path('admin/assets/js/kfms-pwa.js')) ? filemtime(public_path('admin/assets/js/kfms-pwa.js')) : time() }}"></script>
         @stack('scripts')
     </body>

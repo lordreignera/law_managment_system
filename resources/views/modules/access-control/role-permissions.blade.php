@@ -85,10 +85,13 @@
                             </div>
                             <div class="kfms-role-permission-options">
                                 @foreach ($groupPermissions as $permission)
-                                    <label class="kfms-role-permission-option" data-permission-option data-permission-name="{{ strtolower($permission->name) }}">
+                                    <label class="kfms-role-permission-option" data-permission-option data-permission-name="{{ strtolower($registry->permissionLabel($permission->name).' '.$permission->name) }}" title="{{ $registry->permissionDescription($permission->name) }}">
                                         <input type="checkbox" name="permissions[]" value="{{ $permission->name }}" @checked(in_array($permission->name, $assignedPermissionNames, true))>
                                         <span class="kfms-role-permission-check"><i class="mdi mdi-check"></i></span>
-                                        <span class="kfms-role-permission-name">{{ $permission->name }}</span>
+                                        <span class="kfms-permission-copy">
+                                            <strong class="kfms-permission-label">{{ $registry->permissionLabel($permission->name) }}</strong>
+                                            <small class="kfms-permission-key">{{ $permission->name }}</small>
+                                        </span>
                                     </label>
                                 @endforeach
                             </div>

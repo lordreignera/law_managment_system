@@ -6,9 +6,12 @@ use App\Livewire\Profile\UpdateProfileInformationForm;
 use App\Models\Client;
 use App\Models\ClientPortalAccount;
 use App\Models\Conversation;
+use App\Models\Message;
 use App\Models\Matter;
 use App\Models\PracticeArea;
 use App\Models\StaffProfile;
+use App\Notifications\MessageReceived;
+use App\Support\MessageNotifier;
 use App\Models\User;
 use App\Support\MonthlyReferenceNumber;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -384,6 +387,8 @@ class ClientPortalTest extends TestCase
         $this->actingAs($portalUser)->get(route('client.dashboard'))
             ->assertOk()
             ->assertSee('Client Visible Matter')
+            ->assertSee('data-kfms-push-notifications', false)
+            ->assertSee('data-kfms-pwa-install', false)
             ->assertSee('href="'.e(route('client.profile')).'"', false)
             ->assertSee('href="https://kalikumutima.com/"', false)
             ->assertDontSee('kfms-client-hero-actions', false)
@@ -406,6 +411,23 @@ class ClientPortalTest extends TestCase
             'conversation_id' => $conversation->id,
             'sender_id' => $portalUser->id,
             'body' => 'Hello counsel, please update me.',
+        ]);
+        $this->assertDatabaseHas('notifications', [
+            'notifiable_id' => $advocate->id,
+            'type' => MessageReceived::class,
+        ]);
+
+        $reply = Message::create([
+            'conversation_id' => $conversation->id,
+            'sender_id' => $advocate->id,
+            'body' => 'We have received your update.',
+            'sent_at' => now(),
+        ]);
+        MessageNotifier::notifyParticipants($reply);
+
+        $this->assertDatabaseHas('notifications', [
+            'notifiable_id' => $portalUser->id,
+            'type' => MessageReceived::class,
         ]);
 
         $this->actingAs($portalUser)->get(route('client.messages.index'))

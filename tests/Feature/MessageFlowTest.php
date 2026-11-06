@@ -160,6 +160,36 @@ class MessageFlowTest extends TestCase
         );
     }
 
+    public function test_unread_notification_feed_is_user_scoped_and_drives_the_navbar(): void
+    {
+        $this->actingAs($this->sender)
+            ->post(route('messages.store'), [
+                'audience_type' => 'users',
+                'recipient_user_ids' => [$this->litigationUser->id],
+                'title' => 'Unread feed test',
+                'body' => 'This should appear in the notification feed.',
+            ])
+            ->assertSessionHasNoErrors();
+
+        $this->actingAs($this->litigationUser)
+            ->getJson(route('notifications.unread'))
+            ->assertOk()
+            ->assertJsonPath('unread_count', 1)
+            ->assertJsonPath('notifications.0.subject', 'New message from Sender Advocate')
+            ->assertJsonPath('notifications.0.body', 'This should appear in the notification feed.');
+
+        $this->get(route('messages.index'))
+            ->assertOk()
+            ->assertSee('data-kfms-notification-center', false)
+            ->assertSee('New message from Sender Advocate');
+
+        $this->actingAs($this->financeUser)
+            ->getJson(route('notifications.unread'))
+            ->assertOk()
+            ->assertJsonPath('unread_count', 0)
+            ->assertJsonCount(0, 'notifications');
+    }
+
     private function activeUser(string $name, string $email, Branch $branch, Department $department, string $status = 'active'): User
     {
         $user = User::factory()->create([

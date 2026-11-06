@@ -47,6 +47,7 @@ class RoutePermissionRegistry
         'branches' => 'Branches',
         'holidays' => 'Public Holidays',
         'settings' => 'Settings',
+        'audit' => 'Audit & Maintenance',
     ];
 
     /**
@@ -92,6 +93,75 @@ class RoutePermissionRegistry
     public function moduleLabel(string $slug): string
     {
         return self::MODULES[$slug] ?? Str::headline(str_replace('-', ' ', $slug));
+    }
+
+    /**
+     * Return the administrator-facing name for a permission key. The key
+     * itself remains the stable authorization identifier used by routes and
+     * Spatie's role assignments.
+     */
+    public function permissionLabel(string $permissionName): string
+    {
+        $knownLabels = [
+            'messages.store' => 'Send internal messages',
+            'messages.reply' => 'Reply to messages',
+            'messages.read' => 'Mark messages as read',
+            'access.users.approve' => 'Approve staff access requests',
+            'access.roles.permissions.edit' => 'Open role permission manager',
+            'access.roles.permissions.update' => 'Update role permissions',
+            'letters.draft-preview' => 'Preview letter drafts',
+            'letters.preview' => 'Preview letters',
+            'letters.mark-sent' => 'Mark letters as sent',
+            'leave.reschedule.edit' => 'Edit leave rescheduling',
+            'leave.reschedule.update' => 'Update leave rescheduling',
+            'audit.index' => 'View audit logs',
+            'audit.show' => 'View audit log details',
+        ];
+
+        if (isset($knownLabels[$permissionName])) {
+            return $knownLabels[$permissionName];
+        }
+
+        $parts = array_values(array_filter(explode('.', $permissionName)));
+        $module = $this->moduleLabel($parts[0] ?? $permissionName);
+
+        if (count($parts) === 1) {
+            return 'Open '.$module;
+        }
+
+        $action = array_pop($parts);
+        $resource = Str::headline(str_replace(['-', '_'], ' ', end($parts) ?: $parts[0]));
+
+        return match ($action) {
+            'index' => 'View '.$resource,
+            'show' => 'View '.$resource.' details',
+            'create' => 'Open '.$resource.' creation',
+            'store' => 'Create '.$resource,
+            'edit' => 'Open '.$resource.' editor',
+            'update' => 'Update '.$resource,
+            'destroy' => 'Delete '.$resource,
+            'approve' => 'Approve '.$resource,
+            'reject' => 'Reject '.$resource,
+            'export' => 'Export '.$resource,
+            'download' => 'Download '.$resource,
+            'cancel' => 'Cancel '.$resource,
+            'archive' => 'Archive '.$resource,
+            'read' => 'Mark '.$resource.' as read',
+            default => Str::headline(str_replace(['-', '_'], ' ', $action)).' '.$resource,
+        };
+    }
+
+    /**
+     * Explain the effect of a permission without changing its authorization
+     * key. This is deliberately generated from the same stable key so new
+     * route permissions receive a useful explanation automatically.
+     */
+    public function permissionDescription(string $permissionName): string
+    {
+        $module = $this->moduleLabel($this->moduleSlug($permissionName));
+        $label = lcfirst($this->permissionLabel($permissionName));
+
+        return 'Allows this role to '.$label.' in the '.$module.' module.';
     }
 
     public function isRouteBound(string $permissionName): bool

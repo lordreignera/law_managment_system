@@ -74,6 +74,7 @@ class AccessControlController extends Controller
                 ->get(),
             'roles' => Role::orderBy('name')->get(),
             'permissionGroups' => $this->permissionGroups(),
+            'registry' => $this->routeRegistry,
             'statuses' => ['pending', 'active', 'inactive', 'suspended'],
         ]);
     }
@@ -339,6 +340,7 @@ class AccessControlController extends Controller
             'roles' => $roles,
             'permissions' => Permission::orderBy('name')->get(),
             'permissionGroups' => $this->permissionGroups(),
+            'registry' => $this->routeRegistry,
             'filters' => $request->only(['search']),
         ]);
     }
@@ -366,6 +368,7 @@ class AccessControlController extends Controller
         return view('modules.access-control.role-permissions', [
             'role' => $role->load('permissions'),
             'permissionGroups' => $this->permissionGroups(),
+            'registry' => $this->routeRegistry,
         ]);
     }
 

@@ -41,7 +41,10 @@
                                     @foreach ($groupPermissions as $permission)
                                         <div class="kfms-readonly-permission">
                                             <i class="mdi mdi-check-circle-outline" aria-hidden="true"></i>
-                                            <span>{{ $permission->name }}</span>
+                                            <span class="kfms-permission-copy" title="{{ $registry->permissionDescription($permission->name) }}">
+                                                <strong class="kfms-permission-label">{{ $registry->permissionLabel($permission->name) }}</strong>
+                                                <small class="kfms-permission-key">{{ $permission->name }}</small>
+                                            </span>
                                         </div>
                                     @endforeach
                                 </div>

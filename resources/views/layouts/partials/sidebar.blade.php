@@ -176,6 +176,7 @@
         ['label' => 'Branches', 'icon' => 'mdi-office-building', 'route' => 'branches.index', 'active' => 'branches.*', 'permission' => 'branches.index'],
         ['label' => 'Public Holidays', 'icon' => 'mdi-calendar-star', 'route' => 'holidays.index', 'active' => 'holidays.*', 'permission' => 'holidays.index'],
         ['label' => 'Company Settings', 'icon' => 'mdi-settings', 'route' => 'settings.company.edit', 'active' => 'settings.company.*', 'permission' => 'settings.company.edit'],
+        ['label' => 'Audit & Maintenance', 'icon' => 'mdi-clipboard-text-clock-outline', 'route' => 'audit.index', 'active' => 'audit.*', 'permission' => 'audit.index'],
         [
             'label' => 'User Guide',
             'icon' => 'mdi-book-open-page-variant',
