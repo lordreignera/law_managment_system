@@ -19,7 +19,7 @@
     },
     "dependencies": {
         "laravel-echo": "^2.4.0",
-        "pdfjs-dist": "^6.3.289",
+        "pdfjs-dist": "^6.5.438",
         "pusher-js": "^8.5.0"
     },
     "overrides": {
