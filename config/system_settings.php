@@ -88,10 +88,11 @@ return [
         'description' => 'Types of client instructions received by the firm.',
     ],
     'job-titles' => [
-        'title' => 'Jobs',
-        'singular' => 'Job',
+        'title' => 'Positions',
+        'singular' => 'Position',
         'model' => JobTitle::class,
         'description' => 'Staff job titles and positions.',
+        'automatic_sort_order' => true,
     ],
     'budget-categories' => [
         'title' => 'Budget Categories',

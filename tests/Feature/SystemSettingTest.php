@@ -6,6 +6,7 @@ use App\Models\Bank;
 use App\Models\BankBranch;
 use App\Models\CompanySetting;
 use App\Models\InstructionType;
+use App\Models\JobTitle;
 use App\Models\StaffProfile;
 use App\Models\User;
 use App\Models\ZonalOffice;
@@ -111,6 +112,42 @@ class SystemSettingTest extends TestCase
 
         $this->assertSame('KCCA', ZonalOffice::first()->name);
         $this->assertSame('Kampala Road Branch', BankBranch::first()->name);
+    }
+
+    public function test_positions_use_clear_labels_automatic_ordering_and_compact_status_switch(): void
+    {
+        $user = $this->settingsUser();
+        JobTitle::create(['name' => 'Existing Position', 'sort_order' => 7, 'is_active' => true]);
+
+        $this->actingAs($user)
+            ->get(route('settings.system.index', 'job-titles'))
+            ->assertOk()
+            ->assertSee('Positions')
+            ->assertSee('Add Position')
+            ->assertSee('Record status')
+            ->assertSee('kfms-switch')
+            ->assertDontSee('name="sort_order"', false);
+
+        $this->actingAs($user)
+            ->post(route('settings.system.store', 'job-titles'), [
+                'name' => 'New Position',
+                'description' => 'Automatically ordered position.',
+                'is_active' => '1',
+            ])
+            ->assertRedirect(route('settings.system.index', 'job-titles', absolute: false));
+
+        $newPosition = JobTitle::where('name', 'New Position')->firstOrFail();
+        $this->assertSame(8, $newPosition->sort_order);
+
+        $this->actingAs($user)
+            ->put(route('settings.system.update', ['job-titles', $newPosition]), [
+                'name' => 'Renamed Position',
+                'description' => 'Updated description.',
+                'is_active' => '1',
+            ])
+            ->assertRedirect(route('settings.system.index', 'job-titles', absolute: false));
+
+        $this->assertSame(8, $newPosition->fresh()->sort_order);
     }
 
     public function test_settings_search_matches_initial_letters_and_keeps_all_cards_available_for_live_clearing(): void

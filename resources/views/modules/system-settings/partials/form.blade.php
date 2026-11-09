@@ -287,11 +287,13 @@
         </label>
     @endif
 
-    <label>
-        <span>Sort Order</span>
-        <input type="number" min="0" name="sort_order" value="{{ old('sort_order', $record->sort_order ?? 0) }}">
-        @error('sort_order') <small>{{ $message }}</small> @enderror
-    </label>
+    @if (! ($definition['automatic_sort_order'] ?? false))
+        <label>
+            <span>Sort Order</span>
+            <input type="number" min="0" name="sort_order" value="{{ old('sort_order', $record->sort_order ?? 0) }}">
+            @error('sort_order') <small>{{ $message }}</small> @enderror
+        </label>
+    @endif
     @if (in_array('iso_code', $extraFields, true))
         <label><span>Currency ISO Code</span><input type="text" name="iso_code" value="{{ old('iso_code', $record->iso_code) }}" minlength="3" maxlength="3" placeholder="UGX" required>@error('iso_code') <small>{{ $message }}</small> @enderror</label>
     @endif
@@ -318,9 +320,13 @@
         </label>
     @endif
 
-    <label class="kfms-check-row kfms-span-2">
-        <input type="checkbox" name="is_active" value="1" @checked(old('is_active', $record->exists ? $record->is_active : true))>
-        <span>Active</span>
+    <label class="kfms-switch-field kfms-span-2">
+        <span>Record status</span>
+        <span class="kfms-switch-control">
+            <input type="checkbox" name="is_active" value="1" @checked(old('is_active', $record->exists ? $record->is_active : true))>
+            <span class="kfms-switch" aria-hidden="true"></span>
+            <strong>Active</strong>
+        </span>
     </label>
 
     @if (in_array('is_default', $extraFields, true))

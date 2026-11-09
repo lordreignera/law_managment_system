@@ -26,6 +26,10 @@ class MasterDataValidator
             'sort_order' => ['nullable', 'integer', 'min:0'],
             'is_active' => ['nullable', 'boolean'],
         ];
+        $automaticSortOrder = (bool) ($definition['automatic_sort_order'] ?? false);
+        if ($automaticSortOrder) {
+            unset($rules['sort_order']);
+        }
         $extraRules = [
             'court_level' => ['nullable', 'string', 'max:120'],
             'station' => ['nullable', 'string', 'max:120'],
@@ -67,7 +71,13 @@ class MasterDataValidator
             $input['iso_code'] = strtoupper(trim($input['iso_code']));
         }
         $data = Validator::make($input, $rules)->validate();
-        $data['sort_order'] = $data['sort_order'] ?? 0;
+        if ($automaticSortOrder) {
+            $data['sort_order'] = $record?->exists
+                ? $record->sort_order
+                : ((int) $definition['model']::query()->max('sort_order')) + 1;
+        } else {
+            $data['sort_order'] = $data['sort_order'] ?? 0;
+        }
         foreach (array_intersect(['is_active', 'is_default', 'is_inclusive', 'carry_forward', 'requires_attachment'], array_keys($rules)) as $field) {
             $data[$field] = filter_var($data[$field] ?? false, FILTER_VALIDATE_BOOLEAN);
         }
