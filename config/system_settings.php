@@ -92,7 +92,6 @@ return [
         'singular' => 'Position',
         'model' => JobTitle::class,
         'description' => 'Staff job titles and positions.',
-        'automatic_sort_order' => true,
     ],
     'budget-categories' => [
         'title' => 'Budget Categories',

@@ -61,12 +61,6 @@
         @error('currency_code') <small>{{ $message }}</small> @enderror
     </label>
 
-    <label>
-        <span>Sort Order</span>
-        <input type="number" min="0" name="sort_order" value="{{ old('sort_order', $account->sort_order) }}">
-        @error('sort_order') <small>{{ $message }}</small> @enderror
-    </label>
-
     <label class="kfms-span-2">
         <span>Description</span>
         <textarea name="description" rows="3">{{ old('description', $account->description) }}</textarea>
@@ -90,9 +84,14 @@
             <input type="checkbox" name="is_client_funds_account" value="1" @checked(old('is_client_funds_account', $account->is_client_funds_account))>
             <span>Client funds account</span>
         </label>
-        <label class="kfms-checkbox">
-            <input type="checkbox" name="is_active" value="1" @checked(old('is_active', $account->is_active ?? true))>
-            <span>Active</span>
-        </label>
     </div>
+
+    <label class="kfms-switch-field kfms-span-2">
+        <span>Account status</span>
+        <span class="kfms-switch-control">
+            <input type="checkbox" name="is_active" value="1" @checked(old('is_active', $account->is_active ?? true))>
+            <span class="kfms-switch" aria-hidden="true"></span>
+            <strong>Active</strong>
+        </span>
+    </label>
 </div>

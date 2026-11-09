@@ -366,8 +366,7 @@ class MatterLitigationWorkflowTest extends TestCase
             'name' => 'Filed Pleadings',
             'bundle_type' => 'pleadings',
             'status' => 'finalized',
-            'attachment_ids' => [$defence->id, $currentClaim->id],
-            'sort_orders' => [$defence->id => 2, $currentClaim->id => 1],
+            'attachment_ids' => [$currentClaim->id, $defence->id],
             'labels' => [$defence->id => '01 Defence', $currentClaim->id => '02 Claim'],
         ])->assertRedirect();
 

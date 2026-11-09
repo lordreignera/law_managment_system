@@ -16,18 +16,17 @@
         @if ($bundle->description)<p class="kfms-muted-text">{{ $bundle->description }}</p>@endif
         <div class="kfms-table-wrap">
             <table class="kfms-table">
-                <thead><tr><th>Order</th><th>Document</th><th>Category</th><th>Version</th><th>Action</th></tr></thead>
+                <thead><tr><th>Document</th><th>Category</th><th>Version</th><th>Action</th></tr></thead>
                 <tbody>
                     @forelse ($bundle->items as $item)
                         <tr>
-                            <td>{{ $item->sort_order }}</td>
                             <td>{{ $item->label ?: $item->attachment?->title ?: $item->attachment?->original_name }}</td>
                             <td>{{ str($item->attachment?->category ?: 'document')->headline() }}</td>
                             <td>v{{ $item->attachment?->version_number ?: 1 }}</td>
                             <td>@if ($item->attachment)<a class="kfms-link-btn" href="{{ route('attachments.download', $item->attachment) }}">Download</a>@endif</td>
                         </tr>
                     @empty
-                        <tr><td colspan="5" class="kfms-empty">This bundle has no documents.</td></tr>
+                        <tr><td colspan="4" class="kfms-empty">This bundle has no documents.</td></tr>
                     @endforelse
                 </tbody>
             </table>

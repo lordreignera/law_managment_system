@@ -8,7 +8,6 @@
     <label><span>Rate (%)</span><input type="number" name="rate" step="0.0001" min="0" max="100" value="{{ old('rate', $rule->rate) }}"></label>
     <label><span>Effective From</span><input type="date" name="effective_from" value="{{ old('effective_from', $rule->effective_from?->toDateString()) }}" required></label>
     <label><span>Effective To</span><input type="date" name="effective_to" value="{{ old('effective_to', $rule->effective_to?->toDateString()) }}"></label>
-    <label><span>Sort Order</span><input type="number" name="sort_order" min="0" value="{{ old('sort_order', $rule->sort_order ?? 0) }}"></label>
     <label class="kfms-span-2"><span>Formula (optional)</span><textarea name="formula" rows="3">{{ old('formula', $rule->formula) }}</textarea>@error('formula')<small>{{ $message }}</small>@enderror</label>
     <label class="kfms-span-2"><span>Configuration JSON (optional)</span><textarea name="configuration" rows="8" placeholder='For tax bands, store a versioned JSON object such as {"bands": []}'>{{ old('configuration', $rule->configuration ? json_encode($rule->configuration, JSON_PRETTY_PRINT) : '') }}</textarea>@error('configuration')<small>{{ $message }}</small>@enderror</label>
     <label class="kfms-span-2"><span>Description</span><textarea name="description" rows="3">{{ old('description', $rule->description) }}</textarea></label>

@@ -12,7 +12,6 @@
                 <div class="kfms-branch-modal-details">
                     <div><span>Status</span><strong>{{ $department->is_active ? 'Active' : 'Inactive' }}</strong></div>
                     <div><span>Staff</span><strong>{{ number_format($department->users_count ?? $department->users()->count()) }}</strong></div>
-                    <div><span>Sort order</span><strong>{{ $department->sort_order ?? 0 }}</strong></div>
                 </div>
                 <div class="kfms-modal-description">
                     <span>Description</span>

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\PayrollRule;
+use App\Support\AutomaticSortOrder;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -78,7 +79,6 @@ class PayrollRuleController extends Controller
             'is_employer_cost' => ['nullable', 'boolean'],
             'effective_from' => ['required', 'date'],
             'effective_to' => ['nullable', 'date', 'after_or_equal:effective_from'],
-            'sort_order' => ['nullable', 'integer', 'min:0'],
             'description' => ['nullable', 'string', 'max:2000'],
             'flags' => ['nullable', 'array'],
             'flags.*' => [Rule::in(array_keys(PayrollRule::FLAGS))],
@@ -86,7 +86,7 @@ class PayrollRuleController extends Controller
         ]);
 
         $data['configuration'] = filled($data['configuration'] ?? null) ? json_decode($data['configuration'], true, 512, JSON_THROW_ON_ERROR) : null;
-        $data['sort_order'] = $data['sort_order'] ?? 0;
+        $data['sort_order'] = AutomaticSortOrder::next(PayrollRule::query(), $rule);
         if ($request->has('flags')) {
             $flags = array_fill_keys($request->input('flags', []), true);
             $data['is_active'] = isset($flags['active']);

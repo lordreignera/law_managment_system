@@ -53,13 +53,13 @@
                         <span>Description</span>
                         <textarea name="description" rows="3">{{ old('description', $template->description) }}</textarea>
                     </label>
-                    <label>
-                        <span>Sort Order</span>
-                        <input type="number" name="sort_order" value="{{ old('sort_order', $template->sort_order ?: 0) }}" min="0">
-                    </label>
-                    <label class="kfms-checkbox-line">
-                        <input type="checkbox" name="is_active" value="1" @checked(old('is_active', $template->is_active ?? true))>
-                        <span>Active</span>
+                    <label class="kfms-switch-field kfms-span-2">
+                        <span>Template status</span>
+                        <span class="kfms-switch-control">
+                            <input type="checkbox" name="is_active" value="1" @checked(old('is_active', $template->is_active ?? true))>
+                            <span class="kfms-switch" aria-hidden="true"></span>
+                            <strong>Active</strong>
+                        </span>
                     </label>
                 </div>
             </div>

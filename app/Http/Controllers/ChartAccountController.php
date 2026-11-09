@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Exports\RecoveryReportExport;
 use App\Models\AccountClass;
 use App\Models\ChartAccount;
+use App\Support\AutomaticSortOrder;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -188,7 +189,6 @@ class ChartAccountController extends Controller
             'normal_balance' => ['required', Rule::in(array_keys(ChartAccount::NORMAL_BALANCES))],
             'description' => ['nullable', 'string', 'max:2000'],
             'currency_code' => ['nullable', 'string', 'max:10'],
-            'sort_order' => ['nullable', 'integer', 'min:0'],
             'is_postable' => ['nullable', 'boolean'],
             'is_bank_account' => ['nullable', 'boolean'],
             'is_cash_account' => ['nullable', 'boolean'],
@@ -212,7 +212,10 @@ class ChartAccountController extends Controller
         }
 
         $data['account_number'] = $data['account_number'] ?: ChartAccount::nextNumber((int) $data['account_class_id'], $data['parent_id'] ?? null);
-        $data['sort_order'] = $data['sort_order'] ?? (int) preg_replace('/\D+/', '', $data['account_number']);
+        $data['sort_order'] = AutomaticSortOrder::next(
+            ChartAccount::where('parent_id', $data['parent_id'] ?? null),
+            $account
+        );
         $data['is_postable'] = $request->boolean('is_postable');
         $data['is_bank_account'] = $request->boolean('is_bank_account');
         $data['is_cash_account'] = $request->boolean('is_cash_account');

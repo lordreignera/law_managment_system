@@ -18,11 +18,9 @@
                 <label class="kfms-span-2"><span>Description</span><textarea name="description" rows="3">{{ old('description', $bundle->description) }}</textarea></label>
             </div>
             @php($selected = old('attachment_ids', $bundle->items->sortBy('sort_order')->pluck('attachment_id')->all()))
-            @php($sortOrders = old('sort_orders', $bundle->items->pluck('sort_order', 'attachment_id')->all()))
             @include('modules.document-bundles.partials.attachment-picker', [
                 'attachments' => $attachments,
                 'selected' => $selected,
-                'sortOrders' => $sortOrders,
                 'label' => 'Documents in Bundle',
                 'placeholder' => 'Select documents for this bundle',
             ])

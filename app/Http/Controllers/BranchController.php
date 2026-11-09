@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Branch;
 use App\Models\Department;
 use App\Models\StaffProfile;
+use App\Support\AutomaticSortOrder;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -208,11 +209,13 @@ class BranchController extends Controller
                     ->ignore($department?->id),
             ],
             'description' => ['nullable', 'string', 'max:1000'],
-            'sort_order' => ['nullable', 'integer', 'min:0', 'max:9999'],
             'is_active' => ['nullable', 'boolean'],
         ]);
 
-        $data['sort_order'] = (int) ($data['sort_order'] ?? 0);
+        $data['sort_order'] = AutomaticSortOrder::next(
+            Department::where('branch_id', $branch->id),
+            $department
+        );
         $data['is_active'] = $request->boolean('is_active');
 
         return $data;

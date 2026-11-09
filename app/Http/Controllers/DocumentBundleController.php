@@ -49,7 +49,7 @@ class DocumentBundleController extends Controller
                 'finalized_at' => ($data['status'] ?? 'draft') === 'finalized' ? now() : null,
             ]);
 
-            $this->syncItems($bundle, $data['attachment_ids'] ?? [], $data['labels'] ?? [], $data['sort_orders'] ?? []);
+            $this->syncItems($bundle, $data['attachment_ids'] ?? [], $data['labels'] ?? []);
 
             return $bundle;
         });
@@ -94,7 +94,7 @@ class DocumentBundleController extends Controller
             ]);
             if (array_key_exists('attachment_ids', $data)) {
                 $bundle->items()->get()->each->delete();
-                $this->syncItems($bundle, $data['attachment_ids'] ?? [], $data['labels'] ?? [], $data['sort_orders'] ?? []);
+                $this->syncItems($bundle, $data['attachment_ids'] ?? [], $data['labels'] ?? []);
             }
         });
 
@@ -140,8 +140,6 @@ class DocumentBundleController extends Controller
             'attachment_ids.*' => ['integer', 'distinct', 'exists:attachments,id'],
             'labels' => ['nullable', 'array'],
             'labels.*' => ['nullable', 'string', 'max:191'],
-            'sort_orders' => ['nullable', 'array'],
-            'sort_orders.*' => ['integer', 'min:1', 'max:9999'],
         ]);
 
         $ids = array_values(array_unique($data['attachment_ids'] ?? []));
@@ -167,20 +165,9 @@ class DocumentBundleController extends Controller
             ->get();
     }
 
-    private function syncItems(DocumentBundle $bundle, array $attachmentIds, array $labels, array $sortOrders = []): void
+    private function syncItems(DocumentBundle $bundle, array $attachmentIds, array $labels): void
     {
-        $items = collect(array_values($attachmentIds))
-            ->values()
-            ->map(fn ($attachmentId, $index) => [
-                'id' => $attachmentId,
-                'requested_order' => (int) ($sortOrders[$attachmentId] ?? $index + 1),
-                'index' => $index,
-            ])
-            ->all();
-        usort($items, fn (array $left, array $right) => ($left['requested_order'] <=> $right['requested_order']) ?: ($left['index'] <=> $right['index']));
-
-        foreach ($items as $index => $item) {
-            $attachmentId = $item['id'];
+        foreach (array_values($attachmentIds) as $index => $attachmentId) {
             $bundle->items()->create([
                 'attachment_id' => $attachmentId,
                 'sort_order' => $index + 1,

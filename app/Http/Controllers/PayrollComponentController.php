@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\PayrollComponent;
+use App\Support\AutomaticSortOrder;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -102,7 +103,6 @@ class PayrollComponentController extends Controller
             'amount' => ['nullable', 'numeric', 'min:0'],
             'rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'formula' => ['nullable', 'string', 'max:2000'],
-            'sort_order' => ['nullable', 'integer', 'min:0'],
             'description' => ['nullable', 'string', 'max:2000'],
             'flags' => ['nullable', 'array'],
             'flags.*' => [Rule::in(array_keys(PayrollComponent::FLAGS))],
@@ -114,7 +114,7 @@ class PayrollComponentController extends Controller
         ]);
 
         $data['amount'] = $data['amount'] ?? 0;
-        $data['sort_order'] = $data['sort_order'] ?? 0;
+        $data['sort_order'] = AutomaticSortOrder::next(PayrollComponent::query(), $component);
         if ($request->has('flags')) {
             $flags = array_fill_keys($request->input('flags', []), true);
             $data['is_taxable'] = isset($flags['taxable']);

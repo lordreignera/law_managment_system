@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\HasCompanyCode;
+use App\Support\AutomaticSortOrder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -38,10 +39,20 @@ class Department extends Model
     public static function seedStandardForBranch(Branch $branch): void
     {
         foreach (static::standardNames() as $name) {
-            static::firstOrCreate(
+            $department = static::firstOrCreate(
                 ['branch_id' => $branch->id, 'name' => $name],
                 ['is_active' => true]
             );
+
+            if (! $department->wasRecentlyCreated || (int) $department->sort_order !== 0) {
+                continue;
+            }
+
+            $department->update([
+                'sort_order' => AutomaticSortOrder::next(
+                    static::where('branch_id', $branch->id)->whereKeyNot($department->id)
+                ),
+            ]);
         }
     }
 

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\LetterTemplate;
 use App\Models\Letterhead;
+use App\Support\AutomaticSortOrder;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -80,11 +81,10 @@ class LetterTemplateController extends Controller
             'subject' => ['nullable', 'string', 'max:255'],
             'body' => ['required', 'string'],
             'description' => ['nullable', 'string', 'max:1000'],
-            'sort_order' => ['nullable', 'integer', 'min:0'],
             'is_active' => ['nullable', 'boolean'],
         ]);
 
-        $data['sort_order'] = $data['sort_order'] ?? 0;
+        $data['sort_order'] = AutomaticSortOrder::next(LetterTemplate::query(), $template);
         $data['is_active'] = $request->boolean('is_active');
 
         return $data;

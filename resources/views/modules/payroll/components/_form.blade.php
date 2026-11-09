@@ -40,6 +40,5 @@
         'selectAllLabel' => 'Select all flags',
         'hint' => 'Choose the behaviors that apply. The list opens as a searchable, scrollable menu.',
     ])
-    <label><span>Sort Order</span><input type="number" name="sort_order" min="0" value="{{ old('sort_order', $component->sort_order ?? 0) }}"></label>
 </div>
 <div class="kfms-form-actions"><a class="kfms-link-btn" href="{{ route('payroll.components.index') }}">Cancel</a><button class="kfms-btn" type="submit">{{ $component->exists ? 'Update' : 'Create' }} Component</button></div>

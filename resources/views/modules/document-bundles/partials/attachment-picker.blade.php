@@ -1,6 +1,5 @@
 @php
     $selectedValues = array_map('strval', $selected ?? []);
-    $sortOrders = $sortOrders ?? [];
     $pickerId = $id ?? 'bundle-attachment-picker';
 @endphp
 
@@ -26,13 +25,12 @@
                         $attachmentLabel = $attachment->title ?: $attachment->original_name;
                         $attachmentDetail = str($attachment->category ?: 'document')->headline().' / v'.$attachment->version_number;
                     @endphp
-                    <label class="kfms-check-dropdown-option kfms-check-dropdown-order-option" data-check-option-label data-search-text="{{ strtolower($attachmentLabel.' '.$attachmentDetail) }}">
+                    <label class="kfms-check-dropdown-option" data-check-option-label data-search-text="{{ strtolower($attachmentLabel.' '.$attachmentDetail) }}">
                         <input type="checkbox" name="attachment_ids[]" value="{{ $attachment->id }}" data-check-option @checked(in_array((string) $attachment->id, $selectedValues, true))>
                         <span>
                             <strong>{{ $attachmentLabel }}</strong>
                             <small>{{ $attachmentDetail }}</small>
                         </span>
-                        <input class="kfms-check-dropdown-order" type="number" name="sort_orders[{{ $attachment->id }}]" value="{{ $sortOrders[$attachment->id] ?? $loop->iteration }}" min="1" max="9999" aria-label="Order for {{ $attachmentLabel }}">
                     </label>
                 @empty
                     <p class="kfms-check-dropdown-empty">Upload current matter documents before creating a bundle.</p>
@@ -40,7 +38,7 @@
             </div>
         </div>
     </div>
-    <small class="kfms-check-dropdown-hint">Select documents and set the order in which they should appear.</small>
+    <small class="kfms-check-dropdown-hint">Select documents in the order they should appear.</small>
     @error('attachment_ids') <small>{{ $message }}</small> @enderror
     @error('attachment_ids.*') <small>{{ $message }}</small> @enderror
 </div>

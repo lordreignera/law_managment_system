@@ -11,12 +11,6 @@
         <small>Codes are generated automatically.</small>
     </label>
 
-    <label>
-        <span>Sort Order</span>
-        <input type="number" name="sort_order" value="{{ old('sort_order', $department->sort_order ?? 0) }}" min="0" max="9999">
-        @error('sort_order') <small>{{ $message }}</small> @enderror
-    </label>
-
     <label class="kfms-switch-field">
         <span>Department status</span>
         <span class="kfms-switch-control">

@@ -25,7 +25,6 @@
             @include('modules.document-bundles.partials.attachment-picker', [
                 'attachments' => $attachments,
                 'selected' => old('attachment_ids', []),
-                'sortOrders' => old('sort_orders', []),
                 'label' => 'Documents in Bundle',
                 'placeholder' => 'Select documents for this bundle',
             ])

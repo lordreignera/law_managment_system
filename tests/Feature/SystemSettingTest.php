@@ -62,7 +62,7 @@ class SystemSettingTest extends TestCase
         $this->assertDatabaseHas('instruction_types', [
             'id' => $record->id,
             'name' => 'Updated Instruction',
-            'sort_order' => 3,
+            'sort_order' => 0,
             'is_active' => false,
         ]);
 

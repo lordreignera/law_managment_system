@@ -58,7 +58,7 @@ class MasterDataImports
             'branches' => ['name', 'city', 'address', 'is_active'],
             'users' => ['name', 'email', 'password', 'phone', 'job_title', 'branch_name', 'department_name', 'role', 'joined_on'],
             'roles' => ['name', 'permissions'],
-            default => array_merge(['name'], array_map(fn ($field) => self::RELATIONS[$field][0] ?? $field, $this->definitions()[$setting]['extra_fields'] ?? []), ['description', 'sort_order', 'is_active']),
+            default => array_merge(['name'], array_map(fn ($field) => self::RELATIONS[$field][0] ?? $field, $this->definitions()[$setting]['extra_fields'] ?? []), ['description', 'is_active']),
         };
     }
 
@@ -128,7 +128,6 @@ class MasterDataImports
 
         return array_merge($row, [
             $record->description,
-            $record->sort_order,
             $record->is_active ? 1 : 0,
         ]);
     }

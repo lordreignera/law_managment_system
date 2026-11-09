@@ -287,13 +287,6 @@
         </label>
     @endif
 
-    @if (! ($definition['automatic_sort_order'] ?? false))
-        <label>
-            <span>Sort Order</span>
-            <input type="number" min="0" name="sort_order" value="{{ old('sort_order', $record->sort_order ?? 0) }}">
-            @error('sort_order') <small>{{ $message }}</small> @enderror
-        </label>
-    @endif
     @if (in_array('iso_code', $extraFields, true))
         <label><span>Currency ISO Code</span><input type="text" name="iso_code" value="{{ old('iso_code', $record->iso_code) }}" minlength="3" maxlength="3" placeholder="UGX" required>@error('iso_code') <small>{{ $message }}</small> @enderror</label>
     @endif

@@ -23,13 +23,8 @@ class MasterDataValidator
         $rules = [
             'name' => ['required', 'string', 'max:'.($table === 'opposing_counsels' ? 120 : 191), $nameRule],
             'description' => ['nullable', 'string', 'max:1000'],
-            'sort_order' => ['nullable', 'integer', 'min:0'],
             'is_active' => ['nullable', 'boolean'],
         ];
-        $automaticSortOrder = (bool) ($definition['automatic_sort_order'] ?? false);
-        if ($automaticSortOrder) {
-            unset($rules['sort_order']);
-        }
         $extraRules = [
             'court_level' => ['nullable', 'string', 'max:120'],
             'station' => ['nullable', 'string', 'max:120'],
@@ -71,13 +66,18 @@ class MasterDataValidator
             $input['iso_code'] = strtoupper(trim($input['iso_code']));
         }
         $data = Validator::make($input, $rules)->validate();
-        if ($automaticSortOrder) {
-            $data['sort_order'] = $record?->exists
-                ? $record->sort_order
-                : ((int) $definition['model']::query()->max('sort_order')) + 1;
-        } else {
-            $data['sort_order'] = $data['sort_order'] ?? 0;
+        $sortQuery = $definition['model']::query();
+        foreach (['branch_id', 'court_id', 'bank_id', 'centenary_region_id'] as $parent) {
+            if (! in_array($parent, $fields, true)) {
+                continue;
+            }
+
+            $value = $data[$parent] ?? null;
+            $value === null
+                ? $sortQuery->whereNull($parent)
+                : $sortQuery->where($parent, $value);
         }
+        $data['sort_order'] = AutomaticSortOrder::next($sortQuery, $record);
         foreach (array_intersect(['is_active', 'is_default', 'is_inclusive', 'carry_forward', 'requires_attachment'], array_keys($rules)) as $field) {
             $data[$field] = filter_var($data[$field] ?? false, FILTER_VALIDATE_BOOLEAN);
         }
