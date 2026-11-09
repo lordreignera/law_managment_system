@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Exports\UsersExport;
 use App\Models\Branch;
 use App\Models\Department;
 use App\Models\JobTitle;
@@ -11,6 +12,7 @@ use App\Notifications\StaffAccountApproved;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
+use Maatwebsite\Excel\Facades\Excel;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
@@ -147,6 +149,7 @@ class AccessControlFlowTest extends TestCase
             ->get(route('access.users.index'))
             ->assertOk()
             ->assertSee('Add User')
+            ->assertSee('Export Users')
             ->assertSee(route('access.users.create', absolute: false), false);
 
         $this
@@ -192,6 +195,35 @@ class AccessControlFlowTest extends TestCase
 
             $this->assertNotContains('Temporary password: temporary123', $mail['introLines']);
             $this->assertStringContainsString('passwords are never sent by email', implode(' ', $mail['introLines']));
+
+            return true;
+        });
+    }
+
+    public function test_user_list_can_be_exported_without_sensitive_authentication_fields(): void
+    {
+        Excel::fake();
+        Excel::matchByRegex();
+
+        $accessRole = Role::findOrCreate('Access Manager');
+        $accessRole->givePermissionTo(Permission::findOrCreate('access.users.index'));
+
+        $admin = User::factory()->create();
+        $admin->assignRole($accessRole);
+        StaffProfile::create([
+            'user_id' => $admin->id,
+            'employment_status' => 'active',
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('access.users.export', ['search' => 'admin', 'status' => 'active']))
+            ->assertOk();
+
+        Excel::assertDownloaded('/^users-\\d{8}-\\d{6}\.xlsx$/', function (UsersExport $export): bool {
+            $this->assertSame('Users', $export->title());
+            $this->assertContains('Email', $export->headings());
+            $this->assertNotContains('Password', $export->headings());
+            $this->assertNotContains('Permissions', $export->headings());
 
             return true;
         });

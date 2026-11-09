@@ -7,6 +7,7 @@ use App\Models\Branch;
 use App\Models\Department;
 use App\Models\StaffProfile;
 use App\Models\User;
+use App\Exports\UsersExport;
 use App\Notifications\StaffAccountApproved;
 use App\Support\ReferenceData;
 use App\Support\RoutePermissionRegistry;
@@ -17,6 +18,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
+use Maatwebsite\Excel\Facades\Excel;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
@@ -50,6 +52,16 @@ class AccessControlController extends Controller
             'roles' => Role::orderBy('name')->get(),
             'filters' => $request->only(['search', 'status', 'role']),
         ]);
+    }
+
+    public function exportUsers(Request $request)
+    {
+        $this->ensureCanManageAccessControl();
+
+        return Excel::download(
+            new UsersExport($request->only(['search', 'status', 'role'])),
+            'users-'.now()->format('Ymd-His').'.xlsx'
+        );
     }
 
     public function editUser(User $user)

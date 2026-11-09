@@ -11,6 +11,10 @@
                 <span>Assign roles, approve access, suspend users, or remove accounts.</span>
             </div>
             <div class="kfms-toolbar-actions">
+                <a class="kfms-link-btn" href="{{ route('access.users.export', array_filter($filters)) }}">
+                    <i class="mdi mdi-download-outline"></i>
+                    Export Users
+                </a>
                 @can('access.users.create')
                     <a class="kfms-btn" href="{{ route('access.users.create') }}">
                         <i class="mdi mdi-account-plus-outline"></i>

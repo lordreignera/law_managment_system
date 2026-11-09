@@ -448,6 +448,10 @@ Route::middleware([
             Route::get('/users/create', [StaffController::class, 'create'])->name('users.create');
             Route::post('/users', [StaffController::class, 'store'])->name('users.store');
             Route::get('/users', [AccessControlController::class, 'users'])->name('users.index');
+            Route::get('/users/export', [AccessControlController::class, 'exportUsers'])
+                ->withoutMiddleware('route.permission')
+                ->middleware('permission:access.users.index')
+                ->name('users.export');
             Route::get('/users/{user}/edit', [AccessControlController::class, 'editUser'])->name('users.edit');
             Route::put('/users/{user}', [AccessControlController::class, 'updateUser'])->name('users.update');
             Route::patch('/users/{user}/approve', [AccessControlController::class, 'approveUser'])->name('users.approve');
