@@ -6,6 +6,6 @@
     };
 @endphp
 
-<link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}?v={{ $faviconVersion('favicon.ico') }}">
-<link rel="icon" type="image/png" sizes="32x32" href="{{ asset('favicon.png') }}?v={{ $faviconVersion('favicon.png') }}">
-<link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}?v={{ $faviconVersion('apple-touch-icon.png') }}">
+<link rel="icon" type="image/x-icon" href="{{ asset('pwa/favicon.ico') }}?v={{ $faviconVersion('pwa/favicon.ico') }}">
+<link rel="icon" type="image/png" sizes="32x32" href="{{ asset('pwa/favicon-32.png') }}?v={{ $faviconVersion('pwa/favicon-32.png') }}">
+<link rel="apple-touch-icon" sizes="180x180" href="{{ asset('pwa/apple-touch-icon.png') }}?v={{ $faviconVersion('pwa/apple-touch-icon.png') }}">

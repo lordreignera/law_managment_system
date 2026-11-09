@@ -1,9 +1,13 @@
-const CACHE_NAME = 'kfms-static-v1';
+const CACHE_NAME = 'kfms-static-v2';
 const PRECACHE_URLS = [
     '/manifest.webmanifest',
-    '/favicon.ico',
-    '/favicon.png',
-    '/apple-touch-icon.png',
+    '/pwa/icon-192.png',
+    '/pwa/icon-512.png',
+    '/pwa/icon-512-maskable.png',
+    '/pwa/apple-touch-icon.png',
+    '/pwa/favicon-32.png',
+    '/pwa/favicon.ico',
+    '/pwa/notification-badge-72.png',
 ];
 
 const PRIVATE_PATH_PREFIXES = [
@@ -58,8 +62,8 @@ self.addEventListener('push', (event) => {
 
     event.waitUntil(self.registration.showNotification(payload.title || 'KFMS update', {
         body: payload.body || 'There is a new update in KFMS.',
-        icon: '/admin/assets/images/Kali Logo 2.png',
-        badge: '/favicon.png',
+        icon: '/pwa/icon-192.png',
+        badge: '/pwa/notification-badge-72.png',
         tag: payload.tag || 'kfms-update',
         data: { url: payload.url || '/' },
     }));

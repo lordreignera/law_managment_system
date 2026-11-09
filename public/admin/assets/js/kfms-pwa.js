@@ -12,13 +12,17 @@
         return /iphone|ipad|ipod/i.test(window.navigator.userAgent);
     };
 
+    var isAndroid = function () {
+        return /android/i.test(window.navigator.userAgent);
+    };
+
     var installPanel = function () {
         return document.querySelector('[data-kfms-pwa-install]');
     };
 
     var showInstallPanel = function () {
         var panel = installPanel();
-        if (panel && !isInstalled() && !window.sessionStorage.getItem(installDismissKey)) {
+        if (panel && window.isSecureContext && !isInstalled() && !window.sessionStorage.getItem(installDismissKey)) {
             panel.hidden = false;
         }
     };
@@ -125,7 +129,12 @@
 
     document.addEventListener('DOMContentLoaded', function () {
         if ('serviceWorker' in navigator && window.isSecureContext) {
-            navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(function () {});
+            navigator.serviceWorker.register('/sw.js', {
+                scope: '/',
+                updateViaCache: 'none',
+            }).then(function (registration) {
+                registration.update().catch(function () {});
+            }).catch(function () {});
         }
 
         document.querySelectorAll('[data-kfms-push-notifications]').forEach(setupPushButton);
@@ -146,10 +155,14 @@
             }
             if (isIos() && message) {
                 message.textContent = 'In Safari, tap Share, then choose Add to Home Screen.';
+                return;
+            }
+            if (isAndroid() && message) {
+                message.textContent = 'Open your browser menu and choose Add to Home screen.';
             }
         });
 
-        if (isIos() && !isInstalled()) {
+        if (window.isSecureContext && (isIos() || isAndroid()) && !isInstalled()) {
             window.setTimeout(showInstallPanel, 2500);
         }
     });
